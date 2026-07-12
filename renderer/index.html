@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self';" />
+  <title>Koberlet</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- SETUP -->
+  <section id="scr-setup" class="auth" hidden>
+    <div class="auth-card">
+      <button class="langbtn auth-lang" title="Idioma / Language">EN</button>
+      <div class="auth-brand">
+        <div class="auth-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9.2v13.6L16 29 5 22.8V9.2z" fill="none" stroke="#63e038" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 10.5v11M13 16l5-5.5M13 16l5 5.5" fill="none" stroke="#eef2ec" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="auth-name"><b>Koberl</b><span class="grn">et</span></div>
+        <div class="auth-tag" data-i18n="auth_tag_setup">Crea tu bóveda cifrada</div>
+      </div>
+      <div id="setup-step1">
+        <p class="auth-lead" data-i18n="auth_lead">Protege tus claves con una contraseña. Se cifran con AES-256-GCM + scrypt y no se guardan en ningún sitio.</p>
+        <label data-i18n="lbl_pass">Contraseña</label>
+        <div class="auth-input"><svg class="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><input id="setup-pass" type="password" autocomplete="new-password" data-i18n-ph="ph_pass_min" placeholder="mínimo 8 caracteres" /></div>
+        <label data-i18n="lbl_pass2">Repite la contraseña</label>
+        <div class="auth-input"><svg class="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><input id="setup-pass2" type="password" autocomplete="new-password" data-i18n-ph="ph_pass_rep" placeholder="repite la contraseña" /></div>
+        <label data-i18n="lbl_net_first">Red de tu primera wallet</label><select id="setup-net"></select>
+        <button id="btn-setup" class="primary auth-btn" data-i18n="btn_setup">Crear bóveda y wallet</button>
+        <div id="setup-msg" class="msg"></div>
+      </div>
+      <div id="setup-step2" hidden>
+        <p class="warn" data-i18n="seed_warn">⚠️ Apunta esta frase de recuperación en papel y guárdala a salvo. Es la ÚNICA forma de recuperar tu wallet. No se volverá a mostrar.</p>
+        <div class="seedbox mono" id="setup-seed"></div>
+        <div class="btnrow2"><button class="tiny" data-copy="setup-seed" data-i18n="copy">copiar</button><button id="btn-setup-done" class="primary" data-i18n="seed_done">Ya la anoté, continuar</button></div>
+      </div>
+      <div class="auth-foot"><svg viewBox="0 0 24 24" class="i-mini"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg> <span data-i18n="foot_setup">No custodial · cifrado local</span> · <span id="auth-ver-s"></span></div>
+    </div>
+  </section>
+
+  <!-- UNLOCK -->
+  <section id="scr-unlock" class="auth" hidden>
+    <div class="auth-card">
+      <button class="langbtn auth-lang" title="Idioma / Language">EN</button>
+      <div class="auth-brand">
+        <div class="auth-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9.2v13.6L16 29 5 22.8V9.2z" fill="none" stroke="#63e038" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 10.5v11M13 16l5-5.5M13 16l5 5.5" fill="none" stroke="#eef2ec" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="auth-name"><b>Koberl</b><span class="grn">et</span></div>
+        <div class="auth-tag" data-i18n="auth_tag_unlock">Tu monedero multi-cadena</div>
+      </div>
+      <label data-i18n="lbl_pass">Contraseña</label>
+      <div class="auth-input"><svg class="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><input id="unlock-pass" type="password" autocomplete="current-password" data-i18n-ph="ph_pass" placeholder="tu contraseña" /></div>
+      <button id="btn-unlock" class="primary auth-btn" data-i18n="btn_unlock">Desbloquear</button>
+      <div id="unlock-msg" class="msg"></div>
+      <div class="auth-foot"><svg viewBox="0 0 24 24" class="i-mini"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg> <span data-i18n="foot_unlock">Cifrado local AES-256</span> · <span id="auth-ver"></span></div>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar">
+      <div class="logo"><svg class="brand" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9.2v13.6L16 29 5 22.8V9.2z" fill="none" stroke="#63e038" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 10.5v11M13 16l5-5.5M13 16l5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Koberl</b><span class="grn">et</span></div>
+      <nav>
+        <a class="nav on" data-nav="dashboard"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span> <span data-i18n="nav_dashboard">Dashboard</span></a>
+        <a class="nav" data-nav="wallets"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.5 8a2 2 0 0 1 2-2H17a1.5 1.5 0 0 1 1.5 1.5V9"/><path d="M3.5 8v8.5a2 2 0 0 0 2 2H18a1.5 1.5 0 0 0 1.5-1.5V13"/><path d="M20.5 9.5H17a2 2 0 0 0 0 4h3.5a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1z"/></svg></span> <span data-i18n="nav_wallets">Wallets</span></a>
+        <a class="nav" data-nav="red"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18.5" r="2.2"/><circle cx="19" cy="18.5" r="2.2"/><path d="M12 7.2 6 16.6M12 7.2l6 9.4M7 18.5h10"/></svg></span> <span data-i18n="nav_red">Red</span></a>
+        <a class="nav" data-nav="mercado"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9h13"/><path d="M14 6l3 3-3 3"/><path d="M20 15H7"/><path d="M10 12l-3 3 3 3"/></svg></span> <span data-i18n="nav_mercado">Mercado</span></a>
+        <a class="nav" data-nav="puente"><span class="ic"><svg viewBox="0 0 24 24"><path d="M2.5 11.5a9.5 9.5 0 0 1 19 0"/><path d="M4 11.5V18M20 11.5V18M4 18h16M9 13.5V18M15 13.5V18"/></svg></span> <span data-i18n="nav_puente">Puente</span></a>
+        <a class="nav" data-nav="seguridad"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.3-2.9 7.4-7 8.8-4.1-1.4-7-4.5-7-8.8V6z"/><circle cx="12" cy="10.5" r="1.6"/><path d="M12 12v2.5"/></svg></span> <span data-i18n="nav_seguridad">Seguridad</span></a>
+        <a class="nav" data-nav="ajustes"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg></span> <span data-i18n="nav_ajustes">Ajustes</span></a>
+        <a class="nav" data-nav="info"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10.5V17"/><circle cx="12" cy="7.5" r="0.4"/></svg></span> <span data-i18n="nav_info">Info</span></a>
+      </nav>
+      <div class="side-foot">
+        <button id="btn-lock" class="lock"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg> <span data-i18n="lock">Bloquear</span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div id="crumb">Dashboard</div>
+        <div class="top-actions">
+          <button class="langbtn ghost" title="Idioma / Language">EN</button>
+          <button id="btn-history" class="ghost">🕘 <span data-i18n="btn_hist">Historial</span></button>
+          <button id="btn-refresh" class="ghost">↻ <span data-i18n="btn_refresh">Refrescar</span></button>
+        </div>
+      </div>
+
+      <!-- BANNER ACTUALIZACIÓN -->
+      <div id="update-banner" class="updbar" hidden>
+        <span id="update-text"></span>
+        <span class="updbtns"><button id="btn-update-dl" class="tiny">Descargar</button><button id="btn-update-x" class="tiny ghost">✕</button></span>
+      </div>
+
+      <!-- HISTORIAL (plegado por defecto) -->
+      <div id="history-panel" class="hist" hidden>
+        <div class="hist-head"><span data-i18n="hist_title">Historial de operaciones</span>
+          <div class="hist-ctrls"><select id="hist-wallet"></select><button id="hist-close" class="tiny" data-i18n="close">cerrar</button></div>
+        </div>
+        <div id="hist-list"></div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view">
+        <div class="total-card">
+          <div><div class="mutedw" data-i18n="total">Total</div><div class="total" id="total-usd">$—</div>
+            <div id="total-legend" class="legend"></div></div>
+          <div id="donut" class="donut"><div class="hole"></div></div>
+        </div>
+        <h3 data-i18n="bal_by_net">Saldos por red</h3>
+        <div id="net-cards" class="grid"></div>
+      </section>
+
+      <!-- WALLETS -->
+      <section id="view-wallets" class="view" hidden>
+        <div class="row-between"><h3 data-i18n="h_wallets">Wallets</h3>
+          <div><button id="btn-create" class="primary" data-i18n="create_new">＋ Crear nueva</button> <button id="btn-import" class="ghost" data-i18n="import">Importar</button></div>
+        </div>
+        <div id="wallet-list" class="list"></div>
+      </section>
+
+      <!-- RED -->
+      <section id="view-red" class="view" hidden>
+        <h3 data-i18n="h_red">Redes</h3>
+        <div class="net-card"><div class="net-h">Redes Kadena — elige cuáles ver</div>
+          <p class="muted xs">La <b>Oficial</b> es la mainnet normal (donde suelen estar los fondos). El <b>Fork</b> es la red comunitaria (con los tokens del puente kb-*). Puedes ver ambas a la vez.</p>
+          <div id="kda-nets"></div></div>
+        <div class="net-card"><div class="net-h">Redes EVM — para wallets EVM</div>
+          <p id="evm-ctx" class="muted xs"></p>
+          <div id="evm-nets"></div>
+          <label>RPC de Ethereum</label><div class="rpcrow"><input id="eth-rpc" /><button id="btn-save-rpc" class="tiny">Guardar</button></div>
+        </div>
+      </section>
+
+      <!-- MERCADO -->
+      <section id="view-mercado" class="view" hidden>
+        <h3 data-i18n="h_mercado">Mercado — cambiar KDA ⇄ kb-USDC</h3>
+        <div class="info">🔁 Swap <b>no custodial</b> en el pool del fork (kaddex.exchange, chain 2). Firmas tú con tu contraseña; el precio se lee fresco del pool justo antes de firmar. Comisión del pool 0,3% + deslizamiento 0,5%.</div>
+        <div class="card narrow" style="max-width:520px">
+          <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="mk-wallet"></select>
+          <div class="dir-row">
+            <div class="dir-chip" id="mk-from">kb-USDC</div>
+            <button id="mk-invert" class="invert" title="Invertir">⇅</button>
+            <div class="dir-chip" id="mk-to">KDA</div>
+          </div>
+          <label id="mk-lbl-amt">Cantidad a entregar (kb-USDC)</label>
+          <input id="mk-amt" type="number" step="0.000001" placeholder="0.0" />
+          <div id="mk-quote" class="msg"></div>
+          <button id="mk-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
+          <div id="mk-msg" class="msg"></div>
+        </div>
+      </section>
+
+      <!-- PUENTE -->
+      <section id="view-puente" class="view" hidden>
+        <h3 data-i18n="h_puente">Puente Kinesis — Kadena → EVM</h3>
+        <div class="warn">🧪 <b>Puente experimental.</b> Puedes simular (dry-run) la transacción contra el nodo <b>sin firmar ni mover fondos</b> antes de enviarla de verdad. Usa <b>importes pequeños</b> mientras el puente madura.</div>
+        <div class="info">📍 <b>Kinesis opera en la CHAIN 2 de Kadena.</b> Tus <code>kb-*</code> y el <b>KDA para el gas</b> deben estar en la <b>chain 2</b>. En sentido Ethereum→Kadena, el <code>kb-*</code> se acuña en la chain 2. Si tienes fondos en otra chain, muévelos antes a la 2.</div>
+        <div class="card narrow" style="max-width:560px">
+          <div class="dir-row">
+            <div class="dir-chip" id="dir-from">Ethereum</div>
+            <button id="btn-invert" class="invert" title="Invertir dirección">⇅</button>
+            <div class="dir-chip" id="dir-to">Kadena</div>
+          </div>
+          <label id="lbl-from">Wallet origen (Ethereum)</label><select id="br-from"></select>
+          <label>Token <small id="br-tokhint" class="muted"></small></label><select id="br-token"></select>
+          <label id="lbl-dest">Wallet destino (Kadena)</label><select id="br-dest"></select>
+          <div id="br-to-wrap" hidden><label id="lbl-to">Cuenta/dirección destino</label><input id="br-to" /></div>
+          <label>Cantidad</label><input id="br-amt" type="number" step="0.0001" />
+          <div class="btnrow2"><button id="btn-bridge-sim" class="ghost">🧪 Simular</button><button id="btn-bridge-send" class="primary">🚀 Ejecutar de verdad</button></div>
+          <div id="br-msg" class="msg"></div>
+          <div id="br-out" hidden>
+            <label>Código Pact que se ejecutaría</label><div id="br-code" class="mono"></div>
+            <label>Resultado de la simulación</label><pre id="br-result" class="result"></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEGURIDAD -->
+      <section id="view-seguridad" class="view" hidden>
+        <h3 data-i18n="h_seguridad">Seguridad</h3>
+        <div class="card">
+          <p class="muted">Revela la clave privada de una de tus wallets. Requiere la contraseña de la bóveda. No la compartas con nadie.</p>
+          <label>Wallet</label><select id="sec-wallet"></select>
+          <button id="btn-sec-export" class="primary">🔑 Ver clave privada</button>
+        </div>
+        <div class="card"><p class="muted">La bóveda está cifrada (AES-256-GCM + scrypt) y las privadas nunca salen del proceso principal salvo aquí, con tu contraseña.<br>Próximamente: cambiar la contraseña de la bóveda y auto-bloqueo por inactividad.</p></div>
+      </section>
+
+      <!-- AJUSTES -->
+      <section id="view-ajustes" class="view" hidden>
+        <h3 data-i18n="h_ajustes">Ajustes</h3>
+        <div class="card">
+          <label data-i18n="set_kda_mode">Redes Kadena en el dashboard</label>
+          <select id="set-kda-mode">
+            <option value="ambas">Ambas (oficial + fork)</option>
+            <option value="oficial">Solo oficial</option>
+            <option value="fork">Solo fork</option>
+          </select>
+          <p class="muted xs">Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)</p>
+        </div>
+        <div class="card">
+          <div class="row-between"><b>Koberlet <span id="app-ver">—</span></b><button id="btn-check-upd" class="tiny ghost" data-i18n="check_upd">Buscar actualizaciones</button></div>
+          <div id="upd-status" class="muted xs" style="margin-top:6px"></div>
+        </div>
+        <div class="card"><p class="muted">Koberlet · monedero multi-cadena (Kadena + EVM) de DNNS.<br>Bóveda cifrada AES-256-GCM + scrypt. En modo portable, los datos van junto al ejecutable. Las claves privadas nunca salen del proceso principal salvo que las exportes con tu contraseña.</p></div>
+      </section>
+
+      <!-- INFO -->
+      <section id="view-info" class="view" hidden>
+        <h3 data-i18n="h_info">Info y manuales</h3>
+
+        <div class="lang-es">
+          <div class="card">
+            <details>
+              <summary><b>📊 Dashboard</b> — qué estás viendo</summary>
+              <p>Es el resumen de tu dinero. Arriba ves el <b>total en dólares</b> de todas las wallets marcadas como visibles, con un donut del reparto por red. Debajo, una <b>tarjeta por red</b> de cada wallet visible: saldo del token nativo (KDA, ETH…), tokens (USDC, USDT…) y su valor en dólares.</p>
+              <p>En cada tarjeta: <b>📥 Recibir</b> muestra tu dirección y un QR para que te envíen fondos; <b>📤 Enviar</b> abre el formulario de envío (siempre te pedirá la contraseña antes de firmar). Los precios vienen de CoinGecko y se refrescan cada minuto; el botón <b>↻ Refrescar</b> fuerza una lectura nueva.</p>
+            </details>
+            <details>
+              <summary><b>👛 Wallets</b> — crear, importar y gestionar</summary>
+              <p>Cada wallet pertenece a <b>una sola red</b> (Kadena o una red EVM), elegida al crearla. Puedes tener tantas como quieras y marcar con la casilla cuáles se ven en el Dashboard (los saldos se suman).</p>
+              <p><b>Crear nueva:</b> genera una frase semilla de 12 palabras. Apúntala en papel y guárdala a salvo: es la ÚNICA forma de recuperar la wallet, no se vuelve a mostrar.</p>
+              <p><b>Importar:</b> por semilla (compatible con eckoWallet, Chainweaver y MetaMask; puedes listar las cuentas de la semilla y elegir la que tiene tus fondos) o por clave privada (Kadena: 64 hex; EVM: 0x…).</p>
+              <p>El lápiz ✏️ renombra la wallet. Borrar una wallet solo la quita de la app: si conservas su semilla o clave, podrás importarla de nuevo.</p>
+            </details>
+            <details>
+              <summary><b>🌐 Red</b> — qué redes se muestran</summary>
+              <p><b>Kadena</b> tiene dos redes: la <b>Oficial</b> (api.chainweb.com, la mainnet de siempre, donde están los fondos de la mayoría) y el <b>Fork comunitario</b> (donde viven los tokens del puente kb-* y el Mercado). Actívalas o desactívalas con los interruptores: verás una tarjeta por red activada.</p>
+              <p><b>EVM:</b> la misma dirección 0x vale en Ethereum, Arbitrum, Base, BNB Chain y Polygon. Activa las redes que uses para no llenar el dashboard. También puedes cambiar el RPC de Ethereum si el público va lento.</p>
+            </details>
+            <details>
+              <summary><b>🔁 Mercado</b> — cambiar KDA ⇄ kb-USDC</summary>
+              <p>Swap <b>no custodial</b> en el pool de kaddex.exchange del fork (chain 2): tus fondos van directos del pool a tu cuenta, sin intermediarios. Eliges wallet, sentido (⇅) y cantidad; la app te enseña el precio estimado leído del pool y al confirmar (con tu contraseña) firma y envía.</p>
+              <p>Costes: comisión del pool 0,3% + deslizamiento máximo aceptado 0,5%. Necesitas un poco de KDA en la <b>chain 2 del fork</b> para el gas.</p>
+            </details>
+            <details>
+              <summary><b>🌉 Puente</b> — mover tokens entre Kadena y EVM</summary>
+              <p>El puente Kinesis conecta el <b>fork de Kadena</b> con redes EVM. Funciona en ambos sentidos: Ethereum→Kadena (recibes kb-USDC, kb-USDT… en la chain 2) y Kadena→EVM.</p>
+              <p>Antes de enviar de verdad puedes pulsar <b>🧪 Simular</b>: ejecuta la transacción contra el nodo SIN firmar ni mover fondos y te enseña el resultado. ⚠️ Es un puente <b>experimental</b>: usa importes pequeños. Recuerda que en Kadena todo pasa por la <b>chain 2</b> (tokens y KDA para gas).</p>
+            </details>
+            <details>
+              <summary><b>🛡️ Seguridad</b> — cómo se protegen tus claves</summary>
+              <p>Tus claves privadas viven en una <b>bóveda cifrada</b> (AES-256-GCM + scrypt) que solo se abre con tu contraseña. La contraseña no se guarda en ningún sitio: si la olvidas, solo la semilla en papel te salva. Las privadas nunca salen del proceso principal de la app.</p>
+              <p>En esta sección puedes <b>ver la clave privada</b> de una wallet (pide la contraseña otra vez). No la compartas jamás: quien la tenga controla tus fondos. En modo portable, la bóveda va en la carpeta <code>MonederoDNNS-datos</code> junto al ejecutable: si copias la carpeta a otro disco, te llevas todo.</p>
+            </details>
+            <details>
+              <summary><b>⚙️ Ajustes</b> — versión y actualizaciones</summary>
+              <p>Desde Ajustes eliges qué redes Kadena se ven en el dashboard y compruebas si hay <b>actualizaciones</b>. Al actualizar, la app descarga solo el código nuevo (~30 MB), lo aplica y se reinicia sola; <b>tu bóveda y tus datos no se tocan</b>. También verás un aviso arriba cuando haya versión nueva.</p>
+            </details>
+            <details>
+              <summary><b>🕘 Historial</b> — tus operaciones</summary>
+              <p>El botón 🕘 del margen superior abre el historial: transacciones Kadena leídas de la cadena (vía el indexador) más el registro local de envíos EVM y puente. Elige la wallet en el desplegable. Si el indexador no responde, se muestra lo último que se pudo leer.</p>
+            </details>
+          </div>
+        </div>
+
+        <div class="lang-en" hidden>
+          <div class="card">
+            <details>
+              <summary><b>📊 Dashboard</b> — what you are seeing</summary>
+              <p>Your money at a glance. At the top, the <b>total in dollars</b> across all wallets marked as visible, with a donut showing the split per network. Below, one <b>card per network</b> of each visible wallet: native token balance (KDA, ETH…), tokens (USDC, USDT…) and their dollar value.</p>
+              <p>On each card: <b>📥 Receive</b> shows your address and a QR code; <b>📤 Send</b> opens the send form (it always asks for your password before signing). Prices come from CoinGecko and refresh every minute; <b>↻ Refresh</b> forces a fresh read.</p>
+            </details>
+            <details>
+              <summary><b>👛 Wallets</b> — create, import and manage</summary>
+              <p>Each wallet belongs to <b>one network</b> (Kadena or an EVM network), chosen when you create it. You can have as many as you want and tick which ones show on the Dashboard (balances add up).</p>
+              <p><b>Create new:</b> generates a 12-word seed phrase. Write it on paper and keep it safe: it is the ONLY way to recover the wallet and will not be shown again.</p>
+              <p><b>Import:</b> by seed (compatible with eckoWallet, Chainweaver and MetaMask; you can list the seed's accounts and pick the one holding your funds) or by private key (Kadena: 64 hex; EVM: 0x…).</p>
+              <p>The ✏️ pencil renames a wallet. Deleting a wallet only removes it from the app: if you keep its seed or key you can import it again.</p>
+            </details>
+            <details>
+              <summary><b>🌐 Network</b> — which networks are shown</summary>
+              <p><b>Kadena</b> has two networks: the <b>Official</b> one (api.chainweb.com, the regular mainnet where most funds live) and the <b>community Fork</b> (home of the bridge kb-* tokens and the Market). Toggle them on or off: you get one card per enabled network.</p>
+              <p><b>EVM:</b> the same 0x address works on Ethereum, Arbitrum, Base, BNB Chain and Polygon. Enable only the networks you use to keep the dashboard clean. You can also change the Ethereum RPC if the public one is slow.</p>
+            </details>
+            <details>
+              <summary><b>🔁 Market</b> — swap KDA ⇄ kb-USDC</summary>
+              <p><b>Non-custodial</b> swap on the kaddex.exchange pool of the fork (chain 2): funds move straight between the pool and your account, no middlemen. Pick a wallet, direction (⇅) and amount; the app shows an estimated price read fresh from the pool, and on confirm (with your password) it signs and sends.</p>
+              <p>Costs: 0.3% pool fee + max accepted slippage 0.5%. You need a little KDA on <b>chain 2 of the fork</b> for gas.</p>
+            </details>
+            <details>
+              <summary><b>🌉 Bridge</b> — move tokens between Kadena and EVM</summary>
+              <p>The Kinesis bridge connects the <b>Kadena fork</b> with EVM networks, in both directions: Ethereum→Kadena (you receive kb-USDC, kb-USDT… on chain 2) and Kadena→EVM.</p>
+              <p>Before sending for real you can hit <b>🧪 Simulate</b>: it runs the transaction against the node WITHOUT signing or moving funds and shows the result. ⚠️ The bridge is <b>experimental</b>: use small amounts. On Kadena everything happens on <b>chain 2</b> (tokens and KDA for gas).</p>
+            </details>
+            <details>
+              <summary><b>🛡️ Security</b> — how your keys are protected</summary>
+              <p>Your private keys live in an <b>encrypted vault</b> (AES-256-GCM + scrypt) that only opens with your password. The password is never stored anywhere: if you forget it, only your paper seed can save you. Private keys never leave the app's main process.</p>
+              <p>Here you can <b>reveal a wallet's private key</b> (it asks for your password again). Never share it: whoever has it controls your funds. In portable mode the vault lives in the <code>MonederoDNNS-datos</code> folder next to the executable: copy the folder to another drive and you take everything with you.</p>
+            </details>
+            <details>
+              <summary><b>⚙️ Settings</b> — version and updates</summary>
+              <p>In Settings you choose which Kadena networks show on the dashboard and check for <b>updates</b>. When updating, the app downloads only the new code (~30 MB), applies it and restarts itself; <b>your vault and data are untouched</b>. A banner also appears at the top when a new version is available.</p>
+            </details>
+            <details>
+              <summary><b>🕘 History</b> — your operations</summary>
+              <p>The 🕘 button on the top bar opens the history: Kadena transactions read from the chain (via the indexer) plus the local log of EVM and bridge sends. Pick the wallet in the dropdown. If the indexer is down, the last data it could read is shown.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <div class="msgbar"><span id="wallet-msg" class="msg"></span></div>
+    </main>
+  </div>
+
+  <!-- MODAL crear -->
+  <div id="modal-create" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Crear nueva wallet</h2>
+      <div id="create-step1">
+        <label>Nombre</label><input id="cr-label" placeholder="p.ej. Wallet fría" />
+        <label>Red</label><select id="cr-net"></select>
+        <div class="btnrow2"><button id="btn-do-create" class="primary">Generar</button><button class="ghost" data-close>Cancelar</button></div>
+      </div>
+      <div id="create-step2" hidden>
+        <p class="warn">⚠️ Apunta esta semilla en papel y guárdala a salvo. Es la ÚNICA forma de recuperar esta wallet. No se volverá a mostrar.</p>
+        <div class="seedbox mono" id="cr-seed"></div>
+        <div class="btnrow2"><button class="tiny" data-copy="cr-seed">copiar</button><button id="btn-create-done" class="primary">Ya la anoté, continuar</button></div>
+      </div>
+      <div id="cr-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL renombrar -->
+  <div id="modal-rename" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Renombrar wallet</h2>
+      <label>Nombre</label><input id="ren-label" placeholder="p.ej. Mi wallet Kadena" />
+      <div class="btnrow2"><button id="btn-do-rename" class="primary">Guardar</button><button class="ghost" data-close>Cancelar</button></div>
+      <div id="ren-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL importar -->
+  <div id="modal-import" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Importar wallet</h2>
+      <div class="tabs"><button class="tab on" data-tab="mn">Semilla</button><button class="tab" data-tab="pk">Clave privada</button></div>
+      <label>Nombre</label><input id="imp-label" placeholder="p.ej. Mi wallet ecko" />
+      <label>Red</label><select id="imp-net"></select>
+      <div id="tab-mn">
+        <label>Semilla (12/24 palabras)</label><textarea id="imp-mn" rows="3" placeholder="word1 word2 ..."></textarea>
+        <p class="muted xs">Una semilla contiene varias cuentas (índice 0, 1, 2…), como en eckoWallet. Pulsa "Ver cuentas" para elegir la que tiene tus fondos, o importa directamente la índice 0.</p>
+        <button id="btn-seed-scan" class="ghost tiny">🔍 Ver cuentas de esta semilla</button>
+        <label style="margin-top:10px">¿Buscas una cuenta concreta? (opcional)</label>
+        <input id="imp-target" placeholder="k:… (Kadena) o 0x… (EVM)" />
+        <button id="btn-seed-find" class="ghost tiny">🎯 Buscar esa cuenta en la semilla</button>
+        <div id="seed-accts" class="seedaccts"></div>
+      </div>
+      <div id="tab-pk" hidden>
+        <label>Clave privada</label><input id="imp-pk" placeholder="Kadena: 64 hex · EVM: 0x…" />
+      </div>
+      <div class="btnrow2"><button id="btn-do-import" class="primary">Importar</button><button class="ghost" data-close>Cancelar</button></div>
+      <div id="imp-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL exportar -->
+  <div id="modal-export" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Ver clave privada <span id="exp-chain" class="chip"></span></h2>
+      <p class="muted">Introduce la contraseña de la bóveda para revelar la privada. No la compartas.</p>
+      <label data-i18n="lbl_pass">Contraseña</label><input id="exp-pass" type="password" />
+      <div class="btnrow2"><button id="btn-do-export" class="primary">Revelar</button><button class="ghost" data-close>Cerrar</button></div>
+      <div id="exp-out" hidden><label>Clave privada</label>
+        <div class="addr"><span id="exp-secret" class="mono"></span><button class="copy" data-copy="exp-secret">copiar</button></div></div>
+      <div id="exp-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL confirmar envío -->
+  <div id="modal-send" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Confirmar envío</h2>
+      <div id="send-summary" class="sendsum"></div>
+      <label>Contraseña de la bóveda</label><input id="send-pass" type="password" />
+      <div class="btnrow2"><button id="btn-confirm-send" class="primary">Firmar y enviar</button><button class="ghost" data-close>Cancelar</button></div>
+      <div id="send-steps" class="steps"></div>
+      <div id="send-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

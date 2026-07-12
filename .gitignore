@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+
+# Builds y paquetes
+portable-build/
+dist/
+*.zip
+
+# DATOS DE WALLET — NUNCA subir
+MonederoDNNS-datos/
+Koberlet-datos/
+vault.json
+vault-*.bak.json
+history-cache.json
+config.json
+portable.flag
+
+# Claves y secretos
+TeamRed.json
+llaves/
+claves/
+*.key
+*.pem
+.env
+.env.*
