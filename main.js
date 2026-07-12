@@ -150,6 +150,7 @@ function view() {
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000, height: 760, minWidth: 860,
+    icon: path.join(__dirname, 'renderer', 'icon.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
   win.setMenuBarVisibility(false);
@@ -169,17 +170,19 @@ app.on('window-all-closed', () => { unlocked = null; if (process.platform !== 'd
 function ensureDesktopShortcut() {
   try {
     if (process.platform !== 'win32') return;
+    // MARK versiona el acceso directo: al subirla, el siguiente arranque lo crea/actualiza una vez
+    // (p.ej. v2-icon aplicó el icono propio a accesos ya creados). Si el usuario lo borra después, no se recrea.
+    const MARK = 'v2-icon';
     const marker = path.join(app.getPath('userData'), 'shortcut.flag');
-    if (fs.existsSync(marker)) return;
+    if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8').trim() === MARK) return;
     const lnk = path.join(app.getPath('desktop'), 'Koberlet.lnk');
-    if (!fs.existsSync(lnk)) {
-      shell.writeShortcutLink(lnk, 'create', {
-        target: app.getPath('exe'), cwd: _exeDir,
-        description: 'Koberlet — monedero multi-cadena (Kadena + EVM)'
-      });
-    }
+    shell.writeShortcutLink(lnk, fs.existsSync(lnk) ? 'update' : 'create', {
+      target: app.getPath('exe'), cwd: _exeDir,
+      icon: path.join(__dirname, 'renderer', 'icon.ico'), iconIndex: 0,
+      description: 'Koberlet — monedero multi-cadena (Kadena + EVM)'
+    });
     fs.mkdirSync(path.dirname(marker), { recursive: true });
-    fs.writeFileSync(marker, new Date().toISOString());
+    fs.writeFileSync(marker, MARK);
   } catch (_) { /* sin escritorio o sin permisos: no es crítico */ }
 }
 
