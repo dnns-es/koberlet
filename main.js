@@ -73,6 +73,7 @@ const loadConfig = () => {
     networks: DEFAULT_CONFIG.kda.networks.map(n => { const s = savedNets ? savedNets.find(x => x.key === n.key) : null; return { ...n, enabled: s ? !!s.enabled : n.enabled }; })
   };
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
+  c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   delete c.importPath; // línea muerta de la versión que importaba TeamRed.json desde F: — la bóveda es autocontenida
   return c;
 };

@@ -203,3 +203,11 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 #view-info summary:hover{color:var(--kda-d)}
 #view-info details p{margin:10px 0 4px;font-size:13.5px;line-height:1.6;color:#3a3e44}
 #view-info code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12.5px}
+
+/* ===== Ojo ver/ocultar contraseña ===== */
+.auth .auth-input input{padding-right:44px}
+.pwdwrap{position:relative;display:block}
+.pwdwrap input{padding-right:44px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:#aab0a6;padding:4px;line-height:0}
+.eye svg{width:20px;height:20px}
+.eye:hover{color:var(--kda-d)}
