@@ -414,7 +414,22 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Ethereum → Kadena${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.txHash });
     return { ...res, arrived };
   }
-  throw new Error('El envío real Kadena→EVM aún no está activado (solo simulación).');
+  // KADENA -> EVM real: dispatch firmado en el fork + espera de llegada del token al lado EVM
+  if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
+  const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
+  const evmBal = async () => { try { return (await bridge.getEvmBalances({ rpc: b.evm.rpc, address: recipient, routes: [route] }))[0].balance; } catch (_) { return 0; } };
+  const before = await evmBal();
+  const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
+  if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
+  let arrived = false;
+  if (res.minedOk) {
+    onStep({ step: 'evm', status: 'run', detail: 'Esperando al relayer hacia Ethereum…' });
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    for (let i = 0; i < 24 && !arrived; i++) { await sleep(15000); const now = await evmBal(); if (now > before + 1e-9) { onStep({ step: 'evm', status: 'ok', detail: 'recibido · saldo ' + now }); arrived = true; } }
+    if (!arrived) onStep({ step: 'evm', status: 'pending', detail: 'aún no entregado; el relayer puede tardar (fondos no perdidos)' });
+  }
+  logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Kadena → Ethereum${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.requestKey });
+  return { ...res, txHash: res.requestKey, arrived };
 });
 
 // Mercado: swap KDA <-> kb-USDC en el pool del fork (kaddex.exchange, chain 2). No custodial: firma el main con la clave de la wallet.
