@@ -24,6 +24,12 @@ const LANG = {
     set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
     set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
     upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
+    upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
+    upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
+    upd_auto_applying: 'Actualizando a Koberlet v{v}… la app se reiniciará sola.',
+    upd_err: 'Error al actualizar: ', upd_checking: 'Comprobando…',
+    upd_new: 'Nueva versión <b>v{v}</b> disponible.', upd_now: 'Actualizar ahora',
+    upd_latest: 'Estás en la última versión (v{v}).', upd_nocheck: 'No pude comprobar (¿sin conexión o servidor?).',
     hist_title: 'Historial de operaciones', close: 'cerrar'
   },
   en: {
@@ -46,6 +52,12 @@ const LANG = {
     set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
     set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
     upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
+    upd_available: 'Koberlet v{v} available.', update: 'Update',
+    upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
+    upd_auto_applying: 'Updating to Koberlet v{v}… the app will restart by itself.',
+    upd_err: 'Update error: ', upd_checking: 'Checking…',
+    upd_new: 'New version <b>v{v}</b> available.', upd_now: 'Update now',
+    upd_latest: 'You are on the latest version (v{v}).', upd_nocheck: 'Could not check (offline or server down?).',
     hist_title: 'Operation history', close: 'close'
   }
 };
@@ -87,32 +99,32 @@ async function initUpdates() {
     if (u.newer) {
       window._upd = u;
       if (CFG && CFG.updateMode === 'auto' && u.canAuto) {
-        $('update-text').textContent = `Actualizando a Koberlet v${u.latest}… la app se reiniciará sola.`;
+        $('update-text').textContent = t('upd_auto_applying').replace('{v}', u.latest);
         $('btn-update-dl').hidden = true; $('update-banner').hidden = false;
         try { await window.api.updateApply(); return; }
         catch (_) { $('btn-update-dl').hidden = false; } // si falla, cae al aviso manual
       }
-      $('update-text').textContent = `Koberlet v${u.latest} disponible.${u.notes ? ' ' + u.notes : ''}`;
-      $('btn-update-dl').textContent = u.canAuto ? 'Actualizar' : 'Descargar';
+      $('update-text').textContent = t('upd_available').replace('{v}', u.latest) + (u.notes ? ' ' + u.notes : '');
+      $('btn-update-dl').textContent = u.canAuto ? t('update') : t('download');
       $('update-banner').hidden = false;
     }
   } catch (_) {}
 }
 async function doUpdate(u, statusEl) {
   if (u && u.canAuto) {
-    if (statusEl) statusEl.textContent = 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.';
-    try { await window.api.updateApply(); } catch (e) { if (statusEl) statusEl.textContent = 'Error al actualizar: ' + e.message; }
+    if (statusEl) statusEl.textContent = t('upd_applying');
+    try { await window.api.updateApply(); } catch (e) { if (statusEl) statusEl.textContent = t('upd_err') + e.message; }
   } else if (u && u.url) { window.api.openExternal(u.url); }
 }
 $('btn-update-dl').onclick = () => { $('btn-update-dl').disabled = true; doUpdate(window._upd, $('update-text')); };
 $('btn-update-x').onclick = () => { $('update-banner').hidden = true; };
 $('btn-check-upd').onclick = async () => {
-  msg($('upd-status'), 'Comprobando…');
+  msg($('upd-status'), t('upd_checking'));
   try {
     const u = await window.api.updateCheck();
-    if (u.newer) { $('upd-status').innerHTML = `Nueva versión <b>v${u.latest}</b> disponible. <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? 'Actualizar ahora' : 'Descargar'}</a>`; $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); }; }
-    else if (u.latest) msg($('upd-status'), 'Estás en la última versión (v' + u.current + ').', 'ok');
-    else msg($('upd-status'), 'No pude comprobar (¿sin conexión o servidor?).', 'err');
+    if (u.newer) { $('upd-status').innerHTML = t('upd_new').replace('{v}', u.latest) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`; $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); }; }
+    else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
+    else msg($('upd-status'), t('upd_nocheck'), 'err');
   } catch (e) { msg($('upd-status'), e.message, 'err'); }
 };
 $('btn-setup').onclick = async () => {
