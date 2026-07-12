@@ -77,7 +77,7 @@ async function boot() {
 }
 // Versión + auto-update vía descargas.dnns.es
 async function initUpdates() {
-  try { const info = await window.api.appInfo(); const v = 'v' + info.version; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; }); } catch (_) {}
+  try { const info = await window.api.appInfo(); const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; }); } catch (_) {}
   try {
     const u = await window.api.updateCheck();
     if (u.newer) { window._upd = u; $('update-text').textContent = `Koberlet v${u.latest} disponible.${u.notes ? ' ' + u.notes : ''}`; $('btn-update-dl').textContent = u.canAuto ? 'Actualizar' : 'Descargar'; $('update-banner').hidden = false; }
