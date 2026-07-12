@@ -211,3 +211,6 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;color:#aab0a6;padding:4px;line-height:0}
 .eye svg{width:20px;height:20px}
 .eye:hover{color:var(--kda-d)}
+
+/* botón peligro (borrar definitivo) */
+button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#c43e38}
