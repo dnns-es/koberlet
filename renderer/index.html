@@ -323,6 +323,23 @@
     </div>
   </div>
 
+  <!-- MODAL borrar wallet (doble confirmación) -->
+  <div id="modal-del" class="modal" hidden>
+    <div class="card narrow">
+      <h2>Borrar wallet</h2>
+      <div id="del-step1">
+        <p>¿Seguro que quieres borrar <b id="del-name"></b>?</p>
+        <p class="warn">💡 Antes de borrar, <b>copia su semilla o su clave privada</b> (sección 🛡️ Seguridad → Ver clave privada) y guárdala a salvo. Es lo ÚNICO que te permitirá restaurar esta wallet si cambias de idea.</p>
+        <div class="btnrow2"><button id="btn-del-next" class="primary">Ya la tengo, continuar</button><button class="ghost" data-close>Cancelar</button></div>
+      </div>
+      <div id="del-step2" hidden>
+        <p class="warn">⚠️ <b>Última confirmación:</b> la wallet <b id="del-name2"></b> se eliminará de la app. Si no guardaste su semilla o su clave privada, <b>perderás el acceso a sus fondos para siempre</b>.</p>
+        <div class="btnrow2"><button id="btn-del-do" class="danger">Sí, borrar definitivamente</button><button class="ghost" data-close>Cancelar</button></div>
+      </div>
+      <div id="del-msg" class="msg"></div>
+    </div>
+  </div>
+
   <!-- MODAL renombrar -->
   <div id="modal-rename" class="modal" hidden>
     <div class="card narrow">
