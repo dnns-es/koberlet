@@ -22,6 +22,8 @@ const LANG = {
     kda_nets: 'Redes Kadena — elige cuáles ver', evm_nets: 'Redes EVM — para wallets EVM', eth_rpc: 'RPC de Ethereum', save: 'Guardar',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Cantidad a entregar', mk_swap: 'Cambiar',
     set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
+    set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
+    upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
     hist_title: 'Historial de operaciones', close: 'cerrar'
   },
   en: {
@@ -42,6 +44,8 @@ const LANG = {
     kda_nets: 'Kadena networks — choose which to show', evm_nets: 'EVM networks — for EVM wallets', eth_rpc: 'Ethereum RPC', save: 'Save',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Amount to send', mk_swap: 'Swap',
     set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
+    set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
+    upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
     hist_title: 'Operation history', close: 'close'
   }
 };
@@ -80,7 +84,18 @@ async function initUpdates() {
   try { const info = await window.api.appInfo(); const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; }); } catch (_) {}
   try {
     const u = await window.api.updateCheck();
-    if (u.newer) { window._upd = u; $('update-text').textContent = `Koberlet v${u.latest} disponible.${u.notes ? ' ' + u.notes : ''}`; $('btn-update-dl').textContent = u.canAuto ? 'Actualizar' : 'Descargar'; $('update-banner').hidden = false; }
+    if (u.newer) {
+      window._upd = u;
+      if (CFG && CFG.updateMode === 'auto' && u.canAuto) {
+        $('update-text').textContent = `Actualizando a Koberlet v${u.latest}… la app se reiniciará sola.`;
+        $('btn-update-dl').hidden = true; $('update-banner').hidden = false;
+        try { await window.api.updateApply(); return; }
+        catch (_) { $('btn-update-dl').hidden = false; } // si falla, cae al aviso manual
+      }
+      $('update-text').textContent = `Koberlet v${u.latest} disponible.${u.notes ? ' ' + u.notes : ''}`;
+      $('btn-update-dl').textContent = u.canAuto ? 'Actualizar' : 'Descargar';
+      $('update-banner').hidden = false;
+    }
   } catch (_) {}
 }
 async function doUpdate(u, statusEl) {
@@ -127,6 +142,9 @@ async function enter(v) {
     await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
   };
   syncKdaControls();
+  // Ajustes: modo de actualización (manual por defecto / automática)
+  $('set-upd-mode').value = CFG.updateMode || 'manual';
+  $('set-upd-mode').onchange = async () => { CFG.updateMode = $('set-upd-mode').value; await window.api.setConfig(CFG); };
   $('eth-rpc').value = CFG.evm.find(n => n.key === 'eth').rpc;
   $('btn-save-rpc').onclick = async () => { CFG.evm.find(n => n.key === 'eth').rpc = $('eth-rpc').value.trim(); await window.api.setConfig(CFG); msg($('wallet-msg'), 'RPC guardado.', 'ok'); loadBalances(); };
   // interruptores de redes EVM
@@ -470,5 +488,19 @@ $('btn-do-export').onclick = async () => { try { const r = await window.api.expo
 // modales + copiar
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').hidden = true);
 document.addEventListener('click', e => { const t = e.target; if (t.classList.contains('copy')) { const txt = t.dataset.ct || (t.dataset.copy ? $(t.dataset.copy).textContent : null); if (txt) navigator.clipboard.writeText(txt); } });
+
+// Botón 👁 ver/ocultar en todos los campos de contraseña (login, setup, firmas, exportar)
+function initEyes() {
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5c2.2 0 4 .8 5.5 1.9M21.5 12S18 18.5 12 18.5c-2.2 0-4-.8-5.5-1.9"/><path d="M4.5 19.5 19.5 4.5"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(inp => {
+    let wrap = inp.closest('.auth-input');
+    if (!wrap) { wrap = document.createElement('span'); wrap.className = 'pwdwrap'; inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp); }
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'eye'; b.title = 'Ver / ocultar'; b.innerHTML = EYE;
+    b.onclick = () => { const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.innerHTML = show ? EYE_OFF : EYE; inp.focus(); };
+    wrap.appendChild(b);
+  });
+}
+initEyes();
 
 boot();

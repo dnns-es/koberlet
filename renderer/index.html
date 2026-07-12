@@ -194,6 +194,12 @@
         <div class="card">
           <div class="row-between"><b>Koberlet <span id="app-ver">—</span></b><button id="btn-check-upd" class="tiny ghost" data-i18n="check_upd">Buscar actualizaciones</button></div>
           <div id="upd-status" class="muted xs" style="margin-top:6px"></div>
+          <label style="margin-top:12px" data-i18n="set_upd_mode">Actualizaciones</label>
+          <select id="set-upd-mode">
+            <option value="manual" data-i18n="upd_manual">Manual — avisarme y actualizo yo</option>
+            <option value="auto" data-i18n="upd_auto">Automática — instalar al detectarla</option>
+          </select>
+          <p class="muted xs" data-i18n="upd_mode_hint">En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.</p>
         </div>
         <div class="card"><p class="muted">Koberlet · monedero multi-cadena (Kadena + EVM) creado por el <b>TeamRed</b> · DNNS.<br>Bóveda cifrada AES-256-GCM + scrypt. En modo portable, los datos van junto al ejecutable. Las claves privadas nunca salen del proceso principal salvo que las exportes con tu contraseña.</p></div>
       </section>
