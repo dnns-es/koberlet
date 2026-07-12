@@ -143,6 +143,21 @@
           <button id="mk-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
           <div id="mk-msg" class="msg"></div>
         </div>
+
+        <h3 style="margin-top:26px" data-i18n="h_ethswap">Ethereum — cambiar USDC ⇄ ETH (Uniswap)</h3>
+        <div class="card narrow" style="max-width:520px">
+          <label data-i18n="es_wallet">Wallet (Ethereum)</label><select id="es-wallet"></select>
+          <div class="dir-row">
+            <div class="dir-chip" id="es-from">USDC</div>
+            <button id="es-invert" class="invert" title="Invertir">⇅</button>
+            <div class="dir-chip" id="es-to">ETH</div>
+          </div>
+          <label id="es-lbl-amt">Cantidad a entregar (USDC)</label>
+          <input id="es-amt" type="number" step="0.000001" placeholder="0.0" />
+          <div id="es-quote" class="msg"></div>
+          <button id="es-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
+          <div id="es-msg" class="msg"></div>
+        </div>
       </section>
 
       <!-- PUENTE -->
@@ -231,6 +246,7 @@
               <summary><b>🔁 Mercado</b> — cambiar KDA ⇄ kb-USDC</summary>
               <p>Swap <b>no custodial</b> en el pool de kaddex.exchange del fork (chain 2): tus fondos van directos del pool a tu cuenta, sin intermediarios. Eliges wallet, sentido (⇅) y cantidad; la app te enseña el precio estimado leído del pool y al confirmar (con tu contraseña) firma y envía.</p>
               <p>Costes: comisión del pool 0,3% + deslizamiento máximo aceptado 0,5%. Necesitas un poco de KDA en la <b>chain 2 del fork</b> para el gas.</p>
+              <p><b>USDC ⇄ ETH (Uniswap):</b> también puedes cambiar entre USDC y ETH dentro de Ethereum, pensado para <b>reponer ETH de gas</b> pagando con USDC. Ojo: el propio swap gasta ETH en gas (~1-10 $ según esté la red) — hazlo antes de quedarte a cero, y para importes que compensen ese coste.</p>
             </details>
             <details>
               <summary><b>🌉 Puente</b> — mover tokens entre Kadena y EVM</summary>
@@ -278,6 +294,7 @@
               <summary><b>🔁 Market</b> — swap KDA ⇄ kb-USDC</summary>
               <p><b>Non-custodial</b> swap on the kaddex.exchange pool of the fork (chain 2): funds move straight between the pool and your account, no middlemen. Pick a wallet, direction (⇅) and amount; the app shows an estimated price read fresh from the pool, and on confirm (with your password) it signs and sends.</p>
               <p>Costs: 0.3% pool fee + max accepted slippage 0.5%. You need a little KDA on <b>chain 2 of the fork</b> for gas.</p>
+              <p><b>USDC ⇄ ETH (Uniswap):</b> you can also swap between USDC and ETH on Ethereum, meant for <b>topping up gas ETH</b> paying with USDC. Note: the swap itself costs ETH gas (~$1-10 depending on the network) — do it before you hit zero, and for amounts that justify that cost.</p>
             </details>
             <details>
               <summary><b>🌉 Bridge</b> — move tokens between Kadena and EVM</summary>

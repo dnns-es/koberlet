@@ -21,6 +21,7 @@ const LANG = {
     h_seguridad: 'Seguridad', h_ajustes: 'Ajustes', h_info: 'Info y manuales',
     kda_nets: 'Redes Kadena — elige cuáles ver', evm_nets: 'Redes EVM — para wallets EVM', eth_rpc: 'RPC de Ethereum', save: 'Guardar',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Cantidad a entregar', mk_swap: 'Cambiar',
+    h_ethswap: 'Ethereum — cambiar USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
     set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
     set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
     upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
@@ -51,6 +52,7 @@ const LANG = {
     h_seguridad: 'Security', h_ajustes: 'Settings', h_info: 'Info & manuals',
     kda_nets: 'Kadena networks — choose which to show', evm_nets: 'EVM networks — for EVM wallets', eth_rpc: 'Ethereum RPC', save: 'Save',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Amount to send', mk_swap: 'Swap',
+    h_ethswap: 'Ethereum — swap USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
     set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
     set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
     upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
@@ -308,10 +310,46 @@ $('mk-swap').onclick = () => {
     async (pass) => { const r = await window.api.swapExec(pass, wid, MKDIR, amt); return 'Swap enviado. requestKey: ' + r.requestKey; });
 };
 
+// SWAP ETH (USDC <-> ETH en Uniswap, Ethereum mainnet) — para reponer ETH de gas con USDC
+let ESDIR = 'usdc2eth';
+function renderEthSwap() {
+  const evmW = WALLETS.filter(w => w.ethAddress);
+  $('es-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${w.label} · ${shortAddr(w.ethAddress)}</option>`).join('') || '<option value="">— sin wallet Ethereum —</option>';
+  const u2e = ESDIR === 'usdc2eth';
+  $('es-from').textContent = u2e ? 'USDC' : 'ETH';
+  $('es-to').textContent = u2e ? 'ETH' : 'USDC';
+  $('es-lbl-amt').textContent = 'Cantidad a entregar (' + (u2e ? 'USDC' : 'ETH') + ')';
+  esQuote();
+}
+$('es-invert').onclick = () => { ESDIR = ESDIR === 'usdc2eth' ? 'eth2usdc' : 'usdc2eth'; renderEthSwap(); };
+let _esT = null;
+$('es-amt').oninput = () => { clearTimeout(_esT); _esT = setTimeout(esQuote, 500); };
+async function esQuote() {
+  const amt = $('es-amt').value;
+  if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; return; }
+  try {
+    msg($('es-quote'), 'Consultando Uniswap…');
+    const q = await window.api.ethswapQuote(ESDIR, amt);
+    const outSym = ESDIR === 'usdc2eth' ? 'ETH' : 'USDC';
+    $('es-quote').innerHTML = `Recibes ≈ <b>${q.out.toFixed(6)} ${outSym}</b> · mínimo ${q.min.toFixed(6)} (slippage ${q.slipPct}%)` +
+      (q.gasEth != null ? `<br>⛽ Gas estimado del swap: ~${q.gasEth.toFixed(5)} ETH — se paga en ETH: no esperes a quedarte a cero.` : '');
+    $('es-quote').className = 'msg';
+  } catch (e) { msg($('es-quote'), e.message, 'err'); }
+}
+$('es-swap').onclick = () => {
+  const wid = $('es-wallet').value, amt = $('es-amt').value;
+  if (!wid) return msg($('es-msg'), 'No hay wallet Ethereum.', 'err');
+  if (!amt || Number(amt) <= 0) return msg($('es-msg'), 'Indica la cantidad.', 'err');
+  const u2e = ESDIR === 'usdc2eth';
+  askSend(`Cambiar <b>${amt} ${u2e ? 'USDC' : 'ETH'}</b> → <b>${u2e ? 'ETH' : 'USDC'}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; precio fresco al firmar. El gas del swap se paga en ETH de tu cuenta.</span>`,
+    async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt); return (r.ok ? '✅ Swap confirmado.' : '⚠️ Swap enviado, revisa la tx.') + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
+};
+
 async function applyView(v) {
   WALLETS = v.wallets; SHOWN = v.shown;
   renderBridge();
   renderMercado();
+  renderEthSwap();
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${w.label} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
