@@ -1,0 +1,38 @@
+// Puente seguro renderer <-> main. El renderer solo ve estas funciones; nunca las claves (salvo export explícito).
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+  status: () => ipcRenderer.invoke('vault:status'),
+  setup: (passphrase, kind, net) => ipcRenderer.invoke('vault:setup', { passphrase, kind, net }),
+  unlock: (passphrase) => ipcRenderer.invoke('vault:unlock', { passphrase }),
+  lock: () => ipcRenderer.invoke('vault:lock'),
+  balances: () => ipcRenderer.invoke('balances'),
+  sendKda: (passphrase, walletId, kdaNet, chain, to, amount) => ipcRenderer.invoke('send:kda', { passphrase, walletId, kdaNet, chain, to, amount }),
+  sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
+  // multi-wallet
+  walletList: () => ipcRenderer.invoke('wallet:list'),
+  walletShown: (id, shown) => ipcRenderer.invoke('wallet:shown', { id, shown }),
+  walletRemove: (id) => ipcRenderer.invoke('wallet:remove', { id }),
+  renameWallet: (id, label) => ipcRenderer.invoke('wallet:rename', { id, label }),
+  createWallet: (label, kind, net) => ipcRenderer.invoke('wallet:create', { label, kind, net }),
+  importMnemonic: (label, mnemonic, kind, net, index, method) => ipcRenderer.invoke('wallet:import-mnemonic', { label, mnemonic, kind, net, index, method }),
+  seedAccounts: (mnemonic, kind, net, start, count) => ipcRenderer.invoke('seed:accounts', { mnemonic, kind, net, start, count }),
+  seedFind: (mnemonic, kind, net, target, maxIndex) => ipcRenderer.invoke('seed:find', { mnemonic, kind, net, target, maxIndex }),
+  importPrivkey: (label, kind, net, priv) => ipcRenderer.invoke('wallet:import-privkey', { label, kind, net, priv }),
+  exportKey: (passphrase, walletId, chain) => ipcRenderer.invoke('wallet:export', { passphrase, walletId, chain }),
+  bridgeConfig: () => ipcRenderer.invoke('bridge:config'),
+  bridgeTokens: (walletId, dir) => ipcRenderer.invoke('bridge:tokens', { walletId, dir }),
+  bridgeDryRun: (dir, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:dryrun', { dir, fromWalletId, symbol, recipient, amount }),
+  bridgeSend: (dir, passphrase, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:send', { dir, passphrase, fromWalletId, symbol, recipient, amount }),
+  onBridgeStep: (cb) => { const h = (_e, d) => cb(d); ipcRenderer.on('bridge:step', h); return () => ipcRenderer.removeListener('bridge:step', h); },
+  swapQuote: (dir, amount) => ipcRenderer.invoke('swap:quote', { dir, amount }),
+  swapExec: (passphrase, walletId, dir, amount, slippage) => ipcRenderer.invoke('swap:exec', { passphrase, walletId, dir, amount, slippage }),
+  history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
+  qr: (text) => ipcRenderer.invoke('qr', text),
+  getConfig: () => ipcRenderer.invoke('config:get'),
+  setConfig: (c) => ipcRenderer.invoke('config:set', c),
+  appInfo: () => ipcRenderer.invoke('app:info'),
+  updateCheck: () => ipcRenderer.invoke('update:check'),
+  updateApply: () => ipcRenderer.invoke('update:apply'),
+  openExternal: (url) => ipcRenderer.invoke('open:external', url)
+});
