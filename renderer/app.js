@@ -209,7 +209,7 @@ $('btn-bridge-sim').onclick = async () => {
     $('br-out').hidden = false;
     const st = r.result && r.result.status; const err = (r.result && r.result.error && r.result.error.message) || '';
     let m, kind;
-    if (st === 'success') { m = '✅ La transacción se arma bien (simulación correcta).' + (r.gas ? ' Gas: ' + r.gas + '.' : ''); kind = 'ok'; }
+    if (st === 'success') { m = '✅ La transacción se arma bien (simulación correcta).' + (r.gas ? ' Gas: ' + r.gas + '.' : '') + (r.toll ? ` <b>Peaje del puente: ${Number(r.toll).toFixed(2)} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).` : ''); kind = 'ok'; }
     else if (DIR === 'evm2kda' && r.enoughBalance && r.missingApprove) { m = `✅ La tx se construye bien y tienes saldo (${r.balance} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.`; kind = 'ok'; }
     else if (DIR === 'evm2kda' && !r.enoughBalance) { m = `⚠️ Saldo insuficiente en Ethereum: tienes ${r.balance}, necesitas ${r.need}.`; kind = 'err'; }
     else if (/buy gas/i.test(err)) { m = '⚠️ La tx se construye bien, pero esta cuenta KDA no tiene KDA en la chain 2 del fork para el gas. Necesitas algo de KDA ahí.'; kind = 'err'; }
@@ -239,7 +239,7 @@ $('btn-bridge-send').onclick = () => {
   const rutaTxt = DIR === 'evm2kda' ? 'Ethereum → Kadena' : 'Kadena → Ethereum';
   const avisoTxt = DIR === 'evm2kda'
     ? '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.'
-    : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y gastará una pizca de KDA en gas (chain 2). Usa importes pequeños.';
+    : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.';
   askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${amt} ${symbol}</b> a <span class="mono">${to}</span><br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
     async (pass) => {
       initSteps(DIR);
