@@ -129,34 +129,37 @@
 
       <!-- MERCADO -->
       <section id="view-mercado" class="view" hidden>
-        <h3 data-i18n="h_mercado">Mercado — cambiar KDA ⇄ kb-USDC</h3>
-        <div class="card narrow" style="max-width:520px">
-          <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="mk-wallet"></select>
-          <div class="dir-row">
-            <div class="dir-chip" id="mk-from">kb-USDC</div>
-            <button id="mk-invert" class="invert" title="Invertir">⇅</button>
-            <div class="dir-chip" id="mk-to">KDA</div>
+        <h3 data-i18n="h_mercado">Mercado</h3>
+        <p class="muted xs" data-i18n="mercado_sub">Cambios no custodial: firmas tú con tu contraseña y el precio se lee fresco del pool justo antes de firmar.</p>
+        <div class="mkt-grid">
+          <div class="card">
+            <div class="mkt-head"><span class="tdot" style="background:#63e038"></span><b>Kadena Fork</b><span class="muted xs" data-i18n="mkt_kda_sub">kb-USDC ⇄ KDA · pool kaddex, chain 2</span></div>
+            <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="mk-wallet"></select>
+            <div class="dir-row">
+              <div class="dir-chip" id="mk-from">kb-USDC</div>
+              <button id="mk-invert" class="invert" title="Invertir">⇅</button>
+              <div class="dir-chip" id="mk-to">KDA</div>
+            </div>
+            <label id="mk-lbl-amt">Cantidad a entregar (kb-USDC)</label>
+            <input id="mk-amt" type="number" step="0.000001" placeholder="0.0" />
+            <div id="mk-quote" class="msg"></div>
+            <button id="mk-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
+            <div id="mk-msg" class="msg"></div>
           </div>
-          <label id="mk-lbl-amt">Cantidad a entregar (kb-USDC)</label>
-          <input id="mk-amt" type="number" step="0.000001" placeholder="0.0" />
-          <div id="mk-quote" class="msg"></div>
-          <button id="mk-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
-          <div id="mk-msg" class="msg"></div>
-        </div>
-
-        <h3 style="margin-top:26px" data-i18n="h_ethswap">Ethereum — cambiar USDC ⇄ ETH (Uniswap)</h3>
-        <div class="card narrow" style="max-width:520px">
-          <label data-i18n="es_wallet">Wallet (Ethereum)</label><select id="es-wallet"></select>
-          <div class="dir-row">
-            <div class="dir-chip" id="es-from">USDC</div>
-            <button id="es-invert" class="invert" title="Invertir">⇅</button>
-            <div class="dir-chip" id="es-to">ETH</div>
+          <div class="card">
+            <div class="mkt-head"><span class="tdot" style="background:#627eea"></span><b>Ethereum</b><span class="muted xs" data-i18n="mkt_eth_sub">USDC ⇄ ETH · Uniswap, para reponer gas</span></div>
+            <label data-i18n="es_wallet">Wallet (Ethereum)</label><select id="es-wallet"></select>
+            <div class="dir-row">
+              <div class="dir-chip" id="es-from">USDC</div>
+              <button id="es-invert" class="invert" title="Invertir">⇅</button>
+              <div class="dir-chip" id="es-to">ETH</div>
+            </div>
+            <label id="es-lbl-amt">Cantidad a entregar (USDC)</label>
+            <input id="es-amt" type="number" step="0.000001" placeholder="0.0" />
+            <div id="es-quote" class="msg"></div>
+            <button id="es-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
+            <div id="es-msg" class="msg"></div>
           </div>
-          <label id="es-lbl-amt">Cantidad a entregar (USDC)</label>
-          <input id="es-amt" type="number" step="0.000001" placeholder="0.0" />
-          <div id="es-quote" class="msg"></div>
-          <button id="es-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
-          <div id="es-msg" class="msg"></div>
         </div>
       </section>
 
