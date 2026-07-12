@@ -214,3 +214,8 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 
 /* botón peligro (borrar definitivo) */
 button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#c43e38}
+
+/* ===== Mercado en cuadrícula ===== */
+.mkt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;max-width:1080px;margin-top:12px}
+.mkt-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.mkt-head .muted{margin-left:auto;text-align:right}
