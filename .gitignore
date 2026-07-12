@@ -3,6 +3,7 @@ node_modules/
 
 # Builds y paquetes
 portable-build/
+build-app/
 dist/
 *.zip
 
