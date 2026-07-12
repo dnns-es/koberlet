@@ -162,7 +162,12 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
-  app.whenReady().then(() => { createWindow(); ensureDesktopShortcut(); app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); }); });
+  app.whenReady().then(() => {
+    createWindow(); ensureDesktopShortcut();
+    // limpiar restos de una actualización anterior (el bat no siempre puede borrar su propia carpeta)
+    try { fs.rmSync(path.join(path.dirname(app.getPath('exe')), '_update'), { recursive: true, force: true }); } catch (_) {}
+    app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  });
 }
 app.on('window-all-closed', () => { unlocked = null; if (process.platform !== 'darwin') app.quit(); });
 
@@ -521,11 +526,14 @@ ipcMain.handle('update:apply', async () => {
     `move ${q(path.join(resDir, 'app'))} ${q(path.join(resDir, 'app_old'))}`,
     `move ${q(path.join(upd, 'app'))} ${q(path.join(resDir, 'app'))}`,
     `if exist ${q(path.join(resDir, 'app'))} ( rmdir /s /q ${q(path.join(resDir, 'app_old'))} ) else ( move ${q(path.join(resDir, 'app_old'))} ${q(path.join(resDir, 'app'))} )`,
-    `rmdir /s /q ${q(upd)}`,
-    `start "" ${q(exe)}`
+    `start "" ${q(exe)}`,
+    `rmdir /s /q ${q(upd)}`
   ].join('\r\n'), 'latin1');
-  // 4) lanzar el bat suelto y cerrar la app
-  spawn('cmd.exe', ['/c', bat], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
+  // 4) lanzar el bat OCULTO (cmd detached ignora windowsHide y deja una consola negra a la vista;
+  //    wscript con ventana 0 sí lo esconde de verdad) y cerrar la app
+  const vbs = path.join(upd, 'apply.vbs');
+  fs.writeFileSync(vbs, 'CreateObject("WScript.Shell").Run "cmd.exe /c ""' + bat + '""", 0, False\r\n', 'latin1');
+  spawn('wscript.exe', [vbs], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   setTimeout(() => { unlocked = null; app.quit(); }, 400);
   return { ok: true };
 });

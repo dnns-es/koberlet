@@ -1,7 +1,7 @@
 {
   "name": "koberlet",
   "productName": "Koberlet",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "Koberlet — monedero de escritorio multi-cadena (Kadena + EVM) de DNNS",
   "main": "main.js",
   "author": "DNNS",
