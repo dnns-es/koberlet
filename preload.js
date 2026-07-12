@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('api', {
   onBridgeStep: (cb) => { const h = (_e, d) => cb(d); ipcRenderer.on('bridge:step', h); return () => ipcRenderer.removeListener('bridge:step', h); },
   swapQuote: (dir, amount) => ipcRenderer.invoke('swap:quote', { dir, amount }),
   swapExec: (passphrase, walletId, dir, amount, slippage) => ipcRenderer.invoke('swap:exec', { passphrase, walletId, dir, amount, slippage }),
+  ethswapQuote: (dir, amount) => ipcRenderer.invoke('ethswap:quote', { dir, amount }),
+  ethswapExec: (passphrase, walletId, dir, amount) => ipcRenderer.invoke('ethswap:exec', { passphrase, walletId, dir, amount }),
   history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
   qr: (text) => ipcRenderer.invoke('qr', text),
   getConfig: () => ipcRenderer.invoke('config:get'),

@@ -9,6 +9,7 @@ const eth = require('./lib/eth');
 const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const swap = require('./lib/swap');
+const ethswap = require('./lib/ethswap');
 const QRCode = require('qrcode');
 
 // Modo PORTABLE: la bóveda va JUNTO al ejecutable (M.2/USB), no en AppData.
@@ -434,6 +435,17 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
 
 // Mercado: swap KDA <-> kb-USDC en el pool del fork (kaddex.exchange, chain 2). No custodial: firma el main con la clave de la wallet.
 ipcMain.handle('swap:quote', async (_e, { dir, amount }) => swap.quote(dir, amount));
+// Swap USDC <-> ETH en Uniswap (Ethereum mainnet), para reponer ETH de gas con USDC
+ipcMain.handle('ethswap:quote', async (_e, { dir, amount }) => ethswap.quote({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, dir, amount }));
+ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  const w = walletById(walletId); if (!w || !w.eth) throw new Error('Wallet EVM no válida.');
+  const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
+  const r = await ethswap.swap({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, secretHex: w.eth.secret, dir, amount }, onStep);
+  logHistory({ type: 'send-evm', wallet: w.label || '', desc: `Swap ${amount} ${dir === 'usdc2eth' ? 'USDC → ETH' : 'ETH → USDC'} (Uniswap)`, to: w.eth.address, id: r.txHash });
+  return r;
+});
 ipcMain.handle('swap:exec', async (_e, { passphrase, walletId, dir, amount, slippage }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
