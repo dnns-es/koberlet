@@ -463,7 +463,8 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
     for (const t of arr) {
       const inbound = t.toAccount === w.kda.account;
       const other = inbound ? (t.fromAccount || '(acuñado)') : t.toAccount;
-      out.push({ ts: Date.parse(t.blockTime), kind: inbound ? 'in' : 'out', title: `${inbound ? 'Recibido' : 'Enviado'} ${t.amount} ${tokLabel(t.token)}`, sub: `${w.label} · ${inbound ? 'de' : 'a'} ${shortA(other)} · chain ${t.chain}`, id: t.requestKey });
+      // dir/amt/tok/wlabel/other/chain van estructurados para que el renderer los traduzca (ES/EN); title/sub quedan de respaldo
+      out.push({ ts: Date.parse(t.blockTime), kind: inbound ? 'in' : 'out', dir: inbound ? 'in' : 'out', amt: t.amount, tok: tokLabel(t.token), wlabel: w.label, other: shortA(other), chain: t.chain, title: `${inbound ? 'Recibido' : 'Enviado'} ${t.amount} ${tokLabel(t.token)}`, sub: `${w.label} · ${inbound ? 'de' : 'a'} ${shortA(other)} · chain ${t.chain}`, id: t.requestKey });
     }
   }));
   const labels = new Set(wallets.map(w => w.label));
