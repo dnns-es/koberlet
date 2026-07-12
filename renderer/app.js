@@ -292,7 +292,14 @@ async function applyView(v) {
     <div class="wact"><button class="copy" data-ren="${w.id}" title="Renombrar">✏️</button><button class="copy" data-del="${w.id}" title="Borrar">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
   $('wallet-list').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const w = WALLETS.find(x => x.id === b.dataset.ren); openRename(b.dataset.ren, w ? w.label : ''); });
-  $('wallet-list').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { try { applyView(await window.api.walletRemove(b.dataset.del)); } catch (e) { msg($('wallet-msg'), e.message, 'err'); } });
+  // Borrar con DOBLE confirmación + consejo de copiar la semilla antes (modal-del)
+  $('wallet-list').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+    const w = WALLETS.find(x => x.id === b.dataset.del);
+    window._delId = b.dataset.del;
+    $('del-name').textContent = w ? w.label : 'esta wallet'; $('del-name2').textContent = w ? w.label : 'esta wallet';
+    $('del-step1').hidden = false; $('del-step2').hidden = true; msg($('del-msg'), '');
+    $('modal-del').hidden = false;
+  });
   loadBalances();
 }
 
@@ -484,6 +491,13 @@ let expChain = null, expWid = null;
 function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : 'EVM'; $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
 $('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : 'eth'); };
 $('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), 'Revelada. Cópiala y cierra.', 'ok'); } catch (e) { msg($('exp-msg'), e.message, 'err'); } };
+
+// borrar wallet: paso 1 (consejo semilla) → paso 2 (última confirmación) → borrar
+$('btn-del-next').onclick = () => { $('del-step1').hidden = true; $('del-step2').hidden = false; };
+$('btn-del-do').onclick = async () => {
+  try { applyView(await window.api.walletRemove(window._delId)); $('modal-del').hidden = true; msg($('wallet-msg'), 'Wallet borrada.', 'ok'); }
+  catch (e) { msg($('del-msg'), e.message, 'err'); }
+};
 
 // modales + copiar
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.modal').hidden = true);
