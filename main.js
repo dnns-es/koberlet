@@ -29,8 +29,8 @@ const DEFAULT_CONFIG = {
   // Redes Kadena: la OFICIAL (donde están los fondos reales de la mayoría) y el FORK comunitario. Se activan como las EVM.
   kda: {
     networks: [
-      { key: 'mainnet', name: 'Kadena', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: false },
-      { key: 'fork', name: 'Kadena Fork', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#a855f7', enabled: true, fork: true }
+      { key: 'mainnet', name: 'Kadena', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: true, fork: false },
+      { key: 'fork', name: 'Kadena Fork', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
   },
