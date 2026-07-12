@@ -218,9 +218,12 @@ $('btn-bridge-sim').onclick = async () => {
     $('br-msg').innerHTML = m; $('br-msg').className = 'msg ' + kind;
   } catch (e) { msg($('br-msg'), 'Error: ' + e.message, 'err'); }
 };
-const STEP_LABELS = { approve: 'Autorizar token (approve)', transfer: 'Enviar al puente (Ethereum)', ethconfirm: 'Confirmar en Ethereum', kadena: 'Recibir en Kadena (chain 2)' };
+const STEP_SETS = {
+  evm2kda: { approve: 'Autorizar token (approve)', transfer: 'Enviar al puente (Ethereum)', ethconfirm: 'Confirmar en Ethereum', kadena: 'Recibir en Kadena (chain 2)' },
+  kda2evm: { dispatch: 'Enviar al puente (Kadena, chain 2)', kdaconfirm: 'Confirmar en Kadena', evm: 'Recibir en Ethereum' }
+};
 const STEP_ICON = { pending: '⚪', run: '⏳', ok: '✅', skip: '⏭️', fail: '❌' };
-function initSteps() { $('send-steps').innerHTML = Object.keys(STEP_LABELS).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${STEP_LABELS[k]}</span> <span class="sd"></span></div>`).join(''); }
+function initSteps(dir) { const L = STEP_SETS[dir] || STEP_SETS.evm2kda; $('send-steps').innerHTML = Object.keys(L).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${L[k]}</span> <span class="sd"></span></div>`).join(''); }
 function updateStep(d) {
   const row = $('send-steps').querySelector(`[data-step="${d.step}"]`); if (!row) return;
   row.querySelector('.si').textContent = STEP_ICON[d.status] || (d.status === 'pending' ? '🕒' : '⚪');
@@ -234,11 +237,20 @@ $('btn-bridge-send').onclick = () => {
   if (!from) return msg($('br-msg'), 'No hay wallet origen para esa dirección.', 'err');
   if (!to || !amt) return msg($('br-msg'), 'Elige destino y cantidad.', 'err');
   const rutaTxt = DIR === 'evm2kda' ? 'Ethereum → Kadena' : 'Kadena → Ethereum';
-  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${amt} ${symbol}</b> a <span class="mono">${to}</span><br><span class="warn" style="display:block;margin-top:8px">⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.</span>`,
+  const avisoTxt = DIR === 'evm2kda'
+    ? '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.'
+    : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y gastará una pizca de KDA en gas (chain 2). Usa importes pequeños.';
+  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${amt} ${symbol}</b> a <span class="mono">${to}</span><br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
     async (pass) => {
-      let off = () => {};
-      if (DIR === 'evm2kda') { initSteps(); off = window.api.onBridgeStep(updateStep); }
-      try { const r = await window.api.bridgeSend(DIR, pass, from, symbol, to, amt); return (r.arrived ? '✅ Puente completado — recibido en Kadena.' : '⏳ Enviado y confirmado en Ethereum. Esperando al relayer para que llegue a Kadena.') + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; }
+      initSteps(DIR);
+      const off = window.api.onBridgeStep(updateStep);
+      try {
+        const r = await window.api.bridgeSend(DIR, pass, from, symbol, to, amt);
+        const okTxt = DIR === 'evm2kda'
+          ? (r.arrived ? '✅ Puente completado — recibido en Kadena.' : '⏳ Enviado y confirmado en Ethereum. Esperando al relayer para que llegue a Kadena.')
+          : (r.arrived ? '✅ Puente completado — recibido en Ethereum.' : '⏳ Enviado y confirmado en Kadena. Esperando al relayer hacia Ethereum.');
+        return okTxt + ' tx: ' + (r.txHash || '').slice(0, 14) + '…';
+      }
       finally { off(); }
     });
 };
