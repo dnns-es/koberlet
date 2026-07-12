@@ -30,7 +30,9 @@ const LANG = {
     upd_err: 'Error al actualizar: ', upd_checking: 'Comprobando…',
     upd_new: 'Nueva versión <b>v{v}</b> disponible.', upd_now: 'Actualizar ahora',
     upd_latest: 'Estás en la última versión (v{v}).', upd_nocheck: 'No pude comprobar (¿sin conexión o servidor?).',
-    hist_title: 'Historial de operaciones', close: 'cerrar'
+    hist_title: 'Historial de operaciones', close: 'cerrar',
+    hist_loading: 'Cargando historial on-chain…', hist_empty: 'Sin operaciones para esta wallet.',
+    hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a'
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
@@ -58,7 +60,9 @@ const LANG = {
     upd_err: 'Update error: ', upd_checking: 'Checking…',
     upd_new: 'New version <b>v{v}</b> available.', upd_now: 'Update now',
     upd_latest: 'You are on the latest version (v{v}).', upd_nocheck: 'Could not check (offline or server down?).',
-    hist_title: 'Operation history', close: 'close'
+    hist_title: 'Operation history', close: 'close',
+    hist_loading: 'Loading on-chain history…', hist_empty: 'No operations for this wallet.',
+    hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to'
   }
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
@@ -72,7 +76,7 @@ function applyLang() {
   document.querySelectorAll('.langbtn').forEach(b => b.textContent = LNG === 'es' ? 'EN' : 'ES');
   document.documentElement.lang = LNG;
 }
-function setLang(l) { LNG = l; localStorage.setItem('koberlet-lang', l); applyLang(); }
+function setLang(l) { LNG = l; localStorage.setItem('koberlet-lang', l); applyLang(); if ($('history-panel') && !$('history-panel').hidden) refreshHistory(); }
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
 
 function screen(name) { ['scr-setup', 'scr-unlock'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
@@ -417,14 +421,17 @@ const HIST_ICON = { in: '📥', out: '📤', 'send-evm': '📤', bridge: '🌉' 
 let HIST_WID = null;
 async function refreshHistory() {
   const wid = $('hist-wallet').value || null;
-  $('hist-list').innerHTML = '<div class="muted xs" style="padding:10px 2px">Cargando historial on-chain…</div>';
+  $('hist-list').innerHTML = `<div class="muted xs" style="padding:10px 2px">${t('hist_loading')}</div>`;
   let list = [];
   try { list = await window.api.history(wid); } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
   $('hist-list').innerHTML = list.length ? list.map(h => {
-    const fecha = new Date(h.ts).toLocaleString();
+    const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
     const idShort = h.id ? h.id.slice(0, 12) + '…' : '';
-    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${h.title}</div><div class="hx muted">${fecha}${h.sub ? ' · ' + h.sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${h.id}" title="copiar id">⧉</button>` : ''}</div>`;
-  }).join('') : '<div class="muted xs" style="padding:10px 2px">Sin operaciones para esta wallet.</div>';
+    // entradas on-chain vienen estructuradas (dir/amt/tok…) y se traducen aquí; las locales EVM/puente usan title/sub tal cual
+    const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${h.amt} ${h.tok}` : h.title;
+    const sub = h.dir ? `${h.wlabel} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${h.other} · chain ${h.chain}` : h.sub;
+    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${fecha}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${h.id}" title="copiar id">⧉</button>` : ''}</div>`;
+  }).join('') : `<div class="muted xs" style="padding:10px 2px">${t('hist_empty')}</div>`;
 }
 function fillHistWallet() {
   $('hist-wallet').innerHTML = WALLETS.map(w => `<option value="${w.id}">${w.label} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
