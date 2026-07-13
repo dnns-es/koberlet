@@ -115,6 +115,10 @@ const loadConfig = () => {
     .filter(e => e && typeof e.address === 'string' && typeof e.alias === 'string')
     .map(e => ({ alias: String(e.alias).slice(0, 60), address: String(e.address).slice(0, 128), kind: e.kind === 'evm' ? 'evm' : 'kda' }))
     .slice(0, 200);
+  // Metadatos por wallet (idea 15): {tag:'fria'|'caliente'|'', note}. No es secreto.
+  const wmIn = (c.walletMeta && typeof c.walletMeta === 'object' && !Array.isArray(c.walletMeta)) ? c.walletMeta : {};
+  const wm = {}; for (const k in wmIn) { const e = wmIn[k] || {}; wm[k] = { tag: ['fria', 'caliente'].includes(e.tag) ? e.tag : '', note: String(e.note || '').slice(0, 200) }; }
+  c.walletMeta = wm;
   delete c.importPath; // línea muerta de la versión que importaba TeamRed.json desde F: — la bóveda es autocontenida
   return c;
 };
@@ -559,6 +563,33 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
 
 ipcMain.handle('qr', (_e, text) => QRCode.toDataURL(text, { margin: 1, width: 240 }));
 ipcMain.handle('prices', () => getPricesFull()); // idea 5/6: variación 24h + eur para el dashboard y el conversor
+// Idea 12: copia de seguridad cifrada de la bóveda. vault.json YA está cifrado (AES-256-GCM), así que la copia es segura.
+ipcMain.handle('vault:backup', async () => {
+  if (!vault.existe(VAULT())) throw new Error('No hay bóveda que copiar.');
+  const win = BrowserWindow.getAllWindows()[0];
+  const d = new Date().toISOString().slice(0, 10);
+  const { canceled, filePath } = await dialog.showSaveDialog(win, { title: 'Guardar copia cifrada de la bóveda', defaultPath: `koberlet-boveda-${d}.json`, filters: [{ name: 'Bóveda cifrada Koberlet', extensions: ['json'] }] });
+  if (canceled || !filePath) return { ok: false };
+  fs.copyFileSync(VAULT(), filePath);
+  return { ok: true, path: filePath };
+});
+// Restaurar una copia: elige fichero, verifica que abre con la contraseña dada, respalda la actual y la instala. Deja la app bloqueada.
+ipcMain.handle('vault:restore', async (_e, { passphrase }) => {
+  const win = BrowserWindow.getAllWindows()[0];
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, { title: 'Restaurar copia de la bóveda', filters: [{ name: 'Bóveda cifrada Koberlet', extensions: ['json'] }], properties: ['openFile'] });
+  if (canceled || !filePaths || !filePaths[0]) return { ok: false };
+  const raw = fs.readFileSync(filePaths[0], 'utf8');
+  let obj; try { obj = JSON.parse(raw); } catch (_) { throw new Error('El fichero no es una bóveda válida.'); }
+  if (!obj.kdf || !obj.iv || !obj.tag || !obj.ct) throw new Error('El fichero no parece una bóveda de Koberlet.');
+  const tmp = path.join(app.getPath('userData'), 'vault-restore-tmp.json');
+  fs.writeFileSync(tmp, raw, { mode: 0o600 });
+  try { vault.abrir(tmp, passphrase); } catch (e) { fs.rmSync(tmp, { force: true }); throw new Error('La contraseña no abre esa copia (¿es la de ese backup?).'); }
+  fs.rmSync(tmp, { force: true });
+  if (vault.existe(VAULT())) backupVault(); // respaldo del actual con fecha antes de sustituir
+  fs.copyFileSync(filePaths[0], VAULT());
+  unlocked = null; if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; }
+  return { ok: true };
+});
 // Exportar historial a CSV (idea 4): el renderer pasa las filas ya formateadas; guardamos con diálogo nativo.
 ipcMain.handle('history:export', async (_e, { rows, filename }) => {
   const win = BrowserWindow.getAllWindows()[0];
