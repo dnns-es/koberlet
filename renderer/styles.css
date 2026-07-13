@@ -227,3 +227,13 @@ button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#
 .updnotes .ntitle{font-weight:600;color:var(--ink);margin-bottom:4px}
 .updnotes .nlist{margin:0;padding-left:18px}
 .updnotes .nlist li{margin:2px 0;line-height:1.5}
+
+/* ===== Nodos (avanzado) ===== */
+#nodes-adv summary{cursor:pointer;font-weight:600;color:var(--ink)}
+#nodes-adv summary:hover{color:var(--kda-d)}
+.noderow{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+.nodename{display:flex;align-items:center;gap:6px;min-width:120px;font-size:13px;font-weight:600}
+.noderow input.node-rpc{flex:1;min-width:220px}
+.noderow.ro{color:var(--muted)}
+.nodero{flex:1;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;overflow-x:auto;white-space:nowrap}
+.nodes-kda{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}

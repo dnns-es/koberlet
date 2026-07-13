@@ -127,7 +127,17 @@
         <div class="net-card"><div class="net-h">Redes EVM — para wallets EVM</div>
           <p id="evm-ctx" class="muted xs"></p>
           <div id="evm-nets"></div>
-          <label>RPC de Ethereum</label><div class="rpcrow"><input id="eth-rpc" /><button id="btn-save-rpc" class="tiny">Guardar</button></div>
+        </div>
+        <div class="net-card">
+          <details id="nodes-adv">
+            <summary data-i18n="nodes_adv">Nodos (avanzado)</summary>
+            <p class="muted xs" data-i18n="nodes_hint">Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.</p>
+            <div id="evm-nodes"></div>
+            <div class="nodes-kda">
+              <div class="net-h" data-i18n="nodes_kda">Nodos Kadena (fijos por seguridad)</div>
+              <div id="kda-nodes"></div>
+            </div>
+          </details>
         </div>
       </section>
 
