@@ -32,6 +32,7 @@ const LANG = {
     set_lock: 'Bloqueo automático por inactividad', lock_never: 'Nunca',
     lock_hint: 'Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
+    whats_new: 'Ver novedades', whats_new_title: 'Novedades de la v{v}',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
     upd_auto_applying: 'Actualizando a Koberlet v{v}… la app se reiniciará sola.',
     upd_err: 'Error al actualizar: ', upd_checking: 'Comprobando…',
@@ -67,6 +68,7 @@ const LANG = {
     set_lock: 'Auto-lock on inactivity', lock_never: 'Never',
     lock_hint: 'After that idle time the app locks itself and you must re-enter your password. Protects your keys if you leave the computer unattended.',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
+    whats_new: "What's new", whats_new_title: "What's new in v{v}",
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
     upd_auto_applying: 'Updating to Koberlet v{v}… the app will restart by itself.',
     upd_err: 'Update error: ', upd_checking: 'Checking…',
@@ -120,11 +122,27 @@ async function initUpdates() {
         try { await window.api.updateApply(); return; }
         catch (_) { $('btn-update-dl').hidden = false; } // si falla, cae al aviso manual
       }
-      $('update-text').textContent = t('upd_available').replace('{v}', u.latest) + (u.notes ? ' ' + u.notes : '');
+      $('update-text').textContent = t('upd_available').replace('{v}', u.latest);
       $('btn-update-dl').textContent = u.canAuto ? t('update') : t('download');
+      setupNotes(u);
       $('update-banner').hidden = false;
     }
   } catch (_) {}
+}
+// Novedades de la versión nueva (campo `notes` de latest.json). Se renderiza escapado;
+// los saltos de línea y las viñetas "• / - / ·" al inicio de línea se muestran como lista.
+function notesToHtml(notes) {
+  if (!notes) return '';
+  const items = String(notes).split(/\r?\n|\s+·\s+|\s+•\s+/).map(s => s.trim()).filter(Boolean);
+  if (items.length > 1) return '<ul class="nlist">' + items.map(i => `<li>${esc(i.replace(/^[-•·]\s*/, ''))}</li>`).join('') + '</ul>';
+  return `<div>${esc(items[0] || '')}</div>`;
+}
+function setupNotes(u) {
+  const tog = $('update-notes-toggle'), box = $('update-notes');
+  if (!u.notes) { tog.hidden = true; box.hidden = true; box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="ntitle">${t('whats_new_title').replace('{v}', u.latest)}</div>` + notesToHtml(u.notes);
+  tog.hidden = false; box.hidden = true;
+  tog.onclick = () => { box.hidden = !box.hidden; tog.textContent = box.hidden ? t('whats_new') : '▲'; };
 }
 async function doUpdate(u, statusEl) {
   if (u && u.canAuto) {
@@ -138,7 +156,11 @@ $('btn-check-upd').onclick = async () => {
   msg($('upd-status'), t('upd_checking'));
   try {
     const u = await window.api.updateCheck();
-    if (u.newer) { $('upd-status').innerHTML = t('upd_new').replace('{v}', u.latest) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`; $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); }; }
+    if (u.newer) {
+      $('upd-status').innerHTML = t('upd_new').replace('{v}', u.latest) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`
+        + (u.notes ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', u.latest)}</div>${notesToHtml(u.notes)}</div>` : '');
+      $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); };
+    }
     else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
     else msg($('upd-status'), t('upd_nocheck'), 'err');
   } catch (e) { msg($('upd-status'), e.message, 'err'); }
