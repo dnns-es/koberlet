@@ -237,3 +237,21 @@ button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#
 .noderow.ro{color:var(--muted)}
 .nodero{flex:1;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;overflow-x:auto;white-space:nowrap}
 .nodes-kda{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+
+/* ===== Aviso de gas bajo (idea 2) ===== */
+.gaswarn{margin:10px 0}
+.gwrow{background:#fff7e6;border:1px solid #f0d089;color:#8a5a00;border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:6px}
+/* ===== Confirmación de dirección reforzada (idea 3) ===== */
+.addrcheck{background:rgba(224,86,79,.06);border:1px solid var(--line);border-radius:8px;padding:10px;margin:6px 0}
+.addrbig{font-family:ui-monospace,Consolas,monospace;font-size:15px;word-break:break-all;text-align:center;margin-bottom:8px;letter-spacing:.3px}
+.addrbig .ah{color:var(--err);font-weight:700;background:#fde8e6;padding:1px 3px;border-radius:3px}
+.addrcheck .chk{display:flex;align-items:flex-start;gap:8px;font-size:13px;cursor:pointer}
+.addrcheck .chk input{width:auto;margin-top:2px}
+/* ===== Libreta de direcciones (idea 1) ===== */
+.ablist{margin:8px 0;display:flex;flex-direction:column;gap:6px}
+.abrow{display:flex;align-items:center;gap:8px;font-size:13px}
+.abtag{font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;color:#fff}
+.abtag.kda{background:var(--kda-d)} .abtag.evm{background:#627eea}
+.abaddr{color:var(--muted);flex:1}
+.abadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.abadd input{flex:1;min-width:140px}
