@@ -61,16 +61,33 @@ const DEFAULT_CONFIG = {
   }
 };
 
-// unlocked = { pass, data:{ wallets:[{id,label,kind,net,kda,eth}], active } }  SOLO en memoria del main
+// unlocked = { key, salt, params, data:{ wallets:[...], active, shown } }  SOLO en memoria del main.
+// L-2: se retiene la CLAVE derivada, no la passphrase en claro.
 let unlocked = null;
 
-// Auditoría Alex #6: comparación de la passphrase en tiempo constante (evita oráculo de temporización).
+// Re-autenticación: re-deriva la clave con la passphrase entrada y la compara en tiempo constante
+// con la clave de sesión (Alex #6 + auditoría interna L-2: no se guarda la passphrase en claro).
 function passOk(input) {
   if (!unlocked) return false;
-  const a = Buffer.from(String(input), 'utf8'), b = Buffer.from(String(unlocked.pass), 'utf8');
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  try {
+    const k = crypto.scryptSync(String(input), unlocked.salt, 32, { N: unlocked.params.N, r: unlocked.params.r, p: unlocked.params.p, maxmem: 256 * 1024 * 1024 });
+    return crypto.timingSafeEqual(k, unlocked.key);
+  } catch (_) { return false; }
 }
+
+// M-2: auto-bloqueo por inactividad. Al saltar, borra la sesión y avisa al renderer para volver al desbloqueo.
+let lockTimer = null;
+function armAutoLock() {
+  if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; }
+  if (!unlocked) return;
+  const mins = loadConfig().lockMinutes;
+  if (!mins || mins <= 0) return; // 0 = nunca
+  lockTimer = setTimeout(() => {
+    unlocked = null; lockTimer = null;
+    for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send('locked'); } catch (_) {} }
+  }, mins * 60 * 1000);
+}
+function touchActivity() { if (unlocked) armAutoLock(); }
 
 const loadConfig = () => {
   let c;
@@ -92,11 +109,12 @@ const loadConfig = () => {
     return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: (s && httpsOk(s.rpc)) ? s.rpc : n.rpc };
   });
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
+  c.lockMinutes = (c.lockMinutes === undefined || c.lockMinutes === null) ? 10 : Math.max(0, Number(c.lockMinutes) || 0); // M-2: auto-bloqueo, 10 min por defecto (0=nunca)
   delete c.importPath; // línea muerta de la versión que importaba TeamRed.json desde F: — la bóveda es autocontenida
   return c;
 };
 const saveConfig = (c) => fs.writeFileSync(CONFIG(), JSON.stringify(c, null, 2));
-const saveVault = () => vault.crear(VAULT(), unlocked.pass, unlocked.data);
+const saveVault = () => vault.guardar(VAULT(), unlocked.key, unlocked.salt, unlocked.params, unlocked.data);
 function backupVault() {
   const p = VAULT(); if (!fs.existsSync(p)) return;
   const d = new Date(); const ts = d.toISOString().replace(/[:T]/g, '-').slice(0, 19);
@@ -173,6 +191,15 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false }
   });
   win.setMenuBarVisibility(false);
+  // M-1: en una wallet se DENIEGA toda navegación fuera de la app y la apertura de ventanas nuevas.
+  // Los enlaces https legítimos se abren en el navegador del sistema; nunca dentro del Electron.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (e, url) => {
+    if (!url.startsWith('file://')) { e.preventDefault(); if (/^https:\/\//.test(url)) shell.openExternal(url); }
+  });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 // Instancia ÚNICA: si ya hay una abierta, la nueva enfoca la existente y se cierra (evita ventanas duplicadas).
@@ -224,12 +251,16 @@ ipcMain.handle('vault:setup', async (_e, { passphrase, kind, net }) => {
 });
 
 ipcMain.handle('vault:unlock', (_e, { passphrase }) => {
-  const { data, changed } = migrate(vault.abrir(VAULT(), passphrase)); // lanza si passphrase mala
-  unlocked = { pass: passphrase, data };
+  const opened = vault.abrir(VAULT(), passphrase); // lanza si passphrase mala
+  const { data, changed } = migrate(opened.data);
+  unlocked = { key: opened.key, salt: opened.salt, params: opened.params, data };
   if (changed) { try { backupVault(); } catch (_) {} saveVault(); } // persiste el formato normalizado (una wallet = una red)
+  armAutoLock();
   return { ok: true, view: view() };
 });
-ipcMain.handle('vault:lock', () => { unlocked = null; return { ok: true }; });
+ipcMain.handle('vault:lock', () => { unlocked = null; if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } return { ok: true }; });
+// M-2: el renderer avisa de actividad del usuario (throttled) para reiniciar el temporizador de auto-bloqueo.
+ipcMain.on('activity:ping', () => touchActivity());
 
 // Multi-wallet
 ipcMain.handle('wallet:list', () => view());
