@@ -94,7 +94,7 @@
       <!-- HISTORIAL (plegado por defecto) -->
       <div id="history-panel" class="hist" hidden>
         <div class="hist-head"><span data-i18n="hist_title">Historial de operaciones</span>
-          <div class="hist-ctrls"><select id="hist-wallet"></select><button id="hist-close" class="tiny" data-i18n="close">cerrar</button></div>
+          <div class="hist-ctrls"><select id="hist-wallet"></select><button id="hist-csv" class="tiny ghost" data-i18n="export_csv">⬇ CSV</button><button id="hist-close" class="tiny" data-i18n="close">cerrar</button></div>
         </div>
         <div id="hist-list"></div>
       </div>
@@ -106,6 +106,7 @@
             <div id="total-legend" class="legend"></div></div>
           <div id="donut" class="donut"><div class="hole"></div></div>
         </div>
+        <div id="gas-warn" class="gaswarn"></div>
         <h3 data-i18n="bal_by_net">Saldos por red</h3>
         <div id="net-cards" class="grid"></div>
       </section>
@@ -240,6 +241,17 @@
             <option value="0" data-i18n="lock_never">Nunca</option>
           </select>
           <p class="muted xs" data-i18n="lock_hint">Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.</p>
+        </div>
+        <div class="card">
+          <div class="row-between"><b data-i18n="addrbook">Libreta de direcciones</b></div>
+          <p class="muted xs" data-i18n="addrbook_hint">Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.</p>
+          <div id="ab-list" class="ablist"></div>
+          <div class="abadd">
+            <input id="ab-alias" placeholder="Nombre (p.ej. Pascal, Exchange)" maxlength="60"/>
+            <input id="ab-addr" placeholder="k:… o 0x…" maxlength="128"/>
+            <button id="ab-save" class="tiny primary" data-i18n="add">Añadir</button>
+          </div>
+          <div id="ab-msg" class="msg"></div>
         </div>
         <div class="card"><p class="muted">Koberlet · monedero multi-cadena (Kadena + EVM) creado por el <b>TeamRed</b> · DNNS.<br>Bóveda cifrada AES-256-GCM + scrypt. En modo portable, los datos van junto al ejecutable. Las claves privadas nunca salen del proceso principal salvo que las exportes con tu contraseña.</p></div>
       </section>
@@ -436,6 +448,10 @@
     <div class="card narrow">
       <h2>Confirmar envío</h2>
       <div id="send-summary" class="sendsum"></div>
+      <div id="send-addr-check" class="addrcheck" hidden>
+        <div class="addrbig" id="send-addr-big"></div>
+        <label class="chk"><input type="checkbox" id="send-addr-ok"/> <span data-i18n="addr_confirm">He verificado que la dirección de destino es correcta</span></label>
+      </div>
       <label>Contraseña de la bóveda</label><input id="send-pass" type="password" />
       <div class="btnrow2"><button id="btn-confirm-send" class="primary">Firmar y enviar</button><button class="ghost" data-close>Cancelar</button></div>
       <div id="send-steps" class="steps"></div>
@@ -443,6 +459,8 @@
     </div>
   </div>
 
+  <datalist id="dl-kda"></datalist>
+  <datalist id="dl-evm"></datalist>
   <script src="app.js"></script>
 </body>
 </html>

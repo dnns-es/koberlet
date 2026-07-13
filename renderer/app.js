@@ -41,7 +41,12 @@ const LANG = {
     upd_err: 'Error al actualizar: ', upd_checking: 'Comprobando…',
     upd_new: 'Nueva versión <b>v{v}</b> disponible.', upd_now: 'Actualizar ahora',
     upd_latest: 'Estás en la última versión (v{v}).', upd_nocheck: 'No pude comprobar (¿sin conexión o servidor?).',
-    hist_title: 'Historial de operaciones', close: 'cerrar',
+    hist_title: 'Historial de operaciones', close: 'cerrar', export_csv: '⬇ CSV',
+    addr_confirm: 'He verificado que la dirección de destino es correcta',
+    addrbook: 'Libreta de direcciones', add: 'Añadir',
+    addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
+    ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (k:… o 0x…).', ab_pick: '📇 Libreta',
+    csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
     hist_loading: 'Cargando historial on-chain…', hist_empty: 'Sin operaciones para esta wallet.',
     hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a'
   },
@@ -80,7 +85,12 @@ const LANG = {
     upd_err: 'Update error: ', upd_checking: 'Checking…',
     upd_new: 'New version <b>v{v}</b> available.', upd_now: 'Update now',
     upd_latest: 'You are on the latest version (v{v}).', upd_nocheck: 'Could not check (offline or server down?).',
-    hist_title: 'Operation history', close: 'close',
+    hist_title: 'Operation history', close: 'close', export_csv: '⬇ CSV',
+    addr_confirm: 'I have verified the destination address is correct',
+    addrbook: 'Address book', add: 'Add',
+    addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
+    ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (k:… or 0x…).', ab_pick: '📇 Book',
+    csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
     hist_loading: 'Loading on-chain history…', hist_empty: 'No operations for this wallet.',
     hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to'
   }
@@ -208,6 +218,7 @@ async function enter(v) {
   $('evm-nets').innerHTML = CFG.evm.map(n => `<label class="toggle"><input type="checkbox" data-net="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
   $('evm-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => { CFG.evm.find(x => x.key === cb.dataset.net).enabled = cb.checked; await window.api.setConfig(CFG); loadBalances(); });
   renderNodes();
+  renderAddressBook();
   applyView(v);
 }
 const shortAddr = (a) => a ? a.slice(0, 8) + '…' + a.slice(-4) : '';
@@ -224,6 +235,7 @@ function renderBridge() {
   const destW = WALLETS.filter(w => evm2 ? w.kdaAccount : w.ethAddress);
   $('br-from').innerHTML = fromW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(evm2 ? w.ethAddress : w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet —</option>';
   $('br-dest').innerHTML = destW.map(w => `<option value="${evm2 ? w.kdaAccount : w.ethAddress}">${esc(w.label)} · ${shortAddr(evm2 ? w.kdaAccount : w.ethAddress)}</option>`).join('') + '<option value="otra">Otra dirección…</option>';
+  $('br-to').setAttribute('list', evm2 ? 'dl-kda' : 'dl-evm'); // libreta: destino Kadena o EVM según el sentido
   $('br-dest').onchange = () => { $('br-to-wrap').hidden = $('br-dest').value !== 'otra'; };
   $('br-dest').onchange();
   $('br-from').onchange = () => loadBridgeTokens($('br-from').value);
@@ -294,7 +306,7 @@ $('btn-bridge-send').onclick = () => {
         return okTxt + ' tx: ' + (r.txHash || '').slice(0, 14) + '…';
       }
       finally { off(); }
-    });
+    }, to);
 };
 
 // Refleja el estado de las redes Kadena (enabled) en el selector de Ajustes y en los interruptores de Red.
@@ -452,14 +464,14 @@ function cardBlock(bl, qr) {
     const per = Object.keys(bl.perChain || {}).length ? 'Repartido: ' + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : 'Sin saldo aún.';
     extra = `<div class="muted xs">${per}</div>`;
     sendForm = `<label>Chain</label><input class="k-chain" type="number" value="2" min="0" max="19"/>
-      <label>Destino (k:…)</label><input class="k-to" placeholder="k:..."/>
+      <label>Destino (k:…)</label><input class="k-to" list="dl-kda" placeholder="k:... o elige de la libreta"/>
       <label>Cantidad</label><input class="k-amt" type="number" step="0.0001"/>
       <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}">Enviar</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const opts = `<option value="${bl.symbol}">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
     sendForm = `<label>Activo</label><select class="e-asset">${opts}</select>
-      <label>Destino (0x…)</label><input class="e-to" placeholder="0x..."/>
+      <label>Destino (0x…)</label><input class="e-to" list="dl-evm" placeholder="0x... o elige de la libreta"/>
       <label>Cantidad</label><input class="e-amt" type="number" step="0.0001"/>
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">Enviar</button>`;
   }
@@ -501,8 +513,24 @@ async function loadBalances() {
     blocks.forEach(bl => { (segMap[bl.name] = segMap[bl.name] || { name: bl.name, color: bl.color, usd: 0 }).usd += bl.usd; });
     donut(Object.values(segMap), b.total || 0);
     wireCards();
+    renderGasWarnings(blocks);
     msg($('wallet-msg'), '');
   } catch (e) { msg($('wallet-msg'), 'Error: ' + e.message, 'err'); }
+}
+// Idea 2: aviso de gas bajo. Umbral por símbolo del token nativo de cada red.
+const GAS_MIN = { ETH: 0.0015, BNB: 0.005, POL: 1, MATIC: 1, KDA: 0.5 };
+function renderGasWarnings(blocks) {
+  const el = $('gas-warn'); if (!el) return;
+  const warns = [];
+  for (const bl of blocks) {
+    if (bl.error) continue;
+    const sym = bl.kind === 'kda' ? 'KDA' : bl.symbol;
+    const bal = Number(bl.native || 0);
+    const min = GAS_MIN[sym] ?? 0.001;
+    if (bal < min) warns.push(t('low_gas').replace('{sym}', sym).replace('{net}', bl.name + (bl.walletLabel ? ' · ' + bl.walletLabel : '')).replace('{bal}', bal.toFixed(sym === 'KDA' ? 2 : 5)));
+  }
+  el.innerHTML = warns.length ? warns.map(w => `<div class="gwrow">⛽ ${esc(w)}</div>`).join('') : '';
+  el.hidden = !warns.length;
 }
 function wireCards() {
   // Título → despliega tokens/chains
@@ -523,18 +551,28 @@ function wireCards() {
     const c = btn.closest('.netcard'); const chain = Number(c.querySelector('.k-chain').value), to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid, knet = btn.dataset.knet;
-    askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; });
+    askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; }, to);
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid;
-    askSend(`Enviar <b>${esc(amt)} ${esc(label)}</b> en ${esc(btn.dataset.netname)}<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return 'Enviado. tx: ' + r.hash; });
+    askSend(`Enviar <b>${esc(amt)} ${esc(label)}</b> en ${esc(btn.dataset.netname)}<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return 'Enviado. tx: ' + r.hash; }, to);
   });
 }
 // confirmación de envío con contraseña
-function askSend(summary, fn) { window._sendFn = fn; $('send-summary').innerHTML = summary; $('send-pass').value = ''; msg($('send-msg'), ''); $('send-steps').innerHTML = ''; $('modal-send').hidden = false; }
-$('btn-confirm-send').onclick = async () => { try { msg($('send-msg'), 'Firmando y enviando… (puede tardar)'); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { msg($('send-msg'), e.message, 'err'); } };
+// Idea 3: si se pasa `recipient`, se muestra la dirección destacada (cabeza/cola) y se exige marcar el visto bueno antes de firmar.
+function fmtAddr(a) { const s = String(a || ''); if (s.length <= 16) return esc(s); return `<span class="ah">${esc(s.slice(0, 8))}</span>${esc(s.slice(8, -6))}<span class="ah">${esc(s.slice(-6))}</span>`; }
+function askSend(summary, fn, recipient) {
+  window._sendFn = fn; $('send-summary').innerHTML = summary; $('send-pass').value = ''; msg($('send-msg'), ''); $('send-steps').innerHTML = '';
+  const chk = $('send-addr-check'), ok = $('send-addr-ok'), btn = $('btn-confirm-send');
+  if (recipient) {
+    $('send-addr-big').innerHTML = fmtAddr(recipient); ok.checked = false; chk.hidden = false; btn.disabled = true;
+    ok.onchange = () => { btn.disabled = !ok.checked; };
+  } else { chk.hidden = true; btn.disabled = false; ok.onchange = null; }
+  $('modal-send').hidden = false;
+}
+$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), 'Firmando y enviando… (puede tardar)'); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { msg($('send-msg'), e.message, 'err'); } };
 $('send-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-confirm-send').click(); });
 $('btn-refresh').onclick = loadBalances;
 
@@ -545,7 +583,7 @@ async function refreshHistory() {
   const wid = $('hist-wallet').value || null;
   $('hist-list').innerHTML = `<div class="muted xs" style="padding:10px 2px">${t('hist_loading')}</div>`;
   let list = [];
-  try { list = await window.api.history(wid); } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
+  try { list = await window.api.history(wid); window._histList = list; } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
   // Alex #3: todo lo que venga del indexador (amt/tok/other/chain/id/title/sub) se ESCAPA antes de ir a innerHTML.
   $('hist-list').innerHTML = list.length ? list.map(h => {
     const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
@@ -658,6 +696,40 @@ function initEyes() {
   });
 }
 initEyes();
+
+// ===== Idea 1: Libreta de direcciones =====
+function abKind(a) { return /^0x/i.test(a) ? 'evm' : 'kda'; }
+function renderAddressBook() {
+  if (!CFG || !$('ab-list')) return;
+  const ab = CFG.addressBook || [];
+  $('ab-list').innerHTML = ab.length ? ab.map((e, i) => `<div class="abrow"><span class="abtag ${e.kind}">${e.kind === 'kda' ? 'KDA' : 'EVM'}</span><b>${esc(e.alias)}</b> <span class="mono abaddr">${esc(shortAddr(e.address))}</span><button class="copy ab-del" data-i="${i}" title="Borrar">🗑</button></div>`).join('') : `<div class="muted xs">—</div>`;
+  $('ab-list').querySelectorAll('.ab-del').forEach(b => b.onclick = async () => { CFG.addressBook.splice(Number(b.dataset.i), 1); await window.api.setConfig(CFG); renderAddressBook(); });
+  const opt = arr => arr.map(e => `<option value="${esc(e.address)}" label="${esc(e.alias)}">`).join('');
+  if ($('dl-kda')) $('dl-kda').innerHTML = opt(ab.filter(e => e.kind === 'kda'));
+  if ($('dl-evm')) $('dl-evm').innerHTML = opt(ab.filter(e => e.kind === 'evm'));
+}
+$('ab-save').onclick = async () => {
+  const alias = $('ab-alias').value.trim(), addr = $('ab-addr').value.trim();
+  const okAddr = /^k:[0-9a-fA-F]{64}$/.test(addr) || /^0x[0-9a-fA-F]{40}$/.test(addr);
+  if (!alias || !okAddr) return msg($('ab-msg'), t('ab_bad'), 'err');
+  CFG.addressBook = CFG.addressBook || [];
+  CFG.addressBook.push({ alias, address: addr, kind: abKind(addr) });
+  await window.api.setConfig(CFG);
+  $('ab-alias').value = ''; $('ab-addr').value = ''; msg($('ab-msg'), t('ab_saved'), 'ok'); renderAddressBook();
+};
+
+// ===== Idea 4: Exportar historial a CSV =====
+$('hist-csv').onclick = async () => {
+  const list = window._histList || [];
+  if (!list.length) return msg($('wallet-msg'), t('csv_empty'), 'err');
+  const rows = list.map(h => ({
+    fecha: new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES'),
+    tipo: h.dir ? (h.dir === 'in' ? t('hist_in') : t('hist_out')) : (h.kind || h.type || ''),
+    desc: h.dir ? `${h.amt} ${h.tok}` : (h.title || ''),
+    other: h.other || h.wlabel || '', chain: h.chain != null ? h.chain : '', id: h.id || ''
+  }));
+  try { const r = await window.api.exportHistory(rows, 'koberlet-historial.csv'); if (r.ok) msg($('wallet-msg'), t('csv_ok'), 'ok'); } catch (e) { msg($('wallet-msg'), e.message, 'err'); }
+};
 
 // M-2: avisar al main de actividad del usuario (throttle 15s) para reiniciar el auto-bloqueo,
 // y reaccionar al bloqueo automático volviendo a la pantalla de desbloqueo.

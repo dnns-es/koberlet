@@ -1,5 +1,5 @@
 // Proceso principal. Las privadas viven SOLO aquí (nunca en el renderer). Se firma y se exporta aquí.
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -110,6 +110,11 @@ const loadConfig = () => {
   });
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   c.lockMinutes = (c.lockMinutes === undefined || c.lockMinutes === null) ? 10 : Math.max(0, Number(c.lockMinutes) || 0); // M-2: auto-bloqueo, 10 min por defecto (0=nunca)
+  // Libreta de direcciones (idea 1): lista {alias, address, kind:'kda'|'evm'} saneada. No es secreto.
+  c.addressBook = (Array.isArray(c.addressBook) ? c.addressBook : [])
+    .filter(e => e && typeof e.address === 'string' && typeof e.alias === 'string')
+    .map(e => ({ alias: String(e.alias).slice(0, 60), address: String(e.address).slice(0, 128), kind: e.kind === 'evm' ? 'evm' : 'kda' }))
+    .slice(0, 200);
   delete c.importPath; // línea muerta de la versión que importaba TeamRed.json desde F: — la bóveda es autocontenida
   return c;
 };
@@ -551,6 +556,20 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
 });
 
 ipcMain.handle('qr', (_e, text) => QRCode.toDataURL(text, { margin: 1, width: 240 }));
+// Exportar historial a CSV (idea 4): el renderer pasa las filas ya formateadas; guardamos con diálogo nativo.
+ipcMain.handle('history:export', async (_e, { rows, filename }) => {
+  const win = BrowserWindow.getAllWindows()[0];
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Exportar historial', defaultPath: filename || 'koberlet-historial.csv',
+    filters: [{ name: 'CSV', extensions: ['csv'] }]
+  });
+  if (canceled || !filePath) return { ok: false };
+  const esc = (v) => { const s = String(v == null ? '' : v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const head = ['Fecha', 'Tipo', 'Descripción', 'Contraparte', 'Chain', 'Id/Tx'];
+  const csv = '﻿' + [head.join(';')].concat((rows || []).map(r => [r.fecha, r.tipo, r.desc, r.other, r.chain, r.id].map(esc).join(';'))).join('\r\n');
+  fs.writeFileSync(filePath, csv, 'utf8');
+  return { ok: true, path: filePath };
+});
 ipcMain.handle('config:get', () => loadConfig());
 ipcMain.handle('config:set', (_e, c) => {
   if (!c || typeof c !== 'object' || Array.isArray(c)) throw new Error('config inválida');
