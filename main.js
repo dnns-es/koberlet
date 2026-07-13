@@ -64,6 +64,14 @@ const DEFAULT_CONFIG = {
 // unlocked = { pass, data:{ wallets:[{id,label,kind,net,kda,eth}], active } }  SOLO en memoria del main
 let unlocked = null;
 
+// Auditoría Alex #6: comparación de la passphrase en tiempo constante (evita oráculo de temporización).
+function passOk(input) {
+  if (!unlocked) return false;
+  const a = Buffer.from(String(input), 'utf8'), b = Buffer.from(String(unlocked.pass), 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 const loadConfig = () => {
   let c;
   try { c = { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG(), 'utf8')) }; } catch (_) { c = { ...DEFAULT_CONFIG }; }
@@ -74,6 +82,15 @@ const loadConfig = () => {
     networks: DEFAULT_CONFIG.kda.networks.map(n => { const s = savedNets ? savedNets.find(x => x.key === n.key) : null; return { ...n, enabled: s ? !!s.enabled : n.enabled }; })
   };
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
+  // Auditoría Alex #4: las redes EVM se reconstruyen desde DEFAULT (routers, tokens, símbolos fijos del código);
+  // del usuario solo se conserva `enabled` y un `rpc` que sea https válido. Así el renderer no puede repuntar
+  // los endpoints de firma a un nodo hostil ni inyectar contratos de token arbitrarios.
+  const savedEvm = Array.isArray(c.evm) ? c.evm : null;
+  const httpsOk = (u) => { try { return new URL(u).protocol === 'https:'; } catch (_) { return false; } };
+  c.evm = DEFAULT_CONFIG.evm.map(n => {
+    const s = savedEvm ? savedEvm.find(x => x.key === n.key) : null;
+    return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: (s && httpsOk(s.rpc)) ? s.rpc : n.rpc };
+  });
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   delete c.importPath; // línea muerta de la versión que importaba TeamRed.json desde F: — la bóveda es autocontenida
   return c;
@@ -306,7 +323,7 @@ ipcMain.handle('wallet:import-privkey', (_e, { label, kind, net, priv }) => {
 // Exportar privada: EXIGE reintroducir la contraseña de la bóveda
 ipcMain.handle('wallet:export', (_e, { passphrase, walletId, chain }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const acc = w[chain];
   if (!acc) throw new Error('Esta wallet no tiene cuenta ' + chain.toUpperCase() + '.');
@@ -353,7 +370,7 @@ ipcMain.handle('balances', async () => {
 
 ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
@@ -363,7 +380,7 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
 });
 ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   if (!w.eth) throw new Error('Esta wallet no tiene cuenta EVM.');
   const n = c.evm.find(x => x.key === network); if (!n) throw new Error('Red no válida.');
@@ -397,7 +414,7 @@ ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipien
 // ENVÍO REAL del puente (mueve fondos). Exige la contraseña de la bóveda.
 ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol, recipient, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(fromWalletId) || active(); const b = loadConfig().bridge;
   const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
   if (dir === 'evm2kda') {
@@ -439,7 +456,7 @@ ipcMain.handle('swap:quote', async (_e, { dir, amount }) => swap.quote(dir, amou
 ipcMain.handle('ethswap:quote', async (_e, { dir, amount }) => ethswap.quote({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, dir, amount }));
 ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(walletId); if (!w || !w.eth) throw new Error('Wallet EVM no válida.');
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
   const r = await ethswap.swap({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, secretHex: w.eth.secret, dir, amount }, onStep);
@@ -448,7 +465,7 @@ ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount })
 });
 ipcMain.handle('swap:exec', async (_e, { passphrase, walletId, dir, amount, slippage }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (passphrase !== unlocked.pass) throw new Error('Contraseña incorrecta.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   if (!w || !w.kda) throw new Error('Necesitas una wallet Kadena para operar en el mercado.');
   const r = await swap.swap({ dir, amountIn: amount, account: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret, slippage });
@@ -504,11 +521,21 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
 
 ipcMain.handle('qr', (_e, text) => QRCode.toDataURL(text, { margin: 1, width: 240 }));
 ipcMain.handle('config:get', () => loadConfig());
-ipcMain.handle('config:set', (_e, c) => { saveConfig(c); return { ok: true }; });
+ipcMain.handle('config:set', (_e, c) => {
+  if (!c || typeof c !== 'object' || Array.isArray(c)) throw new Error('config inválida');
+  // Se guarda tal cual, pero loadConfig() reconstruye kda/evm/bridge desde DEFAULT y solo respeta
+  // enabled/rpc(https)/updateMode — los campos sensibles de firma nunca los fija el renderer (Alex #4).
+  saveConfig(c); return { ok: true };
+});
 
-// ---- Versión + auto-update vía descargas.dnns.es (patrón latest.json {version,url,sha256,notes}) ----
+// ---- Versión + auto-update vía descargas.dnns.es (latest.json {version,url,appUrl,sha256,sig,notes}) ----
 const APP_VERSION = require('./package.json').version;
 const UPDATE_URL = 'https://descargas.dnns.es/kob7t2m9x4/koberlet';
+// Clave PÚBLICA de firma de updates (Ed25519). La privada vive SOLO en la máquina de publicación (fuera del repo).
+// El updater exige que el paquete descargado case con este sha256 Y que la firma sobre ese sha256 valide con esta clave.
+// Así, ni un servidor de descargas comprometido ni un MITM pueden colar código (no tienen la privada).
+const UPDATE_PUBKEY = '57e9f4fae9fcfa361e58b702cf83ff9b8b806d606a2e741b40b77ed2866bb4e4';
+const nacl = require('tweetnacl');
 const cmpVer = (a, b) => { const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; } return 0; };
 ipcMain.handle('app:info', () => ({ version: APP_VERSION }));
 ipcMain.handle('update:check', async () => {
@@ -529,6 +556,9 @@ ipcMain.handle('update:apply', async () => {
   const j = await r.json();
   const appUrl = j.appUrl; // zip que contiene SOLO la carpeta app (el código)
   if (!appUrl) throw new Error('Esta versión no admite auto-update in-place (falta appUrl).');
+  // SEGURIDAD (auditoría Alex #1): el paquete debe venir del origen oficial y traer sha256 + firma.
+  if (!appUrl.startsWith(UPDATE_URL + '/')) throw new Error('Origen del paquete no autorizado (debe ser descargas.dnns.es).');
+  if (!j.sha256 || !j.sig) throw new Error('El paquete no está firmado; actualización rechazada por seguridad.');
   const exe = app.getPath('exe'); const exeDir = path.dirname(exe); const exeName = path.basename(exe);
   const resDir = path.join(exeDir, 'resources');
   const upd = path.join(exeDir, '_update');
@@ -536,8 +566,15 @@ ipcMain.handle('update:apply', async () => {
   // 1) descargar
   const res = await fetch(appUrl, { signal: AbortSignal.timeout(120000) });
   if (!res.ok) throw new Error('descarga falló: ' + res.status);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  // 1b) VERIFICAR integridad + autenticidad antes de tocar nada
+  const gotHash = crypto.createHash('sha256').update(bytes).digest('hex');
+  if (gotHash !== String(j.sha256).toLowerCase()) throw new Error('El paquete descargado no coincide con el sha256 esperado; se descarta.');
+  let sigOk = false;
+  try { sigOk = nacl.sign.detached.verify(Buffer.from(gotHash, 'utf8'), Buffer.from(j.sig, 'hex'), Buffer.from(UPDATE_PUBKEY, 'hex')); } catch (_) {}
+  if (!sigOk) throw new Error('Firma del paquete inválida; actualización rechazada (posible manipulación).');
   const zipPath = path.join(upd, 'app.zip');
-  fs.writeFileSync(zipPath, Buffer.from(await res.arrayBuffer()));
+  fs.writeFileSync(zipPath, bytes);
   // 2) extraer con PowerShell (queda upd/app)
   await new Promise((resolve, reject) => spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${upd}' -Force`], { windowsHide: true })
     .on('exit', c => c === 0 ? resolve() : reject(new Error('unzip código ' + c))));
