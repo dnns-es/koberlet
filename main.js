@@ -166,19 +166,21 @@ const shownWallets = () => shownIds().map(id => unlocked.data.wallets.find(w => 
 const evmNetName = (key) => { const n = loadConfig().evm.find(x => x.key === key); return n ? n.name : 'EVM'; };
 function enableEvmNet(key) { if (!key) return; const c = loadConfig(); const n = c.evm.find(x => x.key === key); if (n && !n.enabled) { n.enabled = true; saveConfig(c); } }
 
-// Precios USD (CoinGecko, caché 60s). Devuelve mapa { <coingeckoId>: usd }.
-let _priceCache = { at: 0, data: {} };
-async function getPrices() {
-  if (Date.now() - _priceCache.at < 60000 && Object.keys(_priceCache.data).length) return _priceCache.data;
+// Precios (CoinGecko, caché 60s): usd + eur + variación 24h. `full` = { cgId:{usd,eur,chg} }.
+let _priceCache = { at: 0, full: {} };
+async function refreshPrices() {
+  if (Date.now() - _priceCache.at < 60000 && Object.keys(_priceCache.full).length) return;
   const ids = 'kadena,ethereum,binancecoin,polygon-ecosystem-token,usd-coin,tether,dai,wrapped-bitcoin';
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd');
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd,eur&include_24hr_change=true');
     const j = await r.json();
-    const m = {}; for (const k of Object.keys(j)) m[k] = j[k].usd;
-    _priceCache = { at: Date.now(), data: m };
+    const m = {}; for (const k of Object.keys(j)) m[k] = { usd: j[k].usd, eur: j[k].eur, chg: j[k].usd_24h_change };
+    if (Object.keys(m).length) _priceCache = { at: Date.now(), full: m };
   } catch (_) { /* sin red: mantiene la última */ }
-  return _priceCache.data;
 }
+// Compat: el cálculo de saldos usa un mapa { cgId: usd } (números).
+async function getPrices() { await refreshPrices(); const m = {}; for (const k in _priceCache.full) m[k] = _priceCache.full[k].usd; return m; }
+async function getPricesFull() { await refreshPrices(); return _priceCache.full; }
 
 function view() {
   if (!unlocked) return null;
@@ -556,6 +558,7 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
 });
 
 ipcMain.handle('qr', (_e, text) => QRCode.toDataURL(text, { margin: 1, width: 240 }));
+ipcMain.handle('prices', () => getPricesFull()); // idea 5/6: variación 24h + eur para el dashboard y el conversor
 // Exportar historial a CSV (idea 4): el renderer pasa las filas ya formateadas; guardamos con diálogo nativo.
 ipcMain.handle('history:export', async (_e, { rows, filename }) => {
   const win = BrowserWindow.getAllWindows()[0];
