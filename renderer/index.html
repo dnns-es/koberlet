@@ -221,7 +221,18 @@
           <label>Wallet</label><select id="sec-wallet"></select>
           <button id="btn-sec-export" class="primary">🔑 Ver clave privada</button>
         </div>
-        <div class="card"><p class="muted">La bóveda está cifrada (AES-256-GCM + scrypt) y las privadas nunca salen del proceso principal salvo aquí, con tu contraseña.<br>Próximamente: cambiar la contraseña de la bóveda y auto-bloqueo por inactividad.</p></div>
+        <div class="card">
+          <div class="row-between"><b data-i18n="backup_title">Copia de seguridad de la bóveda</b></div>
+          <p class="muted xs" data-i18n="backup_hint">Guarda una copia cifrada de tu bóveda (a un USB, disco o carpeta segura) para poder recuperarla en otro equipo. La copia está cifrada con tu contraseña: sin ella no sirve de nada.</p>
+          <div class="btnrow2"><button id="btn-backup" class="primary" data-i18n="backup_do">⬇ Exportar copia cifrada</button></div>
+          <div id="backup-msg" class="msg"></div>
+          <hr class="soft"/>
+          <p class="muted xs" data-i18n="restore_hint">Restaurar: elige un fichero de copia y su contraseña. Se respalda tu bóveda actual antes de sustituirla.</p>
+          <label data-i18n="lbl_pass">Contraseña de la copia</label><input id="restore-pass" type="password" />
+          <div class="btnrow2"><button id="btn-restore" class="ghost" data-i18n="restore_do">⬆ Restaurar copia…</button></div>
+          <div id="restore-msg" class="msg"></div>
+        </div>
+        <div class="card"><p class="muted">La bóveda está cifrada (AES-256-GCM + scrypt) y las privadas nunca salen del proceso principal salvo aquí, con tu contraseña.</p></div>
       </section>
 
       <!-- AJUSTES -->
@@ -238,6 +249,7 @@
         </div>
         <div class="card">
           <div class="row-between"><b>Koberlet <span id="app-ver">—</span></b><button id="btn-check-upd" class="tiny ghost" data-i18n="check_upd">Buscar actualizaciones</button></div>
+          <div class="verified" data-i18n="upd_verified">🔒 Actualizaciones firmadas y verificadas (Ed25519) antes de instalarse.</div>
           <div id="upd-status" class="muted xs" style="margin-top:6px"></div>
           <label style="margin-top:12px" data-i18n="set_upd_mode">Actualizaciones</label>
           <select id="set-upd-mode">
@@ -408,11 +420,14 @@
     </div>
   </div>
 
-  <!-- MODAL renombrar -->
+  <!-- MODAL editar wallet (nombre + etiqueta + nota) -->
   <div id="modal-rename" class="modal" hidden>
     <div class="card narrow">
-      <h2>Renombrar wallet</h2>
+      <h2 data-i18n="edit_wallet">Editar wallet</h2>
       <label>Nombre</label><input id="ren-label" placeholder="p.ej. Mi wallet Kadena" />
+      <label data-i18n="wtag">Etiqueta</label>
+      <select id="ren-tag"><option value="" data-i18n="wtag_none">— sin etiqueta —</option><option value="fria" data-i18n="wtag_cold">❄️ Fría (ahorro)</option><option value="caliente" data-i18n="wtag_hot">🔥 Caliente (uso diario)</option></select>
+      <label data-i18n="wnote">Nota privada</label><input id="ren-note" maxlength="200" placeholder="opcional" />
       <div class="btnrow2"><button id="btn-do-rename" class="primary">Guardar</button><button class="ghost" data-close>Cancelar</button></div>
       <div id="ren-msg" class="msg"></div>
     </div>
@@ -470,6 +485,22 @@
       <div id="send-msg" class="msg"></div>
     </div>
   </div>
+
+  <!-- MODAL bienvenida (idea 14) -->
+  <div id="modal-welcome" class="modal" hidden>
+    <div class="card narrow">
+      <h2 data-i18n="welcome_title">Bienvenido a Koberlet 👛</h2>
+      <div class="welcome-steps">
+        <div class="wstep"><span class="wnum">1</span><div><b data-i18n="welcome_1t">Apunta tu frase de recuperación</b><p class="muted xs" data-i18n="welcome_1">Es la ÚNICA forma de recuperar tus fondos si pierdes el equipo. Escríbela en papel y guárdala a salvo. Nadie de Koberlet puede recuperarla por ti.</p></div></div>
+        <div class="wstep"><span class="wnum">2</span><div><b data-i18n="welcome_2t">Prueba a recibir</b><p class="muted xs" data-i18n="welcome_2">En una tarjeta del panel pulsa 📥 Recibir para ver tu dirección y QR. Fíjate en la red/chain antes de que te envíen.</p></div></div>
+        <div class="wstep"><span class="wnum">3</span><div><b data-i18n="welcome_3t">Empieza con poco</b><p class="muted xs" data-i18n="welcome_3">Haz un primer envío pequeño para coger confianza. La app te pedirá la contraseña y que confirmes la dirección antes de firmar.</p></div></div>
+      </div>
+      <div class="btnrow2"><button id="btn-welcome-ok" class="primary" data-i18n="welcome_ok">Entendido, empezar</button></div>
+    </div>
+  </div>
+
+  <!-- TOAST (avisos breves, p.ej. post-actualización) -->
+  <div id="toast" class="toast" hidden></div>
 
   <datalist id="dl-kda"></datalist>
   <datalist id="dl-evm"></datalist>

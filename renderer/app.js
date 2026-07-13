@@ -48,6 +48,17 @@ const LANG = {
     ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (k:… o 0x…).', ab_pick: '📇 Libreta',
     csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
     converter: '🧮 Conversor', recv_note_kda: 'Recibes en Kadena. Para Mercado/Puente los fondos deben ir a la chain 2.', recv_note_evm: 'Recibes en {net}. La misma dirección 0x vale en todas las redes EVM; asegúrate de que quien te envía usa la red correcta.', share: 'Compartir',
+    backup_title: 'Copia de seguridad de la bóveda', backup_do: '⬇ Exportar copia cifrada', restore_do: '⬆ Restaurar copia…',
+    backup_hint: 'Guarda una copia cifrada de tu bóveda (a un USB, disco o carpeta segura) para recuperarla en otro equipo. Va cifrada con tu contraseña.',
+    restore_hint: 'Restaurar: elige un fichero de copia y su contraseña. Se respalda tu bóveda actual antes de sustituirla.',
+    backup_ok: 'Copia guardada en {path}', restore_ok: 'Bóveda restaurada. Desbloquea con la contraseña de esa copia.', restore_need_pass: 'Escribe la contraseña de la copia primero.',
+    upd_verified: '🔒 Actualizaciones firmadas y verificadas (Ed25519) antes de instalarse.',
+    edit_wallet: 'Editar wallet', wtag: 'Etiqueta', wtag_none: '— sin etiqueta —', wtag_cold: '❄️ Fría (ahorro)', wtag_hot: '🔥 Caliente (uso diario)', wnote: 'Nota privada',
+    welcome_title: 'Bienvenido a Koberlet 👛', welcome_ok: 'Entendido, empezar',
+    welcome_1t: 'Apunta tu frase de recuperación', welcome_1: 'Es la ÚNICA forma de recuperar tus fondos si pierdes el equipo. Escríbela en papel y guárdala a salvo.',
+    welcome_2t: 'Prueba a recibir', welcome_2: 'En una tarjeta del panel pulsa 📥 Recibir para ver tu dirección y QR. Fíjate en la red/chain.',
+    welcome_3t: 'Empieza con poco', welcome_3: 'Haz un primer envío pequeño para coger confianza. La app pedirá contraseña y confirmar la dirección.',
+    updated_toast: '✔ Actualizado a v{v} · paquete firmado y verificado',
     hist_loading: 'Cargando historial on-chain…', hist_empty: 'Sin operaciones para esta wallet.',
     hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a'
   },
@@ -93,6 +104,17 @@ const LANG = {
     ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (k:… or 0x…).', ab_pick: '📇 Book',
     csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
     converter: '🧮 Converter', recv_note_kda: 'Receiving on Kadena. For Market/Bridge funds must be on chain 2.', recv_note_evm: 'Receiving on {net}. The same 0x address works on all EVM networks; make sure the sender uses the right network.', share: 'Share',
+    backup_title: 'Vault backup', backup_do: '⬇ Export encrypted backup', restore_do: '⬆ Restore backup…',
+    backup_hint: 'Save an encrypted copy of your vault (to a USB, disk or safe folder) to recover it on another computer. It is encrypted with your password.',
+    restore_hint: 'Restore: pick a backup file and its password. Your current vault is backed up before being replaced.',
+    backup_ok: 'Backup saved to {path}', restore_ok: 'Vault restored. Unlock with that backup\'s password.', restore_need_pass: 'Enter the backup password first.',
+    upd_verified: '🔒 Updates are signed and verified (Ed25519) before installing.',
+    edit_wallet: 'Edit wallet', wtag: 'Tag', wtag_none: '— no tag —', wtag_cold: '❄️ Cold (savings)', wtag_hot: '🔥 Hot (daily use)', wnote: 'Private note',
+    welcome_title: 'Welcome to Koberlet 👛', welcome_ok: 'Got it, start',
+    welcome_1t: 'Write down your recovery phrase', welcome_1: 'It is the ONLY way to recover your funds if you lose the device. Write it on paper and keep it safe.',
+    welcome_2t: 'Try receiving', welcome_2: 'On a dashboard card tap 📥 Receive to see your address and QR. Mind the network/chain.',
+    welcome_3t: 'Start small', welcome_3: 'Make a first small send to build confidence. The app asks for your password and to confirm the address.',
+    updated_toast: '✔ Updated to v{v} · signed and verified package',
     hist_loading: 'Loading on-chain history…', hist_empty: 'No operations for this wallet.',
     hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to'
   }
@@ -173,7 +195,13 @@ async function boot() {
 }
 // Versión + auto-update vía descargas.dnns.es
 async function initUpdates() {
-  try { const info = await window.api.appInfo(); const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; }); } catch (_) {}
+  try {
+    const info = await window.api.appInfo(); const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; });
+    // Idea 13: si la versión cambió desde el último arranque, avisa de que se actualizó y verificó.
+    const last = localStorage.getItem('koberlet-last-ver');
+    if (last && last !== info.version) toast(t('updated_toast').replace('{v}', info.version));
+    localStorage.setItem('koberlet-last-ver', info.version);
+  } catch (_) {}
   try {
     const u = await window.api.updateCheck();
     if (u.newer) {
@@ -242,7 +270,7 @@ $('btn-lock').onclick = async () => { await window.api.lock(); location.reload()
 document.querySelectorAll('.nav').forEach(a => a.onclick = () => nav(a.dataset.nav));
 
 async function enter(v) {
-  screen('app'); nav('dashboard');
+  screen('app'); nav('dashboard'); maybeWelcome();
   // interruptores de redes Kadena (Oficial / Fork), como las EVM
   $('kda-nets').innerHTML = CFG.kda.networks.map(n => `<label class="toggle"><input type="checkbox" data-knet="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
   $('kda-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => { CFG.kda.networks.find(x => x.key === cb.dataset.knet).enabled = cb.checked; await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances(); });
@@ -483,7 +511,7 @@ async function applyView(v) {
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
     <label class="wshow" title="Ver en el dashboard"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
-    <div class="wmeta"><div class="wl">${esc(w.label)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ' · <span class="grn">en dashboard</span>' : ''}</div></div>
+    <div class="wmeta"><div class="wl">${esc(w.label)} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ' · <span class="grn">en dashboard</span>' : ''}${wNote(w.id)}</div></div>
     <div class="wact"><button class="copy" data-ren="${w.id}" title="Renombrar">✏️</button><button class="copy" data-del="${w.id}" title="Borrar">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
   $('wallet-list').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const w = WALLETS.find(x => x.id === b.dataset.ren); openRename(b.dataset.ren, w ? w.label : ''); });
@@ -659,8 +687,21 @@ $('btn-create-done').onclick = () => { $('modal-create').hidden = true; $('cr-se
 
 // RENOMBRAR
 let renId = null;
-function openRename(id, label) { renId = id; $('ren-label').value = label || ''; msg($('ren-msg'), ''); $('modal-rename').hidden = false; $('ren-label').focus(); }
-$('btn-do-rename').onclick = async () => { try { const v = await window.api.renameWallet(renId, $('ren-label').value.trim()); $('modal-rename').hidden = true; applyView(v); } catch (e) { msg($('ren-msg'), e.message, 'err'); } };
+function openRename(id, label) {
+  renId = id; $('ren-label').value = label || ''; msg($('ren-msg'), '');
+  const m = (CFG.walletMeta && CFG.walletMeta[id]) || {}; // idea 15: etiqueta + nota
+  $('ren-tag').value = m.tag || ''; $('ren-note').value = m.note || '';
+  $('modal-rename').hidden = false; $('ren-label').focus();
+}
+$('btn-do-rename').onclick = async () => {
+  try {
+    const v = await window.api.renameWallet(renId, $('ren-label').value.trim());
+    CFG.walletMeta = CFG.walletMeta || {};
+    CFG.walletMeta[renId] = { tag: $('ren-tag').value, note: $('ren-note').value.trim() };
+    await window.api.setConfig(CFG);
+    $('modal-rename').hidden = true; applyView(v);
+  } catch (e) { msg($('ren-msg'), e.message, 'err'); }
+};
 $('ren-label').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-do-rename').click(); });
 
 // IMPORTAR
@@ -744,6 +785,29 @@ function initEyes() {
   });
 }
 initEyes();
+
+// ===== Toast breve =====
+function toast(text, ms) { const el = $('toast'); if (!el) return; el.textContent = text; el.hidden = false; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 300); }, ms || 4500); }
+
+// ===== Idea 15: etiqueta + nota por wallet =====
+function wTagBadge(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; if (m.tag === 'fria') return '<span class="wtag cold">❄️ Fría</span>'; if (m.tag === 'caliente') return '<span class="wtag hot">🔥 Caliente</span>'; return ''; }
+function wNote(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; return m.note ? ` · <span class="wnote">📝 ${esc(m.note)}</span>` : ''; }
+
+// ===== Idea 12: copia de seguridad / restaurar bóveda =====
+$('btn-backup').onclick = async () => {
+  try { const r = await window.api.vaultBackup(); if (r.ok) msg($('backup-msg'), t('backup_ok').replace('{path}', r.path), 'ok'); }
+  catch (e) { msg($('backup-msg'), e.message, 'err'); }
+};
+$('btn-restore').onclick = async () => {
+  const p = $('restore-pass').value;
+  if (!p) return msg($('restore-msg'), t('restore_need_pass'), 'err');
+  try { const r = await window.api.vaultRestore(p); if (r.ok) { msg($('restore-msg'), t('restore_ok'), 'ok'); setTimeout(() => location.reload(), 1500); } }
+  catch (e) { msg($('restore-msg'), e.message, 'err'); }
+};
+
+// ===== Idea 14: bienvenida la primera vez =====
+function maybeWelcome() { if (!localStorage.getItem('koberlet-welcomed')) { $('modal-welcome').hidden = false; } }
+$('btn-welcome-ok').onclick = () => { localStorage.setItem('koberlet-welcomed', '1'); $('modal-welcome').hidden = true; };
 
 // ===== Idea 1: Libreta de direcciones =====
 function abKind(a) { return /^0x/i.test(a) ? 'evm' : 'kda'; }
