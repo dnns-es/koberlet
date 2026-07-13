@@ -75,6 +75,7 @@
       <div class="topbar">
         <div id="crumb">Dashboard</div>
         <div class="top-actions">
+          <button id="btn-theme" class="ghost" title="Tema claro / oscuro">🌙</button>
           <button class="langbtn ghost" title="Idioma / Language">EN</button>
           <button id="btn-history" class="ghost">🕘 <span data-i18n="btn_hist">Historial</span></button>
           <button id="btn-refresh" class="ghost">↻ <span data-i18n="btn_refresh">Refrescar</span></button>
@@ -107,6 +108,17 @@
           <div id="donut" class="donut"><div class="hole"></div></div>
         </div>
         <div id="gas-warn" class="gaswarn"></div>
+        <details id="conv" class="conv-card">
+          <summary data-i18n="converter">🧮 Conversor</summary>
+          <div class="convrow">
+            <input id="conv-amt" type="number" step="any" value="1" />
+            <select id="conv-asset"></select>
+            <span class="conveq">=</span>
+            <input id="conv-fiat-amt" type="number" step="any" />
+            <select id="conv-fiat"><option value="usd">USD ($)</option><option value="eur">EUR (€)</option></select>
+          </div>
+          <div id="conv-rate" class="muted xs"></div>
+        </details>
         <h3 data-i18n="bal_by_net">Saldos por red</h3>
         <div id="net-cards" class="grid"></div>
       </section>

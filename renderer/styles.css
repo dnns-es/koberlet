@@ -101,7 +101,7 @@ h3{margin:6px 0 12px;font-size:15px}
 .act-btn.on{background:var(--kda);border-color:var(--kda);color:#fff}
 .nc-panel{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
 .assets{margin:10px 0 4px;display:flex;flex-direction:column;gap:2px}
-.asset{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid #f2f4f0}
+.asset{display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
 .asset:last-child{border-bottom:0}
 .a-sym{font-weight:700;font-size:14px} .a-amt{font-family:Consolas,monospace;font-size:13px;color:var(--ink)} .a-usd{color:var(--muted);font-size:13px;min-width:70px;text-align:right}
 .xs{font-size:11px;margin-top:6px} .err{color:var(--err);font-weight:600}
@@ -255,3 +255,24 @@ button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#
 .abaddr{color:var(--muted);flex:1}
 .abadd{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .abadd input{flex:1;min-width:140px}
+
+/* ===== Variación 24h (idea 5) ===== */
+.a-chg{font-size:11px;font-weight:600;white-space:nowrap}
+.chg.up{color:var(--ok)} .chg.down{color:var(--err)}
+/* ===== Conversor (idea 6) ===== */
+.conv-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0;box-shadow:var(--shadow)}
+.conv-card summary{cursor:pointer;font-weight:600;color:var(--ink)}
+.convrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.convrow input{width:120px} .convrow select{width:auto;min-width:90px} .conveq{font-weight:700}
+#conv-rate{margin-top:6px}
+/* ===== Nota de recepción (idea 8) ===== */
+.recv-note{margin-bottom:8px;line-height:1.5}
+/* ===== Tema oscuro (idea 7) ===== */
+:root[data-theme="dark"]{--bg:#0f1113;--card:#1a1d20;--ink:#e7eae6;--muted:#9aa39a;--line:#2b2f34;--shadow:0 4px 18px rgba(0,0,0,.35)}
+:root[data-theme="dark"] body{background:var(--bg);color:var(--ink)}
+:root[data-theme="dark"] .auth-card,:root[data-theme="dark"] .fullscreen .card{background:#1a1d20}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:#14171a;color:var(--ink);border-color:var(--line)}
+:root[data-theme="dark"] #view-info p,:root[data-theme="dark"] .updnotes,:root[data-theme="dark"] .updnotes .nlist li{color:#c7ccc7}
+:root[data-theme="dark"] code,:root[data-theme="dark"] .nodero{background:#14171a}
+:root[data-theme="dark"] .gwrow{background:#2a2410;border-color:#5a4a1a;color:#e6c37a}
+:root[data-theme="dark"] .addrbig .ah{background:#3a1f1d}

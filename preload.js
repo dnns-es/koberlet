@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('api', {
   history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
   qr: (text) => ipcRenderer.invoke('qr', text),
   exportHistory: (rows, filename) => ipcRenderer.invoke('history:export', { rows, filename }),
+  prices: () => ipcRenderer.invoke('prices'),
   getConfig: () => ipcRenderer.invoke('config:get'),
   setConfig: (c) => ipcRenderer.invoke('config:set', c),
   appInfo: () => ipcRenderer.invoke('app:info'),

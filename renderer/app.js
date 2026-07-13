@@ -47,6 +47,7 @@ const LANG = {
     addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
     ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (k:… o 0x…).', ab_pick: '📇 Libreta',
     csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
+    converter: '🧮 Conversor', recv_note_kda: 'Recibes en Kadena. Para Mercado/Puente los fondos deben ir a la chain 2.', recv_note_evm: 'Recibes en {net}. La misma dirección 0x vale en todas las redes EVM; asegúrate de que quien te envía usa la red correcta.', share: 'Compartir',
     hist_loading: 'Cargando historial on-chain…', hist_empty: 'Sin operaciones para esta wallet.',
     hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a'
   },
@@ -91,6 +92,7 @@ const LANG = {
     addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
     ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (k:… or 0x…).', ab_pick: '📇 Book',
     csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
+    converter: '🧮 Converter', recv_note_kda: 'Receiving on Kadena. For Market/Bridge funds must be on chain 2.', recv_note_evm: 'Receiving on {net}. The same 0x address works on all EVM networks; make sure the sender uses the right network.', share: 'Share',
     hist_loading: 'Loading on-chain history…', hist_empty: 'No operations for this wallet.',
     hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to'
   }
@@ -108,6 +110,49 @@ function applyLang() {
   if (typeof renderNodes === 'function' && CFG) renderNodes();
 }
 function setLang(l) { LNG = l; localStorage.setItem('koberlet-lang', l); applyLang(); if ($('history-panel') && !$('history-panel').hidden) refreshHistory(); }
+
+// ===== Idea 7: tema claro / oscuro =====
+let THEME = localStorage.getItem('koberlet-theme') || 'light';
+function applyTheme() { document.documentElement.setAttribute('data-theme', THEME); const b = $('btn-theme'); if (b) b.textContent = THEME === 'dark' ? '☀️' : '🌙'; }
+if ($('btn-theme')) $('btn-theme').onclick = () => { THEME = THEME === 'dark' ? 'light' : 'dark'; localStorage.setItem('koberlet-theme', THEME); applyTheme(); };
+applyTheme();
+
+// ===== Precios (idea 5/6): variación 24h + fiat. PRICES = { cgId:{usd,eur,chg} } =====
+let PRICES = {};
+const CG_EXTRA = { KDA: 'kadena', 'kb-USDC': 'usd-coin', 'kb-USDT': 'tether', 'kb-DAI': 'dai', 'kb-WBTC': 'wrapped-bitcoin' };
+function cgFor(sym) {
+  if (CG_EXTRA[sym]) return CG_EXTRA[sym];
+  if (CFG) for (const n of CFG.evm) { if (n.symbol === sym) return n.cg; for (const tk of (n.tokens || [])) if (tk.symbol === sym) return tk.cg; }
+  return null;
+}
+function chgHtml(sym) {
+  const cg = cgFor(sym); const p = cg && PRICES[cg];
+  if (!p || p.chg == null) return '';
+  const up = p.chg >= 0;
+  return `<span class="chg ${up ? 'up' : 'down'}">${up ? '▲' : '▼'}${Math.abs(p.chg).toFixed(1)}%</span>`;
+}
+// ===== Idea 6: conversor cripto ⇄ fiat =====
+let _convInit = false;
+function initConverter() {
+  if (!$('conv-asset')) return;
+  if (!$('conv-asset').options.length) $('conv-asset').innerHTML = ['KDA', 'ETH', 'BNB', 'POL'].map(s => `<option value="${s}">${s}</option>`).join('');
+  const recalc = (from) => {
+    const cg = cgFor($('conv-asset').value), fiat = $('conv-fiat').value;
+    const px = cg && PRICES[cg] && PRICES[cg][fiat];
+    if (!px) { $('conv-rate').textContent = '—'; return; }
+    if (from === 'fiat') { const v = Number($('conv-fiat-amt').value || 0) / px; $('conv-amt').value = v ? v.toFixed(6) : ''; }
+    else { const v = Number($('conv-amt').value || 0) * px; $('conv-fiat-amt').value = v ? v.toFixed(2) : ''; }
+    $('conv-rate').textContent = `1 ${$('conv-asset').value} = ${px.toFixed(4)} ${fiat.toUpperCase()}`;
+  };
+  if (!_convInit) {
+    $('conv-amt').oninput = () => recalc('crypto');
+    $('conv-fiat-amt').oninput = () => recalc('fiat');
+    $('conv-asset').onchange = () => recalc('crypto');
+    $('conv-fiat').onchange = () => recalc('crypto');
+    _convInit = true;
+  }
+  recalc('crypto');
+}
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
 
 function screen(name) { ['scr-setup', 'scr-unlock'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
@@ -453,7 +498,7 @@ async function applyView(v) {
   loadBalances();
 }
 
-function assetRow(sym, amt, usd) { return `<div class="asset"><span class="a-sym">${sym}</span><span class="a-amt">${amt}</span><span class="a-usd">$${(usd || 0).toFixed(2)}</span></div>`; }
+function assetRow(sym, amt, usd) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${amt}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">$${(usd || 0).toFixed(2)}</span></div>`; }
 // Una tarjeta = una red de una wallet visible. Colapsada por defecto: solo red + total. Clic en el título despliega tokens/chains.
 function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
@@ -486,7 +531,8 @@ function cardBlock(bl, qr) {
       <button class="act-btn" data-panel="send">📤 Enviar</button>
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
-      <div class="addr"><span class="mono">${bl.address}</span><button class="copy" data-ct="${bl.address}">copiar</button></div>
+      <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : t('recv_note_evm').replace('{net}', esc(bl.name))}</div>
+      <div class="addr"><span class="mono">${esc(bl.address)}</span><button class="copy" data-ct="${esc(bl.address)}">copiar</button></div>
       <img class="qr" src="${qr}"/>
     </div>
     <div class="nc-panel" data-pan="send" hidden>${sendForm}</div>
@@ -503,6 +549,7 @@ function donut(segs, total) {
 async function loadBalances() {
   msg($('wallet-msg'), 'Cargando saldos…');
   try {
+    PRICES = await window.api.prices().catch(() => PRICES); // idea 5/6: variación 24h + fiat
     const b = await window.api.balances();
     const blocks = b.blocks || [];
     const qrs = {};
@@ -514,6 +561,7 @@ async function loadBalances() {
     donut(Object.values(segMap), b.total || 0);
     wireCards();
     renderGasWarnings(blocks);
+    initConverter();
     msg($('wallet-msg'), '');
   } catch (e) { msg($('wallet-msg'), 'Error: ' + e.message, 'err'); }
 }
