@@ -1,14 +1,13 @@
 {
   "name": "koberlet",
   "productName": "Koberlet",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Koberlet — monedero de escritorio multi-cadena (Kadena + EVM) de DNNS",
   "main": "main.js",
   "author": "DNNS",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win"
+    "start": "electron ."
   },
   "dependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
@@ -19,30 +18,6 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "electron": "^31.3.1",
-    "electron-builder": "^24.13.3"
-  },
-  "build": {
-    "appId": "es.dnns.monedero",
-    "productName": "MonederoDNNS",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "main.js",
-      "preload.js",
-      "lib/**",
-      "renderer/**",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        "dir"
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+    "electron": "^43.1.0"
   }
 }

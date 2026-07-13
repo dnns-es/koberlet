@@ -478,13 +478,15 @@ async function refreshHistory() {
   $('hist-list').innerHTML = `<div class="muted xs" style="padding:10px 2px">${t('hist_loading')}</div>`;
   let list = [];
   try { list = await window.api.history(wid); } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
+  // Alex #3: todo lo que venga del indexador (amt/tok/other/chain/id/title/sub) se ESCAPA antes de ir a innerHTML.
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   $('hist-list').innerHTML = list.length ? list.map(h => {
     const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
-    const idShort = h.id ? h.id.slice(0, 12) + '…' : '';
-    // entradas on-chain vienen estructuradas (dir/amt/tok…) y se traducen aquí; las locales EVM/puente usan title/sub tal cual
-    const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${h.amt} ${h.tok}` : h.title;
-    const sub = h.dir ? `${h.wlabel} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${h.other} · chain ${h.chain}` : h.sub;
-    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${fecha}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${h.id}" title="copiar id">⧉</button>` : ''}</div>`;
+    const idShort = h.id ? esc(String(h.id).slice(0, 12)) + '…' : '';
+    // on-chain: campos estructurados (amt/chain se fuerzan a número); locales EVM/puente usan title/sub
+    const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${esc(Number(h.amt))} ${esc(h.tok)}` : esc(h.title);
+    const sub = h.dir ? `${esc(h.wlabel)} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${esc(h.other)} · chain ${esc(Number(h.chain))}` : esc(h.sub);
+    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${esc(fecha)}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${esc(h.id)}" title="copiar id">⧉</button>` : ''}</div>`;
   }).join('') : `<div class="muted xs" style="padding:10px 2px">${t('hist_empty')}</div>`;
 }
 function fillHistWallet() {
