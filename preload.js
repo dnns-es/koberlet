@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('api', {
   bridgeDryRun: (dir, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:dryrun', { dir, fromWalletId, symbol, recipient, amount }),
   bridgeSend: (dir, passphrase, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:send', { dir, passphrase, fromWalletId, symbol, recipient, amount }),
   onBridgeStep: (cb) => { const h = (_e, d) => cb(d); ipcRenderer.on('bridge:step', h); return () => ipcRenderer.removeListener('bridge:step', h); },
+  pingActivity: () => ipcRenderer.send('activity:ping'),
+  onLocked: (cb) => { ipcRenderer.on('locked', () => cb()); },
   swapQuote: (dir, amount) => ipcRenderer.invoke('swap:quote', { dir, amount }),
   swapExec: (passphrase, walletId, dir, amount, slippage) => ipcRenderer.invoke('swap:exec', { passphrase, walletId, dir, amount, slippage }),
   ethswapQuote: (dir, amount) => ipcRenderer.invoke('ethswap:quote', { dir, amount }),

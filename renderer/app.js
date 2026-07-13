@@ -1,5 +1,7 @@
 const $ = (id) => document.getElementById(id);
 function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textContent = text; }
+// L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let CFG = null, WALLETS = [], SHOWN = [];
 
 // ===== i18n ES/EN =====
@@ -27,6 +29,8 @@ const LANG = {
     set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
     set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
     upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
+    set_lock: 'Bloqueo automático por inactividad', lock_never: 'Nunca',
+    lock_hint: 'Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
     upd_auto_applying: 'Actualizando a Koberlet v{v}… la app se reiniciará sola.',
@@ -60,6 +64,8 @@ const LANG = {
     set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
     set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
     upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
+    set_lock: 'Auto-lock on inactivity', lock_never: 'Never',
+    lock_hint: 'After that idle time the app locks itself and you must re-enter your password. Protects your keys if you leave the computer unattended.',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
     upd_auto_applying: 'Updating to Koberlet v{v}… the app will restart by itself.',
@@ -167,6 +173,8 @@ async function enter(v) {
   // Ajustes: modo de actualización (manual por defecto / automática)
   $('set-upd-mode').value = CFG.updateMode || 'manual';
   $('set-upd-mode').onchange = async () => { CFG.updateMode = $('set-upd-mode').value; await window.api.setConfig(CFG); };
+  $('set-lock-mode').value = String(CFG.lockMinutes ?? 10);
+  $('set-lock-mode').onchange = async () => { CFG.lockMinutes = Number($('set-lock-mode').value); await window.api.setConfig(CFG); };
   $('eth-rpc').value = CFG.evm.find(n => n.key === 'eth').rpc;
   $('btn-save-rpc').onclick = async () => { CFG.evm.find(n => n.key === 'eth').rpc = $('eth-rpc').value.trim(); await window.api.setConfig(CFG); msg($('wallet-msg'), 'RPC guardado.', 'ok'); loadBalances(); };
   // interruptores de redes EVM
@@ -186,8 +194,8 @@ function renderBridge() {
   $('br-to').placeholder = evm2 ? 'k:...' : '0x...';
   const fromW = WALLETS.filter(w => evm2 ? w.ethAddress : w.kdaAccount);
   const destW = WALLETS.filter(w => evm2 ? w.kdaAccount : w.ethAddress);
-  $('br-from').innerHTML = fromW.map(w => `<option value="${w.id}">${w.label} · ${shortAddr(evm2 ? w.ethAddress : w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet —</option>';
-  $('br-dest').innerHTML = destW.map(w => `<option value="${evm2 ? w.kdaAccount : w.ethAddress}">${w.label} · ${shortAddr(evm2 ? w.kdaAccount : w.ethAddress)}</option>`).join('') + '<option value="otra">Otra dirección…</option>';
+  $('br-from').innerHTML = fromW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(evm2 ? w.ethAddress : w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet —</option>';
+  $('br-dest').innerHTML = destW.map(w => `<option value="${evm2 ? w.kdaAccount : w.ethAddress}">${esc(w.label)} · ${shortAddr(evm2 ? w.kdaAccount : w.ethAddress)}</option>`).join('') + '<option value="otra">Otra dirección…</option>';
   $('br-dest').onchange = () => { $('br-to-wrap').hidden = $('br-dest').value !== 'otra'; };
   $('br-dest').onchange();
   $('br-from').onchange = () => loadBridgeTokens($('br-from').value);
@@ -246,7 +254,7 @@ $('btn-bridge-send').onclick = () => {
   const avisoTxt = DIR === 'evm2kda'
     ? '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.'
     : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.';
-  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${amt} ${symbol}</b> a <span class="mono">${to}</span><br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
+  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${esc(amt)} ${esc(symbol)}</b> a <span class="mono">${esc(to)}</span><br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
     async (pass) => {
       initSteps(DIR);
       const off = window.api.onBridgeStep(updateStep);
@@ -285,7 +293,7 @@ function updateNetContext() {
 let MKDIR = 'compra'; // 'compra' = entregas kb-USDC, recibes KDA · 'venta' = al revés
 function renderMercado() {
   const kdaW = WALLETS.filter(w => w.kind === 'kda');
-  $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${w.label} · ${shortAddr(w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet Kadena —</option>';
+  $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet Kadena —</option>';
   const compra = MKDIR === 'compra';
   $('mk-from').textContent = compra ? 'kb-USDC' : 'KDA';
   $('mk-to').textContent = compra ? 'KDA' : 'kb-USDC';
@@ -318,7 +326,7 @@ $('mk-swap').onclick = () => {
 let ESDIR = 'usdc2eth';
 function renderEthSwap() {
   const evmW = WALLETS.filter(w => w.ethAddress);
-  $('es-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${w.label} · ${shortAddr(w.ethAddress)}</option>`).join('') || '<option value="">— sin wallet Ethereum —</option>';
+  $('es-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.ethAddress)}</option>`).join('') || '<option value="">— sin wallet Ethereum —</option>';
   const u2e = ESDIR === 'usdc2eth';
   $('es-from').textContent = u2e ? 'USDC' : 'ETH';
   $('es-to').textContent = u2e ? 'ETH' : 'USDC';
@@ -355,10 +363,10 @@ async function applyView(v) {
   renderMercado();
   renderEthSwap();
   updateNetContext();
-  $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${w.label} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
+  $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
     <label class="wshow" title="Ver en el dashboard"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
-    <div class="wmeta"><div class="wl">${w.label}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ' · <span class="grn">en dashboard</span>' : ''}</div></div>
+    <div class="wmeta"><div class="wl">${esc(w.label)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ' · <span class="grn">en dashboard</span>' : ''}</div></div>
     <div class="wact"><button class="copy" data-ren="${w.id}" title="Renombrar">✏️</button><button class="copy" data-del="${w.id}" title="Borrar">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
   $('wallet-list').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const w = WALLETS.find(x => x.id === b.dataset.ren); openRename(b.dataset.ren, w ? w.label : ''); });
@@ -396,7 +404,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">Enviar</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${bl.walletLabel}</small>${bl.error ? ' <small class="err">sin conexión</small>' : ''}<span class="nc-sub">$${(bl.usd || 0).toFixed(2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ' <small class="err">sin conexión</small>' : ''}<span class="nc-sub">$${(bl.usd || 0).toFixed(2)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
@@ -455,13 +463,13 @@ function wireCards() {
     const c = btn.closest('.netcard'); const chain = Number(c.querySelector('.k-chain').value), to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid, knet = btn.dataset.knet;
-    askSend(`Enviar <b>${amt} KDA</b> (chain ${chain})<br>a <span class="mono">${to}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; });
+    askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; });
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid;
-    askSend(`Enviar <b>${amt} ${label}</b> en ${btn.dataset.netname}<br>a <span class="mono">${to}</span>`, async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return 'Enviado. tx: ' + r.hash; });
+    askSend(`Enviar <b>${esc(amt)} ${esc(label)}</b> en ${esc(btn.dataset.netname)}<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return 'Enviado. tx: ' + r.hash; });
   });
 }
 // confirmación de envío con contraseña
@@ -479,7 +487,6 @@ async function refreshHistory() {
   let list = [];
   try { list = await window.api.history(wid); } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
   // Alex #3: todo lo que venga del indexador (amt/tok/other/chain/id/title/sub) se ESCAPA antes de ir a innerHTML.
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   $('hist-list').innerHTML = list.length ? list.map(h => {
     const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
     const idShort = h.id ? esc(String(h.id).slice(0, 12)) + '…' : '';
@@ -490,7 +497,7 @@ async function refreshHistory() {
   }).join('') : `<div class="muted xs" style="padding:10px 2px">${t('hist_empty')}</div>`;
 }
 function fillHistWallet() {
-  $('hist-wallet').innerHTML = WALLETS.map(w => `<option value="${w.id}">${w.label} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
+  $('hist-wallet').innerHTML = WALLETS.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   if (HIST_WID && WALLETS.some(w => w.id === HIST_WID)) $('hist-wallet').value = HIST_WID;
   else { const def = WALLETS.find(w => SHOWN.includes(w.id)) || WALLETS[0]; if (def) $('hist-wallet').value = def.id; }
   HIST_WID = $('hist-wallet').value;
@@ -591,5 +598,12 @@ function initEyes() {
   });
 }
 initEyes();
+
+// M-2: avisar al main de actividad del usuario (throttle 15s) para reiniciar el auto-bloqueo,
+// y reaccionar al bloqueo automático volviendo a la pantalla de desbloqueo.
+let _lastPing = 0;
+function pingActivity() { const now = Date.now(); if (now - _lastPing > 15000) { _lastPing = now; try { window.api.pingActivity(); } catch (_) {} } }
+['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => window.addEventListener(ev, pingActivity, { passive: true }));
+window.api.onLocked(() => { location.reload(); });
 
 boot();
