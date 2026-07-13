@@ -31,6 +31,9 @@ const LANG = {
     upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
     set_lock: 'Bloqueo automático por inactividad', lock_never: 'Nunca',
     lock_hint: 'Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.',
+    nodes_adv: 'Nodos (avanzado)', nodes_kda: 'Nodos Kadena (fijos por seguridad)',
+    nodes_hint: 'Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.',
+    node_save: 'Guardar', node_reset: 'Restablecer', node_saved: 'Nodo guardado.', node_bad: 'Debe ser una dirección https válida.',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
     whats_new: 'Ver novedades', whats_new_title: 'Novedades de la v{v}',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
@@ -67,6 +70,9 @@ const LANG = {
     upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
     set_lock: 'Auto-lock on inactivity', lock_never: 'Never',
     lock_hint: 'After that idle time the app locks itself and you must re-enter your password. Protects your keys if you leave the computer unattended.',
+    nodes_adv: 'Nodes (advanced)', nodes_kda: 'Kadena nodes (fixed for security)',
+    nodes_hint: 'Entry server for each network (RPC). Only touch it if the default node is slow or you want to use your own. Must be an https address. Reset returns to the default node.',
+    node_save: 'Save', node_reset: 'Reset', node_saved: 'Node saved.', node_bad: 'Must be a valid https address.',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
     whats_new: "What's new", whats_new_title: "What's new in v{v}",
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
@@ -89,6 +95,7 @@ function applyLang() {
   document.querySelectorAll('.lang-en').forEach(e => { e.hidden = (LNG !== 'en'); });
   document.querySelectorAll('.langbtn').forEach(b => b.textContent = LNG === 'es' ? 'EN' : 'ES');
   document.documentElement.lang = LNG;
+  if (typeof renderNodes === 'function' && CFG) renderNodes();
 }
 function setLang(l) { LNG = l; localStorage.setItem('koberlet-lang', l); applyLang(); if ($('history-panel') && !$('history-panel').hidden) refreshHistory(); }
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
@@ -197,11 +204,10 @@ async function enter(v) {
   $('set-upd-mode').onchange = async () => { CFG.updateMode = $('set-upd-mode').value; await window.api.setConfig(CFG); };
   $('set-lock-mode').value = String(CFG.lockMinutes ?? 10);
   $('set-lock-mode').onchange = async () => { CFG.lockMinutes = Number($('set-lock-mode').value); await window.api.setConfig(CFG); };
-  $('eth-rpc').value = CFG.evm.find(n => n.key === 'eth').rpc;
-  $('btn-save-rpc').onclick = async () => { CFG.evm.find(n => n.key === 'eth').rpc = $('eth-rpc').value.trim(); await window.api.setConfig(CFG); msg($('wallet-msg'), 'RPC guardado.', 'ok'); loadBalances(); };
   // interruptores de redes EVM
   $('evm-nets').innerHTML = CFG.evm.map(n => `<label class="toggle"><input type="checkbox" data-net="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
   $('evm-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => { CFG.evm.find(x => x.key === cb.dataset.net).enabled = cb.checked; await window.api.setConfig(CFG); loadBalances(); });
+  renderNodes();
   applyView(v);
 }
 const shortAddr = (a) => a ? a.slice(0, 8) + '…' + a.slice(-4) : '';
@@ -309,6 +315,38 @@ function updateNetContext() {
     : 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.';
   const nets = $('evm-nets');
   if (nets) nets.style.opacity = anyEvmShown ? 1 : .55;
+}
+
+// Sección "Nodos (avanzado)": RPC editable por cada red EVM; nodos Kadena de solo lectura (firman → fijos por seguridad).
+function renderNodes() {
+  if (!CFG || !$('evm-nodes')) return;
+  const isHttps = (u) => { try { return new URL(u).protocol === 'https:'; } catch (_) { return false; } };
+  $('evm-nodes').innerHTML = CFG.evm.map(n => `
+    <div class="noderow">
+      <div class="nodename"><span class="tdot" style="background:${n.color}"></span>${n.name}</div>
+      <input class="node-rpc" data-net="${n.key}" value="${esc(n.rpc)}" placeholder="https://..." />
+      <button class="tiny node-save" data-net="${n.key}">${t('node_save')}</button>
+      <button class="tiny ghost node-reset" data-net="${n.key}">${t('node_reset')}</button>
+    </div>`).join('');
+  const persist = async (key, rpc) => {
+    CFG.evm.find(x => x.key === key).rpc = rpc;
+    await window.api.setConfig(CFG);
+    CFG = await window.api.getConfig();   // releer: el main puede haber descartado un rpc no-https → refleja lo real
+    renderNodes(); loadBalances();
+  };
+  $('evm-nodes').querySelectorAll('.node-save').forEach(b => b.onclick = async () => {
+    const inp = $('evm-nodes').querySelector(`.node-rpc[data-net="${b.dataset.net}"]`);
+    const v = inp.value.trim();
+    if (!isHttps(v)) return msg($('wallet-msg'), t('node_bad'), 'err');
+    await persist(b.dataset.net, v); msg($('wallet-msg'), t('node_saved'), 'ok');
+  });
+  $('evm-nodes').querySelectorAll('.node-reset').forEach(b => b.onclick = async () => {
+    await persist(b.dataset.net, '');    // vacío → loadConfig vuelve al rpc por defecto del código
+    msg($('wallet-msg'), t('node_saved'), 'ok');
+  });
+  // Nodos Kadena: solo lectura (no repuntables por seguridad — auditoría #4)
+  if ($('kda-nodes')) $('kda-nodes').innerHTML = CFG.kda.networks.map(n => `
+    <div class="noderow ro"><div class="nodename"><span class="tdot" style="background:${n.color}"></span>${n.name}</div><code class="nodero">${esc(n.node)}</code></div>`).join('');
 }
 
 // MERCADO (swap KDA <-> kb-USDC en el pool del fork)
