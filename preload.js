@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld('api', {
   ethswapExec: (passphrase, walletId, dir, amount) => ipcRenderer.invoke('ethswap:exec', { passphrase, walletId, dir, amount }),
   history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
   qr: (text) => ipcRenderer.invoke('qr', text),
+  exportHistory: (rows, filename) => ipcRenderer.invoke('history:export', { rows, filename }),
   getConfig: () => ipcRenderer.invoke('config:get'),
   setConfig: (c) => ipcRenderer.invoke('config:set', c),
   appInfo: () => ipcRenderer.invoke('app:info'),
