@@ -31,7 +31,8 @@ const DEFAULT_CONFIG = {
   kda: {
     networks: [
       { key: 'mainnet', name: 'Kadena', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: true, fork: false },
-      { key: 'fork', name: 'Kadena Fork', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true }
+      { key: 'fork', name: 'Kadena Fork', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true },
+      { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
   },
