@@ -298,3 +298,7 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 
 /* Modo pruebas (Devnet activada): aviso en el dashboard */
 .testmode{grid-column:1/-1;background:#fff7ed;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;color:#92400e;font-size:14px;margin:0}
+
+/* Envío: dos chains (origen/destino) lado a lado */
+.row2{display:flex;gap:10px}
+.row2>div{flex:1}
