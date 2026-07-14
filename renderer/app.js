@@ -561,7 +561,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">Enviar</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ' <small class="err">sin conexión</small>' : ''}<span class="nc-sub">$${(bl.usd || 0).toFixed(2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ' <small class="err">sin conexión</small>' : ''}<span class="nc-sub">${bl.knet === 'devnet' ? (bl.native || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' KDA' : '$' + (bl.usd || 0).toFixed(2)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
