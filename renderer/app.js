@@ -548,9 +548,11 @@ function cardBlock(bl, qr) {
     rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const per = Object.keys(bl.perChain || {}).length ? 'Repartido: ' + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : 'Sin saldo aún.';
     extra = `<div class="muted xs">${per}</div>`;
-    sendForm = `<label>Chain</label><input class="k-chain" type="number" value="2" min="0" max="19"/>
+    sendForm = `<div class="row2"><div><label>Chain origen</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
+      <div><label>Chain destino</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
       <label>Destino (k:…)</label><input class="k-to" list="dl-kda" placeholder="k:... o elige de la libreta"/>
       <label>Cantidad</label><input class="k-amt" type="number" step="0.0001"/>
+      <div class="muted xs k-xhint" hidden>↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).</div>
       <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}">Enviar</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
@@ -643,11 +645,22 @@ function wireCards() {
     try { const r = await window.api.devnetFaucet(btn.dataset.wid); msg($('wallet-msg'), t('faucet_ok').replace('{n}', r.amount).replace('{c}', r.chain), 'ok'); loadBalances(); }
     catch (e) { msg($('wallet-msg'), t('faucet_err') + ' ' + e.message, 'err'); btn.disabled = false; }
   });
+  // Aviso visual cuando origen ≠ destino (cross-chain)
+  document.querySelectorAll('.netcard').forEach(card => {
+    const src = card.querySelector('.k-chain'), tgt = card.querySelector('.k-tochain'), hint = card.querySelector('.k-xhint');
+    if (src && tgt && hint) { const upd = () => { hint.hidden = src.value === tgt.value; }; src.oninput = upd; tgt.oninput = upd; }
+  });
   document.querySelectorAll('.k-send').forEach(btn => btn.onclick = () => {
-    const c = btn.closest('.netcard'); const chain = Number(c.querySelector('.k-chain').value), to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
+    const c = btn.closest('.netcard');
+    const chain = Number(c.querySelector('.k-chain').value), tochain = Number(c.querySelector('.k-tochain').value);
+    const to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid, knet = btn.dataset.knet;
-    askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; }, to);
+    if (chain === tochain) {
+      askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; }, to);
+    } else {
+      askSend(`Enviar <b>${esc(amt)} KDA</b> de <b>chain ${esc(chain)} → ${esc(tochain)}</b> (cross-chain)<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return 'Cross-chain completado. pactId: ' + r.pactId; }, to);
+    }
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
@@ -869,5 +882,7 @@ let _lastPing = 0;
 function pingActivity() { const now = Date.now(); if (now - _lastPing > 15000) { _lastPing = now; try { window.api.pingActivity(); } catch (_) {} } }
 ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => window.addEventListener(ev, pingActivity, { passive: true }));
 window.api.onLocked(() => { location.reload(); });
+// Progreso del envío cross-chain (dos pasos + SPV): se muestra en la barra de estado
+if (window.api.onXchainProgress) window.api.onXchainProgress((m) => msg($('wallet-msg'), m));
 
 boot();
