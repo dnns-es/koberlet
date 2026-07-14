@@ -379,10 +379,12 @@ ipcMain.handle('balances', async () => {
   const c = loadConfig();
   const prices = await getPrices();
   const px = (id) => prices[id] || 0;
+  // Modo pruebas: con la Devnet activada solo se ven sus saldos ficticios (nada de redes reales ni EVM)
+  const modoPruebas = c.kda.networks.some(n => n.key === 'devnet' && n.enabled);
   const blocks = []; let total = 0;
   for (const w of shownWallets()) {
     if (w.kind === 'kda' && w.kda) {
-      for (const net of c.kda.networks.filter(n => n.enabled)) {
+      for (const net of c.kda.networks.filter(n => n.enabled && (!modoPruebas || n.key === 'devnet'))) {
         try {
           const k = await kda.getBalance(w.kda.account, { node: net.node, networkId: net.networkId, chains: c.kda.chains });
           let tokens = [];
@@ -390,13 +392,13 @@ ipcMain.handle('balances', async () => {
             const kbs = await bridge.getKadenaBalances({ node: net.node, networkId: net.networkId, chain: c.bridge.kda.chain, routes: c.bridge.routes, account: w.kda.account });
             tokens = kbs.filter(t => t.balance > 0).map(t => { const rt = c.bridge.routes.find(r => r.symbol === t.symbol); return { symbol: 'kb-' + t.symbol, amount: t.balance, usd: t.balance * px(rt.cg) }; });
           }
-          const usd = k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
+          const usd = net.key === 'devnet' ? 0 : k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
           total += usd;
         } catch (_) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: 0, perChain: {}, tokens: [], usd: 0, error: true }); }
       }
     } else if (w.kind === 'evm' && w.eth) {
-      for (const n of c.evm.filter(x => x.enabled)) {
+      for (const n of c.evm.filter(x => x.enabled && !modoPruebas)) {
         try {
           const b = await eth.getBalances(w.eth.address, { rpc: n.rpc, tokens: n.tokens });
           const tokens = b.tokens.map(t => ({ ...t, usd: t.amount * px((n.tokens.find(x => x.symbol === t.symbol) || {}).cg) }));
@@ -408,7 +410,7 @@ ipcMain.handle('balances', async () => {
       }
     }
   }
-  return { blocks, total };
+  return { blocks, total, modoPruebas };
 });
 
 ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to, amount }) => {

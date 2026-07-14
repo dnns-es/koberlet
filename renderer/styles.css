@@ -295,3 +295,6 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 .wstep{display:flex;gap:12px;align-items:flex-start}
 .wnum{flex:none;width:26px;height:26px;border-radius:50%;background:var(--kda);color:#08210a;font-weight:800;display:grid;place-items:center;font-size:14px}
 .wstep p{margin:3px 0 0;line-height:1.5}
+
+/* Modo pruebas (Devnet activada): aviso en el dashboard */
+.testmode{grid-column:1/-1;background:#fff7ed;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;color:#92400e;font-size:14px;margin:0}
