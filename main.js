@@ -477,6 +477,24 @@ ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sou
   logHistory({ type: 'send-kda-xchain', wallet: w.label, desc: `Cross-chain ${amount} KDA · chain ${sourceChain}→${targetChain} · ${net.name}`, to, id: r.pactId });
   return r;
 });
+
+// Envío inteligente: junta saldo de varias chains en la de destino si una sola no llega.
+ipcMain.handle('send:kda-smart', async (_e, { passphrase, walletId, kdaNet, targetChain, to, amount }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
+  if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  // El gas de las redenciones cross-chain lo paga sender00 en la devnet; en otras redes, el propio remitente.
+  const gasPayer = net.key === 'devnet' ? DEV_SENDERS.sender00 : { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
+  const r = await kda.sendSmart({
+    node: net.node, networkId: net.networkId, targetChain, from: w.kda.account, to, amount,
+    secretHex: w.kda.secret, publicHex: w.kda.public, gasPayer,
+    onProgress: (m) => { try { _e.sender.send('xchain:progress', m); } catch (_) {} }
+  });
+  logHistory({ type: 'send-kda-smart', wallet: w.label, desc: `Envío ${amount} KDA (barrido multi-chain) → chain ${targetChain} · ${net.name}`, to, id: r.requestKey });
+  return r;
+});
 ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');

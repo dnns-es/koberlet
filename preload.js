@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
   devnetFaucet: (walletId) => ipcRenderer.invoke('devnet:faucet', { walletId }),
   sendKdaXchain: (passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount) => ipcRenderer.invoke('send:kda-xchain', { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }),
+  sendKdaSmart: (passphrase, walletId, kdaNet, targetChain, to, amount) => ipcRenderer.invoke('send:kda-smart', { passphrase, walletId, kdaNet, targetChain, to, amount }),
   onXchainProgress: (cb) => ipcRenderer.on('xchain:progress', (_e, m) => cb(m)),
   // multi-wallet
   walletList: () => ipcRenderer.invoke('wallet:list'),
