@@ -440,9 +440,16 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  const r = await kda.transfer({ node: net.node, networkId: net.networkId, chain, from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public });
+  // Para destinos k: usamos transfer-create (crea la cuenta si no existe; si existe, exige su mismo guard).
+  const fn = to.startsWith('k:') ? kda.transferCreate : kda.transfer;
+  const r = await fn({ node: net.node, networkId: net.networkId, chain, from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public });
+  // Esperamos al minado para poder avisar si la tx falla en cadena (antes el fallo era silencioso)
+  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain, requestKey: r.requestKey, tries: net.key === 'devnet' ? 8 : 20 });
+  if (res && res.result && res.result.status === 'failure') {
+    throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
+  }
   logHistory({ type: 'send-kda', wallet: w.label, desc: `Envío ${amount} KDA · chain ${chain} · ${net.name}`, to, id: r.requestKey });
-  return r;
+  return { ...r, status: res ? 'success' : 'pending' };
 });
 ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
