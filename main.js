@@ -451,6 +451,32 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
   logHistory({ type: 'send-kda', wallet: w.label, desc: `Envío ${amount} KDA · chain ${chain} · ${net.name}`, to, id: r.requestKey });
   return { ...r, status: res ? 'success' : 'pending' };
 });
+
+// Cuentas de desarrollo con claves PÚBLICAS (solo existen en la devnet): sirven de pagador de gas
+const DEV_SENDERS = {
+  sender00: { account: 'sender00', publicHex: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca', secretHex: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898' }
+};
+ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
+  if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  // Gas de la redención en destino: lo paga el propio remitente si tiene saldo allí; si no
+  // y estamos en la devnet, lo paga sender00 (clave pública de desarrollo).
+  let gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
+  try {
+    const bal = await kda.getBalance(w.kda.account, { node: net.node, networkId: net.networkId, chains: [Number(targetChain)] });
+    if (!(bal.perChain[targetChain] > 0.001) && net.key === 'devnet') gasPayer = DEV_SENDERS.sender00;
+  } catch (_) {}
+  const r = await kda.transferCrossChain({
+    node: net.node, networkId: net.networkId, sourceChain, targetChain,
+    from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public, gasPayer,
+    onProgress: (m) => { try { _e.sender.send('xchain:progress', m); } catch (_) {} }
+  });
+  logHistory({ type: 'send-kda-xchain', wallet: w.label, desc: `Cross-chain ${amount} KDA · chain ${sourceChain}→${targetChain} · ${net.name}`, to, id: r.pactId });
+  return r;
+});
 ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
