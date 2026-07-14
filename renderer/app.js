@@ -34,6 +34,7 @@ const LANG = {
     nodes_adv: 'Nodos (avanzado)', nodes_kda: 'Nodos Kadena (fijos por seguridad)',
     nodes_hint: 'Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.',
     node_save: 'Guardar', node_reset: 'Restablecer', node_saved: 'Nodo guardado.', node_bad: 'Debe ser una dirección https válida.',
+    test_mode: '🧪 Modo pruebas — saldos ficticios de la Devnet; las redes reales están ocultas.',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
     whats_new: 'Ver novedades', whats_new_title: 'Novedades de la v{v}',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
@@ -90,6 +91,7 @@ const LANG = {
     nodes_adv: 'Nodes (advanced)', nodes_kda: 'Kadena nodes (fixed for security)',
     nodes_hint: 'Entry server for each network (RPC). Only touch it if the default node is slow or you want to use your own. Must be an https address. Reset returns to the default node.',
     node_save: 'Save', node_reset: 'Reset', node_saved: 'Node saved.', node_bad: 'Must be a valid https address.',
+    test_mode: '🧪 Test mode — fictitious Devnet balances; real networks are hidden.',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
     whats_new: "What's new", whats_new_title: "What's new in v{v}",
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
@@ -273,12 +275,20 @@ async function enter(v) {
   screen('app'); nav('dashboard'); maybeWelcome();
   // interruptores de redes Kadena (Oficial / Fork), como las EVM
   $('kda-nets').innerHTML = CFG.kda.networks.map(n => `<label class="toggle"><input type="checkbox" data-knet="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
-  $('kda-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => { CFG.kda.networks.find(x => x.key === cb.dataset.knet).enabled = cb.checked; await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances(); });
+  $('kda-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => {
+    CFG.kda.networks.find(x => x.key === cb.dataset.knet).enabled = cb.checked;
+    // Modo pruebas excluyente: activar la Devnet apaga las redes reales, y al revés
+    if (cb.checked && cb.dataset.knet === 'devnet') CFG.kda.networks.forEach(n => { if (n.key !== 'devnet') n.enabled = false; });
+    if (cb.checked && cb.dataset.knet !== 'devnet') CFG.kda.networks.forEach(n => { if (n.key === 'devnet') n.enabled = false; });
+    await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
+  });
   // Ajustes: modo de redes Kadena en el dashboard (Ambas / Solo oficial / Solo fork), sincronizado con los interruptores de Red
   $('set-kda-mode').onchange = async () => {
     const v = $('set-kda-mode').value;
     CFG.kda.networks.find(n => n.key === 'mainnet').enabled = v !== 'fork';
     CFG.kda.networks.find(n => n.key === 'fork').enabled = v !== 'oficial';
+    // Elegir redes reales desde Ajustes también saca del modo pruebas
+    CFG.kda.networks.forEach(n => { if (n.key === 'devnet') n.enabled = false; });
     await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
   };
   syncKdaControls();
@@ -582,7 +592,8 @@ async function loadBalances() {
     const blocks = b.blocks || [];
     const qrs = {};
     for (const bl of blocks) { if (!(bl.address in qrs)) qrs[bl.address] = await window.api.qr(bl.address); }
-    $('net-cards').innerHTML = blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || '<p class="muted">No hay wallets visibles. Marca alguna en la sección Wallets.</p>';
+    const aviso = b.modoPruebas ? '<p class="testmode">' + t('test_mode') + '</p>' : '';
+    $('net-cards').innerHTML = aviso + (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || '<p class="muted">No hay wallets visibles. Marca alguna en la sección Wallets.</p>');
     $('total-usd').textContent = '$' + (b.total || 0).toFixed(2);
     const segMap = {};
     blocks.forEach(bl => { (segMap[bl.name] = segMap[bl.name] || { name: bl.name, color: bl.color, usd: 0 }).usd += bl.usd; });
