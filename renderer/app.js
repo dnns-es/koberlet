@@ -35,6 +35,7 @@ const LANG = {
     nodes_hint: 'Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.',
     node_save: 'Guardar', node_reset: 'Restablecer', node_saved: 'Nodo guardado.', node_bad: 'Debe ser una dirección https válida.',
     test_mode: '🧪 Modo pruebas — saldos ficticios de la Devnet; las redes reales están ocultas.',
+    faucet_wait: 'Recargando desde el grifo… (unos segundos)', faucet_ok: 'Recarga recibida: +{n} KDA en la chain {c}.', faucet_err: 'La recarga falló:',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
     whats_new: 'Ver novedades', whats_new_title: 'Novedades de la v{v}',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
@@ -92,6 +93,7 @@ const LANG = {
     nodes_hint: 'Entry server for each network (RPC). Only touch it if the default node is slow or you want to use your own. Must be an https address. Reset returns to the default node.',
     node_save: 'Save', node_reset: 'Reset', node_saved: 'Node saved.', node_bad: 'Must be a valid https address.',
     test_mode: '🧪 Test mode — fictitious Devnet balances; real networks are hidden.',
+    faucet_wait: 'Topping up from the faucet… (a few seconds)', faucet_ok: 'Top-up received: +{n} KDA on chain {c}.', faucet_err: 'Top-up failed:',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
     whats_new: "What's new", whats_new_title: "What's new in v{v}",
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
@@ -567,6 +569,7 @@ function cardBlock(bl, qr) {
     <div class="nc-actions">
       <button class="act-btn" data-panel="recv">📥 Recibir</button>
       <button class="act-btn" data-panel="send">📤 Enviar</button>
+      ${bl.kind === 'kda' && bl.knet === 'devnet' ? `<button class="act-btn k-faucet" data-wid="${bl.walletId}">🚰 +1.000 KDA</button>` : ''}
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
       <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : t('recv_note_evm').replace('{net}', esc(bl.name))}</div>
@@ -633,6 +636,12 @@ function wireCards() {
     if (other) other.hidden = true;
     panel.hidden = !panel.hidden;
     card.querySelectorAll('.act-btn').forEach(b => b.classList.toggle('on', b === btn && !panel.hidden));
+  });
+  // Grifo devnet: pide 1.000 KDA de prueba a sender00 (sin contraseña: no toca claves propias)
+  document.querySelectorAll('.k-faucet').forEach(btn => btn.onclick = async () => {
+    btn.disabled = true; msg($('wallet-msg'), t('faucet_wait'));
+    try { const r = await window.api.devnetFaucet(btn.dataset.wid); msg($('wallet-msg'), t('faucet_ok').replace('{n}', r.amount).replace('{c}', r.chain), 'ok'); loadBalances(); }
+    catch (e) { msg($('wallet-msg'), t('faucet_err') + ' ' + e.message, 'err'); btn.disabled = false; }
   });
   document.querySelectorAll('.k-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const chain = Number(c.querySelector('.k-chain').value), to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
