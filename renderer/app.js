@@ -553,7 +553,7 @@ function cardBlock(bl, qr) {
       <label>Destino (k:…)</label><input class="k-to" list="dl-kda" placeholder="k:... o elige de la libreta"/>
       <label>Cantidad</label><input class="k-amt" type="number" step="0.0001"/>
       <div class="muted xs k-xhint" hidden>↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).</div>
-      <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}">Enviar</button>`;
+      <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>Enviar</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const opts = `<option value="${bl.symbol}">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
@@ -656,10 +656,22 @@ function wireCards() {
     const to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
     const wid = btn.dataset.wid, knet = btn.dataset.knet;
-    if (chain === tochain) {
+    const num = Number(amt);
+    let per = {}; try { per = JSON.parse(btn.dataset.perchain || '{}'); } catch (_) {}
+    const RES = 0.11;
+    const enChainOrigen = per[chain] || 0;
+    if (chain === tochain && num <= enChainOrigen - RES) {
+      // Cabe en la propia chain: envío normal
       askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; }, to);
-    } else {
+    } else if (chain !== tochain && num <= enChainOrigen - RES) {
+      // Cross-chain simple: la chain origen tiene bastante
       askSend(`Enviar <b>${esc(amt)} KDA</b> de <b>chain ${esc(chain)} → ${esc(tochain)}</b> (cross-chain)<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return 'Cross-chain completado. pactId: ' + r.pactId; }, to);
+    } else {
+      // No cabe en una sola chain → BARRIDO: juntar de varias hacia la chain destino
+      const disponible = Object.values(per).reduce((s, x) => s + Math.max(0, x - RES), 0);
+      if (num > disponible) return msg($('wallet-msg'), `No hay saldo suficiente ni sumando todas las chains (disponible ~${disponible.toFixed(2)} KDA dejando gas).`, 'err');
+      const nchains = Object.keys(per).filter(k => (per[k] || 0) > RES).length;
+      askSend(`Enviar <b>${esc(amt)} KDA</b> recibidos en la <b>chain ${esc(tochain)}</b>.<br>Se juntará de varias chains (~${nchains}) mediante cross-chain — <b>tarda unos minutos</b>.<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKdaSmart(pass, wid, knet, tochain, to, amt); return 'Barrido completado. requestKey: ' + r.requestKey; }, to);
     }
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
