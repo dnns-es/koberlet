@@ -413,6 +413,27 @@ ipcMain.handle('balances', async () => {
   return { blocks, total, modoPruebas };
 });
 
+// Grifo de la Devnet: sender00 (cuenta de desarrollo con claves PÚBLICAS, solo existe en la devnet) regala KDA de prueba.
+const GRIFO_DEVNET = {
+  from: 'sender00',
+  pub: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca',
+  sec: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898',
+  cantidad: 1000, chain: 0
+};
+ipcMain.handle('devnet:faucet', async (_e, { walletId }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const c = loadConfig();
+  const net = c.kda.networks.find(n => n.key === 'devnet');
+  if (!net || !net.enabled) throw new Error('La Devnet no está activada.');
+  const w = unlocked.data.wallets.find(x => x.id === walletId);
+  if (!w || w.kind !== 'kda' || !w.kda) throw new Error('Wallet no válida.');
+  const r = await kda.transferCreate({ node: net.node, networkId: net.networkId, chain: GRIFO_DEVNET.chain, from: GRIFO_DEVNET.from, to: w.kda.account, amount: GRIFO_DEVNET.cantidad, secretHex: GRIFO_DEVNET.sec, publicHex: GRIFO_DEVNET.pub });
+  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: GRIFO_DEVNET.chain, requestKey: r.requestKey });
+  if (!res || !res.result || res.result.status !== 'success') throw new Error('La recarga no se minó: ' + JSON.stringify((res && res.result && res.result.error && res.result.error.message) || 'sin respuesta'));
+  logHistory({ desc: `Grifo devnet: +${GRIFO_DEVNET.cantidad} KDA (chain ${GRIFO_DEVNET.chain}) → ${w.label}`, walletId: w.id });
+  return { amount: GRIFO_DEVNET.cantidad, chain: GRIFO_DEVNET.chain, requestKey: r.requestKey };
+});
+
 ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
