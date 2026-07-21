@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld('api', {
   swapQuote: (dir, amount) => ipcRenderer.invoke('swap:quote', { dir, amount }),
   swapExec: (passphrase, walletId, dir, amount, slippage) => ipcRenderer.invoke('swap:exec', { passphrase, walletId, dir, amount, slippage }),
   ethswapQuote: (dir, amount) => ipcRenderer.invoke('ethswap:quote', { dir, amount }),
-  ethswapExec: (passphrase, walletId, dir, amount) => ipcRenderer.invoke('ethswap:exec', { passphrase, walletId, dir, amount }),
+  ethswapExec: (passphrase, walletId, dir, amount, minOut) => ipcRenderer.invoke('ethswap:exec', { passphrase, walletId, dir, amount, minOut }),
   history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
   qr: (text) => ipcRenderer.invoke('qr', text),
   exportHistory: (rows, filename) => ipcRenderer.invoke('history:export', { rows, filename }),

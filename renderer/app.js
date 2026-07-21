@@ -234,7 +234,7 @@ function notesToHtml(notes) {
 function setupNotes(u) {
   const tog = $('update-notes-toggle'), box = $('update-notes');
   if (!u.notes) { tog.hidden = true; box.hidden = true; box.innerHTML = ''; return; }
-  box.innerHTML = `<div class="ntitle">${t('whats_new_title').replace('{v}', u.latest)}</div>` + notesToHtml(u.notes);
+  box.innerHTML = `<div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>` + notesToHtml(u.notes);
   tog.hidden = false; box.hidden = true;
   tog.onclick = () => { box.hidden = !box.hidden; tog.textContent = box.hidden ? t('whats_new') : '▲'; };
 }
@@ -251,8 +251,8 @@ $('btn-check-upd').onclick = async () => {
   try {
     const u = await window.api.updateCheck();
     if (u.newer) {
-      $('upd-status').innerHTML = t('upd_new').replace('{v}', u.latest) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`
-        + (u.notes ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', u.latest)}</div>${notesToHtml(u.notes)}</div>` : '');
+      $('upd-status').innerHTML = t('upd_new').replace('{v}', esc(u.latest)) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`
+        + (u.notes ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>${notesToHtml(u.notes)}</div>` : '');
       $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); };
     }
     else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
@@ -348,12 +348,12 @@ $('btn-bridge-sim').onclick = async () => {
     $('br-out').hidden = false;
     const st = r.result && r.result.status; const err = (r.result && r.result.error && r.result.error.message) || '';
     let m, kind;
-    if (st === 'success') { m = '✅ La transacción se arma bien (simulación correcta).' + (r.gas ? ' Gas: ' + r.gas + '.' : '') + (r.toll ? ` <b>Peaje del puente: ${Number(r.toll).toFixed(2)} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).` : ''); kind = 'ok'; }
+    if (st === 'success') { window._brToll = (r.toll != null) ? { dir: DIR, key: String(amt) + '|' + symbol + '|' + to, toll: Number(r.toll) } : null; m = '✅ La transacción se arma bien (simulación correcta).' + (r.gas ? ' Gas: ' + esc(String(r.gas)) + '.' : '') + (r.toll ? ` <b>Peaje del puente: ${Number(r.toll).toFixed(2)} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).` : ''); kind = 'ok'; }
     else if (DIR === 'evm2kda' && r.enoughBalance && r.missingApprove) { m = `✅ La tx se construye bien y tienes saldo (${r.balance} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.`; kind = 'ok'; }
     else if (DIR === 'evm2kda' && !r.enoughBalance) { m = `⚠️ Saldo insuficiente en Ethereum: tienes ${r.balance}, necesitas ${r.need}.`; kind = 'err'; }
     else if (/buy gas/i.test(err)) { m = '⚠️ La tx se construye bien, pero esta cuenta KDA no tiene KDA en la chain 2 del fork para el gas. Necesitas algo de KDA ahí.'; kind = 'err'; }
     else if (/row not found|No value found|Insufficient|balance/i.test(err)) { m = '⚠️ La tx se construye bien, pero no tienes saldo de ese token. Revisa abajo.'; kind = 'err'; }
-    else { m = '⚠️ Simulación con error: ' + err.slice(0, 140); kind = 'err'; }
+    else { m = '⚠️ Simulación con error: ' + esc(err.slice(0, 140)); kind = 'err'; }
     $('br-msg').innerHTML = m; $('br-msg').className = 'msg ' + kind;
   } catch (e) { msg($('br-msg'), 'Error: ' + e.message, 'err'); }
 };
@@ -379,7 +379,9 @@ $('btn-bridge-send').onclick = () => {
   const avisoTxt = DIR === 'evm2kda'
     ? '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.'
     : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.';
-  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${esc(amt)} ${esc(symbol)}</b> a <span class="mono">${esc(to)}</span><br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
+  const _bt = window._brToll; // solo si la simulación fue de ESTOS mismos parámetros (si no, se muestra sin toll)
+  const tollTxt = (DIR === 'kda2evm' && _bt && _bt.dir === DIR && _bt.key === (String(amt) + '|' + symbol + '|' + to)) ? `<br><b>Peaje del puente: ${Number(_bt.toll).toFixed(2)} KDA</b> (en KDA de la chain 2, aparte del token).` : '';
+  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${esc(amt)} ${esc(symbol)}</b> a <span class="mono">${esc(to)}</span>${tollTxt}<br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
     async (pass) => {
       initSteps(DIR);
       const off = window.api.onBridgeStep(updateStep);
@@ -492,26 +494,30 @@ function renderEthSwap() {
 }
 $('es-invert').onclick = () => { ESDIR = ESDIR === 'usdc2eth' ? 'eth2usdc' : 'usdc2eth'; renderEthSwap(); };
 let _esT = null;
+let _esQuote = null; // último quote confirmado (dir+amt+min) — se firma este `min`, no uno recalculado del RPC (rev. 2026-07-21 #3)
 $('es-amt').oninput = () => { clearTimeout(_esT); _esT = setTimeout(esQuote, 500); };
 async function esQuote() {
   const amt = $('es-amt').value;
-  if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; return; }
+  if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; _esQuote = null; return; }
   try {
     msg($('es-quote'), 'Consultando Uniswap…');
     const q = await window.api.ethswapQuote(ESDIR, amt);
+    _esQuote = { dir: ESDIR, amt: String(amt), min: q.min };
     const outSym = ESDIR === 'usdc2eth' ? 'ETH' : 'USDC';
     $('es-quote').innerHTML = `Recibes ≈ <b>${q.out.toFixed(6)} ${outSym}</b> · mínimo ${q.min.toFixed(6)} (slippage ${q.slipPct}%)` +
       (q.gasEth != null ? `<br>⛽ Gas estimado del swap: ~${q.gasEth.toFixed(5)} ETH — se paga en ETH: no esperes a quedarte a cero.` : '');
     $('es-quote').className = 'msg';
-  } catch (e) { msg($('es-quote'), e.message, 'err'); }
+  } catch (e) { _esQuote = null; msg($('es-quote'), e.message, 'err'); }
 }
 $('es-swap').onclick = () => {
   const wid = $('es-wallet').value, amt = $('es-amt').value;
   if (!wid) return msg($('es-msg'), 'No hay wallet Ethereum.', 'err');
   if (!amt || Number(amt) <= 0) return msg($('es-msg'), 'Indica la cantidad.', 'err');
+  if (!_esQuote || _esQuote.dir !== ESDIR || _esQuote.amt !== String(amt)) return msg($('es-msg'), 'Espera a la cotización (o vuelve a escribir la cantidad) antes de firmar.', 'err');
+  const minOut = _esQuote.min;
   const u2e = ESDIR === 'usdc2eth';
-  askSend(`Cambiar <b>${amt} ${u2e ? 'USDC' : 'ETH'}</b> → <b>${u2e ? 'ETH' : 'USDC'}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; precio fresco al firmar. El gas del swap se paga en ETH de tu cuenta.</span>`,
-    async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt); return (r.ok ? '✅ Swap confirmado.' : '⚠️ Swap enviado, revisa la tx.') + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
+  askSend(`Cambiar <b>${esc(amt)} ${u2e ? 'USDC' : 'ETH'}</b> → <b>${u2e ? 'ETH' : 'USDC'}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; recibes como mínimo <b>${esc(String(minOut))} ${u2e ? 'ETH' : 'USDC'}</b> (lo que viste al cotizar). Si el precio real cae por debajo, la operación se revierte. El gas se paga en ETH.</span>`,
+    async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt, minOut); return (r.ok ? '✅ Swap confirmado.' : '⚠️ Swap enviado, revisa la tx.') + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
 };
 
 async function applyView(v) {

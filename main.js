@@ -253,6 +253,7 @@ function ensureDesktopShortcut() {
 ipcMain.handle('vault:status', () => ({ exists: vault.existe(VAULT()), unlocked: !!unlocked, config: loadConfig() }));
 
 ipcMain.handle('vault:setup', async (_e, { passphrase, kind, net }) => {
+  if (vault.existe(VAULT())) backupVault(); // salvaguarda: nunca machacar una bóveda existente (p.ej. doble-submit) sin respaldo con fecha
   const { mnemonic, kda: k, eth: e } = await wallets.createNew(kind);
   const id = crypto.randomUUID();
   const w = { id, label: kind === 'kda' ? 'Mi wallet KDA' : 'Mi wallet ' + evmNetName(net || 'eth'), kind, kda: k, eth: e };
@@ -571,12 +572,12 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
 ipcMain.handle('swap:quote', async (_e, { dir, amount }) => swap.quote(dir, amount));
 // Swap USDC <-> ETH en Uniswap (Ethereum mainnet), para reponer ETH de gas con USDC
 ipcMain.handle('ethswap:quote', async (_e, { dir, amount }) => ethswap.quote({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, dir, amount }));
-ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount }) => {
+ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount, minOut }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(walletId); if (!w || !w.eth) throw new Error('Wallet EVM no válida.');
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
-  const r = await ethswap.swap({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, secretHex: w.eth.secret, dir, amount }, onStep);
+  const r = await ethswap.swap({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, secretHex: w.eth.secret, dir, amount, minOut }, onStep);
   logHistory({ type: 'send-evm', wallet: w.label || '', desc: `Swap ${amount} ${dir === 'usdc2eth' ? 'USDC → ETH' : 'ETH → USDC'} (Uniswap)`, to: w.eth.address, id: r.txHash });
   return r;
 });
@@ -701,11 +702,18 @@ ipcMain.handle('update:check', async () => {
   try {
     const r = await fetch(UPDATE_URL + '/latest.json', { signal: AbortSignal.timeout(6000), cache: 'no-store' });
     const j = await r.json();
-    const newer = j && j.version && cmpVer(j.version, APP_VERSION) > 0;
-    return { current: APP_VERSION, latest: j.version || null, newer: !!newer, url: j.url || (UPDATE_URL + '/'), canAuto: !!j.appUrl, notes: j.notes || '' };
+    // SEGURIDAD (revisión 2026-07-21 #1): latest.json NO va firmado (solo el paquete sí). Por eso `version` y `url`
+    // se validan en origen antes de que el renderer los use: version debe ser semver estricto, y url debe colgar del
+    // origen oficial. Así, aunque el server de descargas o un MITM mienta, no cuela markup ni redirige el botón.
+    const ver = (j && typeof j.version === 'string' && /^\d+\.\d+\.\d+$/.test(j.version)) ? j.version : null;
+    const newer = ver && cmpVer(ver, APP_VERSION) > 0;
+    const url = (j && typeof j.url === 'string' && j.url.startsWith(UPDATE_URL + '/')) ? j.url : (UPDATE_URL + '/');
+    return { current: APP_VERSION, latest: ver, newer: !!newer, url, canAuto: !!j.appUrl, notes: j.notes || '' };
   } catch (_) { return { current: APP_VERSION, latest: null, newer: false }; }
 });
-ipcMain.handle('open:external', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
+// SEGURIDAD (revisión 2026-07-21 #1b): el único uso de open:external es el botón de descarga del update, que apunta
+// al origen oficial. Se restringe a ese origen para que un latest.json manipulado no pueda abrir un host arbitrario.
+ipcMain.handle('open:external', (_e, url) => { if (typeof url === 'string' && url.startsWith(UPDATE_URL + '/')) shell.openExternal(url); });
 
 // Auto-update IN-PLACE: descarga SOLO el código nuevo (resources/app) y lo cambia con un .bat al cerrar,
 // preservando la bóveda (MonederoDNNS-datos vive junto al .exe, fuera de resources/app). No pierde nada.
