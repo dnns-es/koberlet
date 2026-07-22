@@ -230,8 +230,11 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
   app.whenReady().then(() => {
     createWindow(); ensureDesktopShortcut();
-    // limpiar restos de una actualización anterior (el bat no siempre puede borrar su propia carpeta)
-    try { fs.rmSync(path.join(path.dirname(app.getPath('exe')), '_update'), { recursive: true, force: true }); } catch (_) {}
+    // limpiar restos de actualizaciones anteriores (_update y _update-<ts>; el bat no siempre puede borrar su propia carpeta)
+    try {
+      const d0 = path.dirname(app.getPath('exe'));
+      for (const d of fs.readdirSync(d0)) if (d === '_update' || d.startsWith('_update-')) { try { fs.rmSync(path.join(d0, d), { recursive: true, force: true }); } catch (_) {} }
+    } catch (_) {}
     app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
   });
 }
@@ -737,8 +740,11 @@ ipcMain.handle('update:apply', async () => {
   if (!j.sha256 || !j.sig) throw new Error('El paquete no está firmado; actualización rechazada por seguridad.');
   const exe = app.getPath('exe'); const exeDir = path.dirname(exe); const exeName = path.basename(exe);
   const resDir = path.join(exeDir, 'resources');
-  const upd = path.join(exeDir, '_update');
-  fs.rmSync(upd, { recursive: true, force: true }); fs.mkdirSync(upd, { recursive: true });
+  // Carpeta ÚNICA por intento: si un intento anterior dejó su bat vivo (bloquea la carpeta), borrar el
+  // _update compartido lanzaba ENOTEMPTY y encima vaciaba a medias el paquete del otro intento (visto 2026-07-22).
+  const upd = path.join(exeDir, '_update-' + Date.now());
+  for (const d of fs.readdirSync(exeDir)) if (d === '_update' || d.startsWith('_update-')) { try { fs.rmSync(path.join(exeDir, d), { recursive: true, force: true }); } catch (_) {} }
+  fs.mkdirSync(upd, { recursive: true });
   // 1) descargar
   const res = await fetch(appUrl, { signal: AbortSignal.timeout(120000) });
   if (!res.ok) throw new Error('descarga falló: ' + res.status);
@@ -763,10 +769,14 @@ ipcMain.handle('update:apply', async () => {
     'timeout /t 2 /nobreak >nul',
     ':wait',
     `tasklist /fi "imagename eq ${exeName}" | find /i "${exeName}" >nul && (timeout /t 1 /nobreak >nul & goto wait)`,
+    // si el paquete nuevo está incompleto (p.ej. otra instancia limpió esta carpeta), NO tocar la app actual
+    `if not exist ${q(path.join(upd, 'app', 'main.js'))} goto done`,
     `if exist ${q(path.join(resDir, 'app_old'))} rmdir /s /q ${q(path.join(resDir, 'app_old'))}`,
     `move ${q(path.join(resDir, 'app'))} ${q(path.join(resDir, 'app_old'))}`,
     `move ${q(path.join(upd, 'app'))} ${q(path.join(resDir, 'app'))}`,
-    `if exist ${q(path.join(resDir, 'app'))} ( rmdir /s /q ${q(path.join(resDir, 'app_old'))} ) else ( move ${q(path.join(resDir, 'app_old'))} ${q(path.join(resDir, 'app'))} )`,
+    // verificar por FICHERO, no por carpeta (una app parcial también "existe"): si falta main.js, restaurar el respaldo
+    `if exist ${q(path.join(resDir, 'app', 'main.js'))} ( rmdir /s /q ${q(path.join(resDir, 'app_old'))} ) else ( rmdir /s /q ${q(path.join(resDir, 'app'))} & move ${q(path.join(resDir, 'app_old'))} ${q(path.join(resDir, 'app'))} )`,
+    ':done',
     `start "" ${q(exe)}`,
     `rmdir /s /q ${q(upd)}`
   ].join('\r\n'), 'latin1');
