@@ -345,7 +345,7 @@ function initConverter() {
     const px = cg && PRICES[cg] && PRICES[cg][fiat];
     if (!px) { $('conv-rate').textContent = '—'; return; }
     if (from === 'fiat') { const v = Number($('conv-fiat-amt').value || 0) / px; $('conv-amt').value = v ? v.toFixed(6) : ''; }
-    else { const v = Number($('conv-amt').value || 0) * px; $('conv-fiat-amt').value = v ? v.toFixed(2) : ''; }
+    else { const v = Number($('conv-amt').value || 0) * px; $('conv-fiat-amt').value = v ? v.toFixed(6) : ''; }
     $('conv-rate').textContent = `1 ${$('conv-asset').value} = ${px.toFixed(4)} ${fiat.toUpperCase()}`;
   };
   if (!_convInit) {
