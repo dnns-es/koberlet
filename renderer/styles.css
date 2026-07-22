@@ -299,6 +299,41 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 /* Modo pruebas (Devnet activada): aviso en el dashboard */
 .testmode{grid-column:1/-1;background:#fff7ed;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;color:#92400e;font-size:14px;margin:0}
 
+/* ===== Fix modo oscuro (bug 01dCod3r): componentes con fondo claro fijo que quedaban ilegibles ===== */
+:root[data-theme="dark"] .wrow,
+:root[data-theme="dark"] .hist,
+:root[data-theme="dark"] .net-card{background:var(--card);border-color:var(--line)}
+:root[data-theme="dark"] .hrow{border-bottom-color:var(--line)}
+:root[data-theme="dark"] button.ghost{background:var(--card);border-color:var(--line);color:var(--ink)}
+:root[data-theme="dark"] .act-btn{background:var(--card);border-color:var(--line);color:var(--kda)}
+:root[data-theme="dark"] .act-btn.on{background:var(--kda);border-color:var(--kda);color:#08210a}
+:root[data-theme="dark"] button.tiny{background:#1e2a1a;border-color:#2f4527;color:var(--kda)}
+:root[data-theme="dark"] .mono,
+:root[data-theme="dark"] .sendsum,
+:root[data-theme="dark"] .dir-chip,
+:root[data-theme="dark"] .tok,
+:root[data-theme="dark"] .stp,
+:root[data-theme="dark"] .seedrow{background:#14171a;border-color:var(--line)}
+:root[data-theme="dark"] .stp.done{background:#1e2a1a;color:var(--ink)}
+:root[data-theme="dark"] .seedbox{background:#14171a}
+:root[data-theme="dark"] .tab{background:#14171a;border-color:var(--line)}
+:root[data-theme="dark"] .tab.on{background:var(--kda);color:#08210a}
+:root[data-theme="dark"] .auth{background:radial-gradient(760px 440px at 50% -14%, rgba(99,224,56,.10), transparent 60%),linear-gradient(180deg,#111411,#0d0f0d)}
+:root[data-theme="dark"] .auth::before{background-image:radial-gradient(rgba(150,220,150,.05) 1px, transparent 1.4px)}
+:root[data-theme="dark"] .auth-card{border-color:var(--line);box-shadow:0 24px 70px rgba(0,0,0,.5)}
+:root[data-theme="dark"] .auth-lead{color:#b7bdb3}
+:root[data-theme="dark"] .auth input,:root[data-theme="dark"] .auth select{background:#14171a}
+:root[data-theme="dark"] .auth input:focus,:root[data-theme="dark"] .auth select:focus{background:#14171a}
+:root[data-theme="dark"] .auth-lang{background:#14171a;border-color:var(--line)}
+:root[data-theme="dark"] .mtag{background:#20233a;color:#9aa4e8}
+:root[data-theme="dark"] .updbar{background:#16240f;border-color:#2f4527;color:#9fd68c}
+:root[data-theme="dark"] .warn{background:#2a2410;border-color:#5a4a1a;color:#e6c37a}
+:root[data-theme="dark"] .info{background:#12233a;border-color:#274a72;color:#8fc1f2}
+:root[data-theme="dark"] .info code{background:#0e1b2c}
+:root[data-theme="dark"] .testmode{background:#2a2410;border-color:#8a6100;color:#e6c37a}
+:root[data-theme="dark"] .addrcheck{background:rgba(224,86,79,.12);border-color:var(--line)}
+:root[data-theme="dark"] .updnotes{background:rgba(99,224,56,.06)}
+
 /* Envío: dos chains (origen/destino) lado a lado */
 .row2{display:flex;gap:10px}
 .row2>div{flex:1}

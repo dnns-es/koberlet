@@ -62,7 +62,92 @@ const LANG = {
     welcome_3t: 'Empieza con poco', welcome_3: 'Haz un primer envío pequeño para coger confianza. La app pedirá contraseña y confirmar la dirección.',
     updated_toast: '✔ Actualizado a v{v} · paquete firmado y verificado',
     hist_loading: 'Cargando historial on-chain…', hist_empty: 'Sin operaciones para esta wallet.',
-    hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a'
+    hist_in: 'Recibido', hist_out: 'Enviado', hist_from: 'de', hist_to: 'a',
+    err_pass_min: 'Mínimo 8 caracteres.', err_pass_match: 'No coinciden.', creating_vault: 'Creando bóveda…', err_wrong_pass: 'Contraseña incorrecta.',
+    lbl_from_eth: 'Wallet origen (Ethereum)', lbl_from_kda: 'Wallet origen (Kadena)',
+    lbl_dest_kda: 'Wallet destino (Kadena)', lbl_dest_eth: 'Wallet destino (Ethereum)',
+    lbl_to_kda: 'Cuenta Kadena destino (k:…)', lbl_to_evm: 'Dirección EVM destino (0x…)',
+    no_wallet: '— sin wallet —', other_addr: 'Otra dirección…',
+    loading_tokens: 'cargando saldos…', tok_balance: '(saldo {b})',
+    br_no_from: 'No hay wallet origen para esa dirección.', br_need: 'Elige destino y cantidad.', br_simulating: 'Simulando…',
+    br_sim_ok: '✅ La transacción se arma bien (simulación correcta).',
+    br_toll: ' <b>Peaje del puente: {t} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).',
+    br_sim_approve: '✅ La tx se construye bien y tienes saldo ({b} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.',
+    br_sim_nobal: '⚠️ Saldo insuficiente en Ethereum: tienes {b}, necesitas {n}.',
+    br_sim_nogas: '⚠️ La tx se construye bien, pero esta cuenta KDA no tiene KDA en la chain 2 de Kadena para el gas. Necesitas algo de KDA ahí.',
+    br_sim_notok: '⚠️ La tx se construye bien, pero no tienes saldo de ese token. Revisa abajo.',
+    br_sim_err: '⚠️ Simulación con error: ',
+    step_approve: 'Autorizar token (approve)', step_transfer: 'Enviar al puente (Ethereum)', step_ethconfirm: 'Confirmar en Ethereum', step_kadena: 'Recibir en Kadena (chain 2)',
+    step_dispatch: 'Enviar al puente (Kadena, chain 2)', step_kdaconfirm: 'Confirmar en Kadena', step_evm: 'Recibir en Ethereum',
+    br_warn_e2k: '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.',
+    br_warn_k2e: '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.',
+    br_toll_line: '<br><b>Peaje del puente: {t} KDA</b> (en KDA de la chain 2, aparte del token).',
+    br_confirm: '<b>ENVÍO REAL por el puente</b> ({r})<br>Puentear <b>{a} {s}</b> a <span class="mono">{to}</span>',
+    br_done_kda: '✅ Puente completado — recibido en Kadena.', br_pend_kda: '⏳ Enviado y confirmado en Ethereum. Esperando al relayer para que llegue a Kadena.',
+    br_done_eth: '✅ Puente completado — recibido en Ethereum.', br_pend_eth: '⏳ Enviado y confirmado en Kadena. Esperando al relayer hacia Ethereum.',
+    evm_ctx_on: 'Marca las redes EVM que quieras ver (la misma dirección 0x vale en todas).',
+    evm_ctx_off: 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.',
+    no_wallet_kda: '— sin wallet Kadena —', no_wallet_eth: '— sin wallet Ethereum —',
+    mk_quoting: 'Calculando precio del pool…',
+    mk_quote_html: 'Recibes ≈ <b>{out} {tok}</b> · mínimo {min} (slippage {slip}%)<br>Precio {p} kb-USDC/KDA · impacto {imp}%',
+    err_no_kda_wallet: 'No hay wallet Kadena.', err_no_eth_wallet: 'No hay wallet Ethereum.', err_need_amt: 'Indica la cantidad.',
+    mk_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Pool de Kadena (kaddex.exchange, chain 2), no custodial. Precio fresco al firmar.</span>',
+    mk_sent: 'Swap enviado. requestKey: ',
+    es_quoting: 'Consultando Uniswap…',
+    es_quote_html: 'Recibes ≈ <b>{out} {sym}</b> · mínimo {min} (slippage {slip}%)',
+    es_gas_note: '<br>⛽ Gas estimado del swap: ~{g} ETH — se paga en ETH: no esperes a quedarte a cero.',
+    es_wait_quote: 'Espera a la cotización (o vuelve a escribir la cantidad) antes de firmar.',
+    es_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; recibes como mínimo <b>{min} {t}</b> (lo que viste al cotizar). Si el precio real cae por debajo, la operación se revierte. El gas se paga en ETH.</span>',
+    es_ok: '✅ Swap confirmado.', es_check: '⚠️ Swap enviado, revisa la tx.',
+    ttl_show_dash: 'Ver en el dashboard', ttl_rename: 'Renombrar', ttl_del: 'Borrar', on_dash: 'en dashboard', this_wallet: 'esta wallet',
+    spread: 'Repartido: ', no_bal_yet: 'Sin saldo aún.',
+    lbl_chain_from: 'Chain origen', lbl_chain_to: 'Chain destino', lbl_dest_k: 'Destino (k:…)', lbl_dest_0x: 'Destino (0x…)', lbl_amount: 'Cantidad', lbl_asset: 'Activo',
+    ph_kda_dest: 'k:... o elige de la libreta', ph_evm_dest: '0x... o elige de la libreta',
+    xchain_hint: '↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).',
+    send: 'Enviar', btn_recv: '📥 Recibir', btn_send: '📤 Enviar', btn_faucet: '🚰 +1.000 KDA', offline: 'sin conexión',
+    loading_balances: 'Cargando saldos…',
+    no_wallets_visible: 'No hay wallets visibles. Marca alguna en la sección Wallets.',
+    err_fill_dest_amt: 'Rellena destino y cantidad.',
+    cf_send_kda: 'Enviar <b>{a} KDA</b> (chain {c})<br>a <span class="mono">{to}</span>',
+    cf_send_kda_x: 'Enviar <b>{a} KDA</b> de <b>chain {c1} → {c2}</b> (cross-chain)<br>a <span class="mono">{to}</span>',
+    cf_send_kda_sweep: 'Enviar <b>{a} KDA</b> recibidos en la <b>chain {c}</b>.<br>Se juntará de varias chains (~{n}) mediante cross-chain — <b>tarda unos minutos</b>.<br>a <span class="mono">{to}</span>',
+    cf_send_evm: 'Enviar <b>{a} {s}</b> en {net}<br>a <span class="mono">{to}</span>',
+    sent_rk: 'Enviado. requestKey: ', xchain_done: 'Cross-chain completado. pactId: ', sweep_done: 'Barrido completado. requestKey: ', sent_tx: 'Enviado. tx: ',
+    err_sweep_bal: 'No hay saldo suficiente ni sumando todas las chains (disponible ~{b} KDA dejando gas).',
+    signing: 'Firmando y enviando… (puede tardar)',
+    generating: 'Generando…', importing: 'Importando…',
+    err_paste_seed: 'Pega la semilla primero.', err_paste_target: 'Pega la cuenta que buscas.',
+    seed_scanning: 'Buscando cuentas y saldos… (unos segundos)',
+    seed_finding: 'Buscando la cuenta en los índices (0-40, ambos métodos)…',
+    seed_more: 'Ver 5 cuentas más (desde #{n})', import_this: 'Importar esta',
+    seed_notfound: 'No aparece en los primeros {n} índices con ninguno de los dos métodos. Tu wallet usa otra derivación — dímelo y la añado.',
+    exp_revealed: 'Revelada. Cópiala y cierra.', wallet_deleted: 'Wallet borrada.',
+    ttl_eye: 'Ver / ocultar', ttl_copy_id: 'copiar id',
+    tag_cold: '❄️ Fría', tag_hot: '🔥 Caliente',
+    kda_mode_both: 'Ambas (Kadena + Kadena Inc)', kda_mode_inc: 'Solo Kadena (Inc)', kda_mode_comm: 'Solo Kadena',
+    kda_mode_hint: 'Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)',
+    min_5: '5 minutos', min_10: '10 minutos', min_30: '30 minutos',
+    sec_intro: 'Revela la clave privada de una de tus wallets. Requiere la contraseña de la bóveda. No la compartas con nadie.',
+    sec_view_pk: '🔑 Ver clave privada',
+    sec_note: 'La bóveda está cifrada (AES-256-GCM + scrypt) y las privadas nunca salen del proceso principal salvo aquí, con tu contraseña.',
+    lbl_backup_pass: 'Contraseña de la copia',
+    br_sim_btn: '🧪 Simular', br_send_btn: '🚀 Ejecutar de verdad',
+    br_code_lbl: 'Código Pact que se ejecutaría', br_result_lbl: 'Resultado de la simulación',
+    create_title: 'Crear nueva wallet', lbl_name: 'Nombre', lbl_net: 'Red', generate: 'Generar', cancel: 'Cancelar',
+    ph_cr_label: 'p.ej. Wallet fría', ph_ren_label: 'p.ej. Mi wallet Kadena', ph_imp_label: 'p.ej. Mi wallet ecko', ph_optional: 'opcional',
+    seed_warn2: '⚠️ Apunta esta semilla en papel y guárdala a salvo. Es la ÚNICA forma de recuperar esta wallet. No se volverá a mostrar.',
+    del_title: 'Borrar wallet',
+    del_q: '¿Seguro que quieres borrar <b>{w}</b>?',
+    del_warn1: '💡 Antes de borrar, <b>copia su semilla o su clave privada</b> (sección 🛡️ Seguridad → Ver clave privada) y guárdala a salvo. Es lo ÚNICO que te permitirá restaurar esta wallet si cambias de idea.',
+    del_warn2: '⚠️ <b>Última confirmación:</b> la wallet <b>{w}</b> se eliminará de la app. Si no guardaste su semilla o su clave privada, <b>perderás el acceso a sus fondos para siempre</b>.',
+    del_have: 'Ya la tengo, continuar', del_yes: 'Sí, borrar definitivamente',
+    imp_title: 'Importar wallet', tab_seed: 'Semilla', tab_pk: 'Clave privada',
+    lbl_seed: 'Semilla (12/24 palabras)',
+    imp_hint: 'Una semilla contiene varias cuentas (índice 0, 1, 2…), como en eckoWallet. Pulsa "Ver cuentas" para elegir la que tiene tus fondos, o importa directamente la índice 0.',
+    btn_seed_scan: '🔍 Ver cuentas de esta semilla', lbl_seed_target: '¿Buscas una cuenta concreta? (opcional)', ph_seed_target: 'k:… (Kadena) o 0x… (EVM)', btn_seed_find: '🎯 Buscar esa cuenta en la semilla',
+    exp_title: 'Ver clave privada', exp_intro: 'Introduce la contraseña de la bóveda para revelar la privada. No la compartas.', reveal: 'Revelar', close_btn: 'Cerrar',
+    send_title: 'Confirmar envío', lbl_vault_pass: 'Contraseña de la bóveda', btn_sign_send: 'Firmar y enviar',
+    ttl_invert: 'Invertir', ttl_theme: 'Tema claro / oscuro'
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
@@ -120,14 +205,102 @@ const LANG = {
     welcome_3t: 'Start small', welcome_3: 'Make a first small send to build confidence. The app asks for your password and to confirm the address.',
     updated_toast: '✔ Updated to v{v} · signed and verified package',
     hist_loading: 'Loading on-chain history…', hist_empty: 'No operations for this wallet.',
-    hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to'
+    hist_in: 'Received', hist_out: 'Sent', hist_from: 'from', hist_to: 'to',
+    err_pass_min: 'At least 8 characters.', err_pass_match: 'Passwords do not match.', creating_vault: 'Creating vault…', err_wrong_pass: 'Wrong password.',
+    lbl_from_eth: 'Source wallet (Ethereum)', lbl_from_kda: 'Source wallet (Kadena)',
+    lbl_dest_kda: 'Destination wallet (Kadena)', lbl_dest_eth: 'Destination wallet (Ethereum)',
+    lbl_to_kda: 'Destination Kadena account (k:…)', lbl_to_evm: 'Destination EVM address (0x…)',
+    no_wallet: '— no wallet —', other_addr: 'Other address…',
+    loading_tokens: 'loading balances…', tok_balance: '(balance {b})',
+    br_no_from: 'No source wallet for that address.', br_need: 'Choose destination and amount.', br_simulating: 'Simulating…',
+    br_sim_ok: '✅ The transaction builds correctly (simulation OK).',
+    br_toll: ' <b>Bridge toll: {t} KDA</b> (charged on Kadena when dispatching, besides the bridged token).',
+    br_sim_approve: '✅ The tx builds correctly and you have balance ({b} of the token). It only reverts because the <b>approve</b> is missing (authorizing the router to move your token) — a prior step done automatically in the real send.',
+    br_sim_nobal: '⚠️ Insufficient balance on Ethereum: you have {b}, you need {n}.',
+    br_sim_nogas: '⚠️ The tx builds correctly, but this KDA account has no KDA on Kadena chain 2 for gas. You need some KDA there.',
+    br_sim_notok: '⚠️ The tx builds correctly, but you have no balance of that token. Check below.',
+    br_sim_err: '⚠️ Simulation error: ',
+    step_approve: 'Approve token', step_transfer: 'Send to bridge (Ethereum)', step_ethconfirm: 'Confirm on Ethereum', step_kadena: 'Receive on Kadena (chain 2)',
+    step_dispatch: 'Send to bridge (Kadena, chain 2)', step_kdaconfirm: 'Confirm on Kadena', step_evm: 'Receive on Ethereum',
+    br_warn_e2k: '⚠️ Moves real funds through the bridge. It will approve + transferRemote and spend ETH on gas. Use small amounts.',
+    br_warn_k2e: '⚠️ Moves real funds through the bridge. It burns the kb-token on Kadena (dispatch) and also charges the bridge TOLL in KDA on chain 2 (~37 KDA towards Ethereum; check the exact value with Simulate). Use amounts that make the toll worth it.',
+    br_toll_line: '<br><b>Bridge toll: {t} KDA</b> (in KDA on chain 2, besides the token).',
+    br_confirm: '<b>REAL SEND through the bridge</b> ({r})<br>Bridge <b>{a} {s}</b> to <span class="mono">{to}</span>',
+    br_done_kda: '✅ Bridge completed — received on Kadena.', br_pend_kda: '⏳ Sent and confirmed on Ethereum. Waiting for the relayer to deliver on Kadena.',
+    br_done_eth: '✅ Bridge completed — received on Ethereum.', br_pend_eth: '⏳ Sent and confirmed on Kadena. Waiting for the relayer towards Ethereum.',
+    evm_ctx_on: 'Tick the EVM networks you want to see (the same 0x address works on all of them).',
+    evm_ctx_off: 'These networks are shown when you have an EVM wallet visible on the dashboard.',
+    no_wallet_kda: '— no Kadena wallet —', no_wallet_eth: '— no Ethereum wallet —',
+    mk_quoting: 'Reading pool price…',
+    mk_quote_html: 'You receive ≈ <b>{out} {tok}</b> · minimum {min} (slippage {slip}%)<br>Price {p} kb-USDC/KDA · impact {imp}%',
+    err_no_kda_wallet: 'No Kadena wallet.', err_no_eth_wallet: 'No Ethereum wallet.', err_need_amt: 'Enter the amount.',
+    mk_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Kadena pool (kaddex.exchange, chain 2), non-custodial. Fresh price at signing.</span>',
+    mk_sent: 'Swap sent. requestKey: ',
+    es_quoting: 'Querying Uniswap…',
+    es_quote_html: 'You receive ≈ <b>{out} {sym}</b> · minimum {min} (slippage {slip}%)',
+    es_gas_note: '<br>⛽ Estimated swap gas: ~{g} ETH — paid in ETH: don\'t wait until you hit zero.',
+    es_wait_quote: 'Wait for the quote (or re-type the amount) before signing.',
+    es_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b> on Uniswap (Ethereum)<br><span class="muted">Non-custodial; you receive at least <b>{min} {t}</b> (what you saw when quoting). If the real price drops below it, the operation reverts. Gas is paid in ETH.</span>',
+    es_ok: '✅ Swap confirmed.', es_check: '⚠️ Swap sent, check the tx.',
+    ttl_show_dash: 'Show on the dashboard', ttl_rename: 'Rename', ttl_del: 'Delete', on_dash: 'on dashboard', this_wallet: 'this wallet',
+    spread: 'Spread: ', no_bal_yet: 'No balance yet.',
+    lbl_chain_from: 'Source chain', lbl_chain_to: 'Destination chain', lbl_dest_k: 'Destination (k:…)', lbl_dest_0x: 'Destination (0x…)', lbl_amount: 'Amount', lbl_asset: 'Asset',
+    ph_kda_dest: 'k:... or pick from the book', ph_evm_dest: '0x... or pick from the book',
+    xchain_hint: '↔ Send between different chains (cross-chain): takes a bit longer (two steps + SPV proof).',
+    send: 'Send', btn_recv: '📥 Receive', btn_send: '📤 Send', btn_faucet: '🚰 +1,000 KDA', offline: 'offline',
+    loading_balances: 'Loading balances…',
+    no_wallets_visible: 'No visible wallets. Tick one in the Wallets section.',
+    err_fill_dest_amt: 'Fill in destination and amount.',
+    cf_send_kda: 'Send <b>{a} KDA</b> (chain {c})<br>to <span class="mono">{to}</span>',
+    cf_send_kda_x: 'Send <b>{a} KDA</b> from <b>chain {c1} → {c2}</b> (cross-chain)<br>to <span class="mono">{to}</span>',
+    cf_send_kda_sweep: 'Send <b>{a} KDA</b> received on <b>chain {c}</b>.<br>It will be gathered from several chains (~{n}) via cross-chain — <b>takes a few minutes</b>.<br>to <span class="mono">{to}</span>',
+    cf_send_evm: 'Send <b>{a} {s}</b> on {net}<br>to <span class="mono">{to}</span>',
+    sent_rk: 'Sent. requestKey: ', xchain_done: 'Cross-chain completed. pactId: ', sweep_done: 'Sweep completed. requestKey: ', sent_tx: 'Sent. tx: ',
+    err_sweep_bal: 'Not enough balance even adding up all chains (about {b} KDA available leaving gas).',
+    signing: 'Signing and sending… (may take a while)',
+    generating: 'Generating…', importing: 'Importing…',
+    err_paste_seed: 'Paste the seed first.', err_paste_target: 'Paste the account you are looking for.',
+    seed_scanning: 'Looking up accounts and balances… (a few seconds)',
+    seed_finding: 'Searching for the account across indexes (0-40, both methods)…',
+    seed_more: 'Show 5 more accounts (from #{n})', import_this: 'Import this one',
+    seed_notfound: 'Not found in the first {n} indexes with either method. Your wallet uses another derivation — tell me and I will add it.',
+    exp_revealed: 'Revealed. Copy it and close.', wallet_deleted: 'Wallet deleted.',
+    ttl_eye: 'Show / hide', ttl_copy_id: 'copy id',
+    tag_cold: '❄️ Cold', tag_hot: '🔥 Hot',
+    kda_mode_both: 'Both (Kadena + Kadena Inc)', kda_mode_inc: 'Only Kadena (Inc)', kda_mode_comm: 'Only Kadena',
+    kda_mode_hint: 'Which Kadena cards are shown for each wallet. Use it to declutter the dashboard if you do not use one of the networks. (Same as the switches in the Network section.)',
+    min_5: '5 minutes', min_10: '10 minutes', min_30: '30 minutes',
+    sec_intro: 'Reveals the private key of one of your wallets. Requires the vault password. Never share it with anyone.',
+    sec_view_pk: '🔑 View private key',
+    sec_note: 'The vault is encrypted (AES-256-GCM + scrypt) and private keys never leave the main process except here, with your password.',
+    lbl_backup_pass: 'Backup password',
+    br_sim_btn: '🧪 Simulate', br_send_btn: '🚀 Send for real',
+    br_code_lbl: 'Pact code that would run', br_result_lbl: 'Simulation result',
+    create_title: 'Create new wallet', lbl_name: 'Name', lbl_net: 'Network', generate: 'Generate', cancel: 'Cancel',
+    ph_cr_label: 'e.g. Cold wallet', ph_ren_label: 'e.g. My Kadena wallet', ph_imp_label: 'e.g. My ecko wallet', ph_optional: 'optional',
+    seed_warn2: '⚠️ Write this seed on paper and keep it safe. It is the ONLY way to recover this wallet. It will not be shown again.',
+    del_title: 'Delete wallet',
+    del_q: 'Are you sure you want to delete <b>{w}</b>?',
+    del_warn1: '💡 Before deleting, <b>copy its seed or private key</b> (🛡️ Security section → View private key) and keep it safe. It is the ONLY thing that will let you restore this wallet if you change your mind.',
+    del_warn2: '⚠️ <b>Final confirmation:</b> wallet <b>{w}</b> will be removed from the app. If you did not save its seed or private key, <b>you will lose access to its funds forever</b>.',
+    del_have: 'Got it, continue', del_yes: 'Yes, delete permanently',
+    imp_title: 'Import wallet', tab_seed: 'Seed', tab_pk: 'Private key',
+    lbl_seed: 'Seed (12/24 words)',
+    imp_hint: 'A seed holds several accounts (index 0, 1, 2…), like in eckoWallet. Hit "View accounts" to pick the one holding your funds, or import index 0 directly.',
+    btn_seed_scan: "🔍 View this seed's accounts", lbl_seed_target: 'Looking for a specific account? (optional)', ph_seed_target: 'k:… (Kadena) or 0x… (EVM)', btn_seed_find: '🎯 Find that account in the seed',
+    exp_title: 'View private key', exp_intro: 'Enter the vault password to reveal the private key. Do not share it.', reveal: 'Reveal', close_btn: 'Close',
+    send_title: 'Confirm send', lbl_vault_pass: 'Vault password', btn_sign_send: 'Sign and send',
+    ttl_invert: 'Reverse', ttl_theme: 'Light / dark theme'
   }
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
 function t(k) { return (LANG[LNG] && LANG[LNG][k]) || LANG.es[k] || k; }
+// t() con variables: tr('clave', {a: 5}) sustituye TODAS las apariciones de {a} (replace solo cambia la primera).
+function tr(k, vars) { let s = t(k); for (const x in (vars || {})) s = s.split('{' + x + '}').join(String(vars[x])); return s; }
 function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
   const on = document.querySelector('.nav.on'); if (on && $('crumb')) $('crumb').textContent = t('nav_' + on.dataset.nav);
   document.querySelectorAll('.lang-es').forEach(e => { e.hidden = (LNG !== 'es'); });
   document.querySelectorAll('.lang-en').forEach(e => { e.hidden = (LNG !== 'en'); });
@@ -135,7 +308,12 @@ function applyLang() {
   document.documentElement.lang = LNG;
   if (typeof renderNodes === 'function' && CFG) renderNodes();
 }
-function setLang(l) { LNG = l; localStorage.setItem('koberlet-lang', l); applyLang(); if ($('history-panel') && !$('history-panel').hidden) refreshHistory(); }
+function setLang(l) {
+  LNG = l; localStorage.setItem('koberlet-lang', l); applyLang();
+  if ($('history-panel') && !$('history-panel').hidden) refreshHistory();
+  // Re-renderizar las secciones dinámicas (montadas por JS) para que cambien de idioma al vuelo
+  if ($('app') && !$('app').hidden && WALLETS.length) { renderBridge(); renderMercado(); renderEthSwap(); updateNetContext(); loadBalances(); }
+}
 
 // ===== Idea 7: tema claro / oscuro =====
 let THEME = localStorage.getItem('koberlet-theme') || 'light';
@@ -261,14 +439,14 @@ $('btn-check-upd').onclick = async () => {
 };
 $('btn-setup').onclick = async () => {
   const p = $('setup-pass').value, p2 = $('setup-pass2').value;
-  if (p.length < 8) return msg($('setup-msg'), 'Mínimo 8 caracteres.', 'err');
-  if (p !== p2) return msg($('setup-msg'), 'No coinciden.', 'err');
+  if (p.length < 8) return msg($('setup-msg'), t('err_pass_min'), 'err');
+  if (p !== p2) return msg($('setup-msg'), t('err_pass_match'), 'err');
   const { kind, net } = parseNet($('setup-net').value);
-  try { msg($('setup-msg'), 'Creando bóveda…'); const r = await window.api.setup(p, kind, net); $('setup-seed').textContent = r.mnemonic; $('setup-step1').hidden = true; $('setup-step2').hidden = false; }
+  try { msg($('setup-msg'), t('creating_vault')); const r = await window.api.setup(p, kind, net); $('setup-seed').textContent = r.mnemonic; $('setup-step1').hidden = true; $('setup-step2').hidden = false; }
   catch (e) { msg($('setup-msg'), 'Error: ' + e.message, 'err'); }
 };
 $('btn-setup-done').onclick = () => screen('scr-unlock');
-$('btn-unlock').onclick = async () => { try { const r = await window.api.unlock($('unlock-pass').value); enter(r.view); } catch (_) { msg($('unlock-msg'), 'Contraseña incorrecta.', 'err'); } };
+$('btn-unlock').onclick = async () => { try { const r = await window.api.unlock($('unlock-pass').value); enter(r.view); } catch (_) { msg($('unlock-msg'), t('err_wrong_pass'), 'err'); } };
 $('unlock-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-unlock').click(); });
 $('btn-lock').onclick = async () => { await window.api.lock(); location.reload(); };
 document.querySelectorAll('.nav').forEach(a => a.onclick = () => nav(a.dataset.nav));
@@ -312,14 +490,14 @@ function renderBridge() {
   const evm2 = DIR === 'evm2kda';
   $('dir-from').textContent = evm2 ? 'Ethereum' : 'Kadena';
   $('dir-to').textContent = evm2 ? 'Kadena' : 'Ethereum';
-  $('lbl-from').textContent = evm2 ? 'Wallet origen (Ethereum)' : 'Wallet origen (Kadena)';
-  $('lbl-dest').textContent = evm2 ? 'Wallet destino (Kadena)' : 'Wallet destino (Ethereum)';
-  $('lbl-to').textContent = evm2 ? 'Cuenta Kadena destino (k:…)' : 'Dirección EVM destino (0x…)';
+  $('lbl-from').textContent = evm2 ? t('lbl_from_eth') : t('lbl_from_kda');
+  $('lbl-dest').textContent = evm2 ? t('lbl_dest_kda') : t('lbl_dest_eth');
+  $('lbl-to').textContent = evm2 ? t('lbl_to_kda') : t('lbl_to_evm');
   $('br-to').placeholder = evm2 ? 'k:...' : '0x...';
   const fromW = WALLETS.filter(w => evm2 ? w.ethAddress : w.kdaAccount);
   const destW = WALLETS.filter(w => evm2 ? w.kdaAccount : w.ethAddress);
-  $('br-from').innerHTML = fromW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(evm2 ? w.ethAddress : w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet —</option>';
-  $('br-dest').innerHTML = destW.map(w => `<option value="${evm2 ? w.kdaAccount : w.ethAddress}">${esc(w.label)} · ${shortAddr(evm2 ? w.kdaAccount : w.ethAddress)}</option>`).join('') + '<option value="otra">Otra dirección…</option>';
+  $('br-from').innerHTML = fromW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(evm2 ? w.ethAddress : w.kdaAccount)}</option>`).join('') || `<option value="">${t('no_wallet')}</option>`;
+  $('br-dest').innerHTML = destW.map(w => `<option value="${evm2 ? w.kdaAccount : w.ethAddress}">${esc(w.label)} · ${shortAddr(evm2 ? w.kdaAccount : w.ethAddress)}</option>`).join('') + `<option value="otra">${t('other_addr')}</option>`;
   $('br-to').setAttribute('list', evm2 ? 'dl-kda' : 'dl-evm'); // libreta: destino Kadena o EVM según el sentido
   $('br-dest').onchange = () => { $('br-to-wrap').hidden = $('br-dest').value !== 'otra'; };
   $('br-dest').onchange();
@@ -329,40 +507,40 @@ function renderBridge() {
 $('btn-invert').onclick = () => { DIR = DIR === 'evm2kda' ? 'kda2evm' : 'evm2kda'; renderBridge(); msg($('br-msg'), ''); $('br-out').hidden = true; };
 async function loadBridgeTokens(walletId) {
   if (!walletId) { $('br-token').innerHTML = ''; return; }
-  $('br-token').innerHTML = '<option>cargando saldos…</option>'; $('br-tokhint').textContent = '';
+  $('br-token').innerHTML = `<option>${t('loading_tokens')}</option>`; $('br-tokhint').textContent = '';
   const toks = await window.api.bridgeTokens(walletId, DIR);
-  $('br-token').innerHTML = toks.map(t => `<option value="${t.symbol}" data-bal="${t.balance}">${t.symbol} — ${t.balance}</option>`).join('');
-  $('br-token').onchange = () => { const o = $('br-token').selectedOptions[0]; $('br-tokhint').textContent = o ? '(saldo ' + o.dataset.bal + ')' : ''; };
+  $('br-token').innerHTML = toks.map(tk => `<option value="${tk.symbol}" data-bal="${tk.balance}">${tk.symbol} — ${tk.balance}</option>`).join('');
+  $('br-token').onchange = () => { const o = $('br-token').selectedOptions[0]; $('br-tokhint').textContent = o ? tr('tok_balance', { b: o.dataset.bal }) : ''; };
   $('br-token').onchange();
 }
 $('btn-bridge-sim').onclick = async () => {
   const from = $('br-from').value, symbol = $('br-token').value, amt = $('br-amt').value;
   const to = $('br-dest').value === 'otra' ? $('br-to').value.trim() : $('br-dest').value;
-  if (!from) return msg($('br-msg'), 'No hay wallet origen para esa dirección.', 'err');
-  if (!to || !amt) return msg($('br-msg'), 'Elige destino y cantidad.', 'err');
+  if (!from) return msg($('br-msg'), t('br_no_from'), 'err');
+  if (!to || !amt) return msg($('br-msg'), t('br_need'), 'err');
   try {
-    msg($('br-msg'), 'Simulando…'); $('br-out').hidden = true;
+    msg($('br-msg'), t('br_simulating')); $('br-out').hidden = true;
     const r = await window.api.bridgeDryRun(DIR, from, symbol, to, amt);
     $('br-code').textContent = r.code;
     $('br-result').textContent = JSON.stringify(r.result, null, 2);
     $('br-out').hidden = false;
     const st = r.result && r.result.status; const err = (r.result && r.result.error && r.result.error.message) || '';
     let m, kind;
-    if (st === 'success') { window._brToll = (r.toll != null) ? { dir: DIR, key: String(amt) + '|' + symbol + '|' + to, toll: Number(r.toll) } : null; m = '✅ La transacción se arma bien (simulación correcta).' + (r.gas ? ' Gas: ' + esc(String(r.gas)) + '.' : '') + (r.toll ? ` <b>Peaje del puente: ${Number(r.toll).toFixed(2)} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).` : ''); kind = 'ok'; }
-    else if (DIR === 'evm2kda' && r.enoughBalance && r.missingApprove) { m = `✅ La tx se construye bien y tienes saldo (${r.balance} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.`; kind = 'ok'; }
-    else if (DIR === 'evm2kda' && !r.enoughBalance) { m = `⚠️ Saldo insuficiente en Ethereum: tienes ${r.balance}, necesitas ${r.need}.`; kind = 'err'; }
-    else if (/buy gas/i.test(err)) { m = '⚠️ La tx se construye bien, pero esta cuenta KDA no tiene KDA en la chain 2 del fork para el gas. Necesitas algo de KDA ahí.'; kind = 'err'; }
-    else if (/row not found|No value found|Insufficient|balance/i.test(err)) { m = '⚠️ La tx se construye bien, pero no tienes saldo de ese token. Revisa abajo.'; kind = 'err'; }
-    else { m = '⚠️ Simulación con error: ' + esc(err.slice(0, 140)); kind = 'err'; }
+    if (st === 'success') { window._brToll = (r.toll != null) ? { dir: DIR, key: String(amt) + '|' + symbol + '|' + to, toll: Number(r.toll) } : null; m = t('br_sim_ok') + (r.gas ? ' Gas: ' + esc(String(r.gas)) + '.' : '') + (r.toll ? tr('br_toll', { t: Number(r.toll).toFixed(2) }) : ''); kind = 'ok'; }
+    else if (DIR === 'evm2kda' && r.enoughBalance && r.missingApprove) { m = tr('br_sim_approve', { b: r.balance }); kind = 'ok'; }
+    else if (DIR === 'evm2kda' && !r.enoughBalance) { m = tr('br_sim_nobal', { b: r.balance, n: r.need }); kind = 'err'; }
+    else if (/buy gas/i.test(err)) { m = t('br_sim_nogas'); kind = 'err'; }
+    else if (/row not found|No value found|Insufficient|balance/i.test(err)) { m = t('br_sim_notok'); kind = 'err'; }
+    else { m = t('br_sim_err') + esc(err.slice(0, 140)); kind = 'err'; }
     $('br-msg').innerHTML = m; $('br-msg').className = 'msg ' + kind;
   } catch (e) { msg($('br-msg'), 'Error: ' + e.message, 'err'); }
 };
 const STEP_SETS = {
-  evm2kda: { approve: 'Autorizar token (approve)', transfer: 'Enviar al puente (Ethereum)', ethconfirm: 'Confirmar en Ethereum', kadena: 'Recibir en Kadena (chain 2)' },
-  kda2evm: { dispatch: 'Enviar al puente (Kadena, chain 2)', kdaconfirm: 'Confirmar en Kadena', evm: 'Recibir en Ethereum' }
+  evm2kda: { approve: 'step_approve', transfer: 'step_transfer', ethconfirm: 'step_ethconfirm', kadena: 'step_kadena' },
+  kda2evm: { dispatch: 'step_dispatch', kdaconfirm: 'step_kdaconfirm', evm: 'step_evm' }
 };
 const STEP_ICON = { pending: '⚪', run: '⏳', ok: '✅', skip: '⏭️', fail: '❌' };
-function initSteps(dir) { const L = STEP_SETS[dir] || STEP_SETS.evm2kda; $('send-steps').innerHTML = Object.keys(L).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${L[k]}</span> <span class="sd"></span></div>`).join(''); }
+function initSteps(dir) { const L = STEP_SETS[dir] || STEP_SETS.evm2kda; $('send-steps').innerHTML = Object.keys(L).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${t(L[k])}</span> <span class="sd"></span></div>`).join(''); }
 function updateStep(d) {
   const row = $('send-steps').querySelector(`[data-step="${d.step}"]`); if (!row) return;
   row.querySelector('.si').textContent = STEP_ICON[d.status] || (d.status === 'pending' ? '🕒' : '⚪');
@@ -373,23 +551,21 @@ function updateStep(d) {
 $('btn-bridge-send').onclick = () => {
   const from = $('br-from').value, symbol = $('br-token').value, amt = $('br-amt').value;
   const to = $('br-dest').value === 'otra' ? $('br-to').value.trim() : $('br-dest').value;
-  if (!from) return msg($('br-msg'), 'No hay wallet origen para esa dirección.', 'err');
-  if (!to || !amt) return msg($('br-msg'), 'Elige destino y cantidad.', 'err');
+  if (!from) return msg($('br-msg'), t('br_no_from'), 'err');
+  if (!to || !amt) return msg($('br-msg'), t('br_need'), 'err');
   const rutaTxt = DIR === 'evm2kda' ? 'Ethereum → Kadena' : 'Kadena → Ethereum';
-  const avisoTxt = DIR === 'evm2kda'
-    ? '⚠️ Mueve fondos reales por el puente. Hará approve + transferRemote y gastará ETH en gas. Usa importes pequeños.'
-    : '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.';
+  const avisoTxt = DIR === 'evm2kda' ? t('br_warn_e2k') : t('br_warn_k2e');
   const _bt = window._brToll; // solo si la simulación fue de ESTOS mismos parámetros (si no, se muestra sin toll)
-  const tollTxt = (DIR === 'kda2evm' && _bt && _bt.dir === DIR && _bt.key === (String(amt) + '|' + symbol + '|' + to)) ? `<br><b>Peaje del puente: ${Number(_bt.toll).toFixed(2)} KDA</b> (en KDA de la chain 2, aparte del token).` : '';
-  askSend(`<b>ENVÍO REAL por el puente</b> (${rutaTxt})<br>Puentear <b>${esc(amt)} ${esc(symbol)}</b> a <span class="mono">${esc(to)}</span>${tollTxt}<br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
+  const tollTxt = (DIR === 'kda2evm' && _bt && _bt.dir === DIR && _bt.key === (String(amt) + '|' + symbol + '|' + to)) ? tr('br_toll_line', { t: Number(_bt.toll).toFixed(2) }) : '';
+  askSend(tr('br_confirm', { r: rutaTxt, a: esc(amt), s: esc(symbol), to: esc(to) }) + `${tollTxt}<br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
     async (pass) => {
       initSteps(DIR);
       const off = window.api.onBridgeStep(updateStep);
       try {
         const r = await window.api.bridgeSend(DIR, pass, from, symbol, to, amt);
         const okTxt = DIR === 'evm2kda'
-          ? (r.arrived ? '✅ Puente completado — recibido en Kadena.' : '⏳ Enviado y confirmado en Ethereum. Esperando al relayer para que llegue a Kadena.')
-          : (r.arrived ? '✅ Puente completado — recibido en Ethereum.' : '⏳ Enviado y confirmado en Kadena. Esperando al relayer hacia Ethereum.');
+          ? (r.arrived ? t('br_done_kda') : t('br_pend_kda'))
+          : (r.arrived ? t('br_done_eth') : t('br_pend_eth'));
         return okTxt + ' tx: ' + (r.txHash || '').slice(0, 14) + '…';
       }
       finally { off(); }
@@ -409,9 +585,7 @@ function syncKdaControls() {
 function updateNetContext() {
   const anyEvmShown = WALLETS.some(w => w.kind === 'evm' && SHOWN.includes(w.id));
   if ($('kda-ctx')) $('kda-ctx').textContent = '';
-  if ($('evm-ctx')) $('evm-ctx').textContent = anyEvmShown
-    ? 'Marca las redes EVM que quieras ver (la misma dirección 0x vale en todas).'
-    : 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.';
+  if ($('evm-ctx')) $('evm-ctx').textContent = anyEvmShown ? t('evm_ctx_on') : t('evm_ctx_off');
   const nets = $('evm-nets');
   if (nets) nets.style.opacity = anyEvmShown ? 1 : .55;
 }
@@ -452,11 +626,11 @@ function renderNodes() {
 let MKDIR = 'compra'; // 'compra' = entregas kb-USDC, recibes KDA · 'venta' = al revés
 function renderMercado() {
   const kdaW = WALLETS.filter(w => w.kind === 'kda');
-  $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || '<option value="">— sin wallet Kadena —</option>';
+  $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('no_wallet_kda')}</option>`;
   const compra = MKDIR === 'compra';
   $('mk-from').textContent = compra ? 'kb-USDC' : 'KDA';
   $('mk-to').textContent = compra ? 'KDA' : 'kb-USDC';
-  $('mk-lbl-amt').textContent = 'Cantidad a entregar (' + (compra ? 'kb-USDC' : 'KDA') + ')';
+  $('mk-lbl-amt').textContent = t('mk_amount') + ' (' + (compra ? 'kb-USDC' : 'KDA') + ')';
   mkQuote();
 }
 $('mk-invert').onclick = () => { MKDIR = MKDIR === 'compra' ? 'venta' : 'compra'; renderMercado(); };
@@ -466,30 +640,30 @@ async function mkQuote() {
   const amt = $('mk-amt').value;
   if (!amt || Number(amt) <= 0) { $('mk-quote').textContent = ''; return; }
   try {
-    msg($('mk-quote'), 'Calculando precio del pool…');
+    msg($('mk-quote'), t('mk_quoting'));
     const q = await window.api.swapQuote(MKDIR, amt);
-    $('mk-quote').innerHTML = `Recibes ≈ <b>${q.esperada.toFixed(6)} ${q.tokenOut}</b> · mínimo ${q.minimo.toFixed(6)} (slippage ${q.slippagePct}%)<br>Precio ${q.precio.toFixed(6)} kb-USDC/KDA · impacto ${q.impacto.toFixed(2)}%`;
+    $('mk-quote').innerHTML = tr('mk_quote_html', { out: q.esperada.toFixed(6), tok: q.tokenOut, min: q.minimo.toFixed(6), slip: q.slippagePct, p: q.precio.toFixed(6), imp: q.impacto.toFixed(2) });
     $('mk-quote').className = 'msg';
   } catch (e) { msg($('mk-quote'), e.message, 'err'); }
 }
 $('mk-swap').onclick = () => {
   const wid = $('mk-wallet').value, amt = $('mk-amt').value;
-  if (!wid) return msg($('mk-msg'), 'No hay wallet Kadena.', 'err');
-  if (!amt || Number(amt) <= 0) return msg($('mk-msg'), 'Indica la cantidad.', 'err');
+  if (!wid) return msg($('mk-msg'), t('err_no_kda_wallet'), 'err');
+  if (!amt || Number(amt) <= 0) return msg($('mk-msg'), t('err_need_amt'), 'err');
   const compra = MKDIR === 'compra';
-  askSend(`Cambiar <b>${amt} ${compra ? 'kb-USDC' : 'KDA'}</b> → <b>${compra ? 'KDA' : 'kb-USDC'}</b><br><span class="muted">Pool del fork (kaddex.exchange, chain 2), no custodial. Precio fresco al firmar.</span>`,
-    async (pass) => { const r = await window.api.swapExec(pass, wid, MKDIR, amt); return 'Swap enviado. requestKey: ' + r.requestKey; });
+  askSend(tr('mk_confirm', { a: esc(amt), f: compra ? 'kb-USDC' : 'KDA', t: compra ? 'KDA' : 'kb-USDC' }),
+    async (pass) => { const r = await window.api.swapExec(pass, wid, MKDIR, amt); return t('mk_sent') + r.requestKey; });
 };
 
 // SWAP ETH (USDC <-> ETH en Uniswap, Ethereum mainnet) — para reponer ETH de gas con USDC
 let ESDIR = 'usdc2eth';
 function renderEthSwap() {
   const evmW = WALLETS.filter(w => w.ethAddress);
-  $('es-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.ethAddress)}</option>`).join('') || '<option value="">— sin wallet Ethereum —</option>';
+  $('es-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.ethAddress)}</option>`).join('') || `<option value="">${t('no_wallet_eth')}</option>`;
   const u2e = ESDIR === 'usdc2eth';
   $('es-from').textContent = u2e ? 'USDC' : 'ETH';
   $('es-to').textContent = u2e ? 'ETH' : 'USDC';
-  $('es-lbl-amt').textContent = 'Cantidad a entregar (' + (u2e ? 'USDC' : 'ETH') + ')';
+  $('es-lbl-amt').textContent = t('mk_amount') + ' (' + (u2e ? 'USDC' : 'ETH') + ')';
   esQuote();
 }
 $('es-invert').onclick = () => { ESDIR = ESDIR === 'usdc2eth' ? 'eth2usdc' : 'usdc2eth'; renderEthSwap(); };
@@ -500,24 +674,24 @@ async function esQuote() {
   const amt = $('es-amt').value;
   if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; _esQuote = null; return; }
   try {
-    msg($('es-quote'), 'Consultando Uniswap…');
+    msg($('es-quote'), t('es_quoting'));
     const q = await window.api.ethswapQuote(ESDIR, amt);
     _esQuote = { dir: ESDIR, amt: String(amt), min: q.min };
     const outSym = ESDIR === 'usdc2eth' ? 'ETH' : 'USDC';
-    $('es-quote').innerHTML = `Recibes ≈ <b>${q.out.toFixed(6)} ${outSym}</b> · mínimo ${q.min.toFixed(6)} (slippage ${q.slipPct}%)` +
-      (q.gasEth != null ? `<br>⛽ Gas estimado del swap: ~${q.gasEth.toFixed(5)} ETH — se paga en ETH: no esperes a quedarte a cero.` : '');
+    $('es-quote').innerHTML = tr('es_quote_html', { out: q.out.toFixed(6), sym: outSym, min: q.min.toFixed(6), slip: q.slipPct }) +
+      (q.gasEth != null ? tr('es_gas_note', { g: q.gasEth.toFixed(5) }) : '');
     $('es-quote').className = 'msg';
   } catch (e) { _esQuote = null; msg($('es-quote'), e.message, 'err'); }
 }
 $('es-swap').onclick = () => {
   const wid = $('es-wallet').value, amt = $('es-amt').value;
-  if (!wid) return msg($('es-msg'), 'No hay wallet Ethereum.', 'err');
-  if (!amt || Number(amt) <= 0) return msg($('es-msg'), 'Indica la cantidad.', 'err');
-  if (!_esQuote || _esQuote.dir !== ESDIR || _esQuote.amt !== String(amt)) return msg($('es-msg'), 'Espera a la cotización (o vuelve a escribir la cantidad) antes de firmar.', 'err');
+  if (!wid) return msg($('es-msg'), t('err_no_eth_wallet'), 'err');
+  if (!amt || Number(amt) <= 0) return msg($('es-msg'), t('err_need_amt'), 'err');
+  if (!_esQuote || _esQuote.dir !== ESDIR || _esQuote.amt !== String(amt)) return msg($('es-msg'), t('es_wait_quote'), 'err');
   const minOut = _esQuote.min;
   const u2e = ESDIR === 'usdc2eth';
-  askSend(`Cambiar <b>${esc(amt)} ${u2e ? 'USDC' : 'ETH'}</b> → <b>${u2e ? 'ETH' : 'USDC'}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; recibes como mínimo <b>${esc(String(minOut))} ${u2e ? 'ETH' : 'USDC'}</b> (lo que viste al cotizar). Si el precio real cae por debajo, la operación se revierte. El gas se paga en ETH.</span>`,
-    async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt, minOut); return (r.ok ? '✅ Swap confirmado.' : '⚠️ Swap enviado, revisa la tx.') + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
+  askSend(tr('es_confirm', { a: esc(amt), f: u2e ? 'USDC' : 'ETH', t: u2e ? 'ETH' : 'USDC', min: esc(String(minOut)) }),
+    async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt, minOut); return (r.ok ? t('es_ok') : t('es_check')) + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
 };
 
 async function applyView(v) {
@@ -528,16 +702,19 @@ async function applyView(v) {
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
-    <label class="wshow" title="Ver en el dashboard"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
-    <div class="wmeta"><div class="wl">${esc(w.label)} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ' · <span class="grn">en dashboard</span>' : ''}${wNote(w.id)}</div></div>
-    <div class="wact"><button class="copy" data-ren="${w.id}" title="Renombrar">✏️</button><button class="copy" data-del="${w.id}" title="Borrar">🗑</button></div></div>`).join('');
+    <label class="wshow" title="${t('ttl_show_dash')}"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
+    <div class="wmeta"><div class="wl">${esc(w.label)} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ` · <span class="grn">${t('on_dash')}</span>` : ''}${wNote(w.id)}</div></div>
+    <div class="wact"><button class="copy" data-ren="${w.id}" title="${t('ttl_rename')}">✏️</button><button class="copy" data-del="${w.id}" title="${t('ttl_del')}">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
   $('wallet-list').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const w = WALLETS.find(x => x.id === b.dataset.ren); openRename(b.dataset.ren, w ? w.label : ''); });
   // Borrar con DOBLE confirmación + consejo de copiar la semilla antes (modal-del)
   $('wallet-list').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
     const w = WALLETS.find(x => x.id === b.dataset.del);
     window._delId = b.dataset.del;
-    $('del-name').textContent = w ? w.label : 'esta wallet'; $('del-name2').textContent = w ? w.label : 'esta wallet';
+    const wname = esc(w ? w.label : t('this_wallet'));
+    $('del-q').innerHTML = tr('del_q', { w: wname });
+    $('del-warn1').innerHTML = t('del_warn1');
+    $('del-warn2').innerHTML = tr('del_warn2', { w: wname });
     $('del-step1').hidden = false; $('del-step2').hidden = true; msg($('del-msg'), '');
     $('modal-del').hidden = false;
   });
@@ -552,36 +729,36 @@ function cardBlock(bl, qr) {
     const toks = bl.tokens || [];
     const kdaUsd = (bl.usd || 0) - toks.reduce((s, t) => s + t.usd, 0);
     rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
-    const per = Object.keys(bl.perChain || {}).length ? 'Repartido: ' + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : 'Sin saldo aún.';
+    const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : t('no_bal_yet');
     extra = `<div class="muted xs">${per}</div>`;
-    sendForm = `<div class="row2"><div><label>Chain origen</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
-      <div><label>Chain destino</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
-      <label>Destino (k:…)</label><input class="k-to" list="dl-kda" placeholder="k:... o elige de la libreta"/>
-      <label>Cantidad</label><input class="k-amt" type="number" step="0.0001"/>
-      <div class="muted xs k-xhint" hidden>↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).</div>
-      <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>Enviar</button>`;
+    sendForm = `<div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
+      <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
+      <label>${t('lbl_dest_k')}</label><input class="k-to" list="dl-kda" placeholder="${t('ph_kda_dest')}"/>
+      <label>${t('lbl_amount')}</label><input class="k-amt" type="number" step="0.0001"/>
+      <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
+      <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>${t('send')}</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const opts = `<option value="${bl.symbol}">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-    sendForm = `<label>Activo</label><select class="e-asset">${opts}</select>
-      <label>Destino (0x…)</label><input class="e-to" list="dl-evm" placeholder="0x... o elige de la libreta"/>
-      <label>Cantidad</label><input class="e-amt" type="number" step="0.0001"/>
-      <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">Enviar</button>`;
+    sendForm = `<label>${t('lbl_asset')}</label><select class="e-asset">${opts}</select>
+      <label>${t('lbl_dest_0x')}</label><input class="e-to" list="dl-evm" placeholder="${t('ph_evm_dest')}"/>
+      <label>${t('lbl_amount')}</label><input class="e-amt" type="number" step="0.0001"/>
+      <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ' <small class="err">sin conexión</small>' : ''}<span class="nc-sub">${bl.knet === 'devnet' ? (bl.native || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' KDA' : '$' + (bl.usd || 0).toFixed(2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err">${t('offline')}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? (bl.native || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' KDA' : '$' + (bl.usd || 0).toFixed(2)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
     </div>
     <div class="nc-actions">
-      <button class="act-btn" data-panel="recv">📥 Recibir</button>
-      <button class="act-btn" data-panel="send">📤 Enviar</button>
-      ${bl.kind === 'kda' && bl.knet === 'devnet' ? `<button class="act-btn k-faucet" data-wid="${bl.walletId}">🚰 +1.000 KDA</button>` : ''}
+      <button class="act-btn" data-panel="recv">${t('btn_recv')}</button>
+      <button class="act-btn" data-panel="send">${t('btn_send')}</button>
+      ${bl.kind === 'kda' && bl.knet === 'devnet' ? `<button class="act-btn k-faucet" data-wid="${bl.walletId}">${t('btn_faucet')}</button>` : ''}
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
       <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : t('recv_note_evm').replace('{net}', esc(bl.name))}</div>
-      <div class="addr"><span class="mono">${esc(bl.address)}</span><button class="copy" data-ct="${esc(bl.address)}">copiar</button></div>
+      <div class="addr"><span class="mono">${esc(bl.address)}</span><button class="copy" data-ct="${esc(bl.address)}">${t('copy')}</button></div>
       <img class="qr" src="${qr}"/>
     </div>
     <div class="nc-panel" data-pan="send" hidden>${sendForm}</div>
@@ -596,7 +773,7 @@ function donut(segs, total) {
 }
 
 async function loadBalances() {
-  msg($('wallet-msg'), 'Cargando saldos…');
+  msg($('wallet-msg'), t('loading_balances'));
   try {
     PRICES = await window.api.prices().catch(() => PRICES); // idea 5/6: variación 24h + fiat
     const b = await window.api.balances();
@@ -604,7 +781,7 @@ async function loadBalances() {
     const qrs = {};
     for (const bl of blocks) { if (!(bl.address in qrs)) qrs[bl.address] = await window.api.qr(bl.address); }
     const aviso = b.modoPruebas ? '<p class="testmode">' + t('test_mode') + '</p>' : '';
-    $('net-cards').innerHTML = aviso + (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || '<p class="muted">No hay wallets visibles. Marca alguna en la sección Wallets.</p>');
+    $('net-cards').innerHTML = aviso + (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || `<p class="muted">${t('no_wallets_visible')}</p>`);
     $('total-usd').textContent = '$' + (b.total || 0).toFixed(2);
     const segMap = {};
     blocks.forEach(bl => { (segMap[bl.name] = segMap[bl.name] || { name: bl.name, color: bl.color, usd: 0 }).usd += bl.usd; });
@@ -660,7 +837,7 @@ function wireCards() {
     const c = btn.closest('.netcard');
     const chain = Number(c.querySelector('.k-chain').value), tochain = Number(c.querySelector('.k-tochain').value);
     const to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
-    if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
+    if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
     const wid = btn.dataset.wid, knet = btn.dataset.knet;
     const num = Number(amt);
     let per = {}; try { per = JSON.parse(btn.dataset.perchain || '{}'); } catch (_) {}
@@ -668,23 +845,23 @@ function wireCards() {
     const enChainOrigen = per[chain] || 0;
     if (chain === tochain && num <= enChainOrigen - RES) {
       // Cabe en la propia chain: envío normal
-      askSend(`Enviar <b>${esc(amt)} KDA</b> (chain ${esc(chain)})<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return 'Enviado. requestKey: ' + r.requestKey; }, to);
+      askSend(tr('cf_send_kda', { a: esc(amt), c: esc(chain), to: esc(to) }), async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return t('sent_rk') + r.requestKey; }, to);
     } else if (chain !== tochain && num <= enChainOrigen - RES) {
       // Cross-chain simple: la chain origen tiene bastante
-      askSend(`Enviar <b>${esc(amt)} KDA</b> de <b>chain ${esc(chain)} → ${esc(tochain)}</b> (cross-chain)<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return 'Cross-chain completado. pactId: ' + r.pactId; }, to);
+      askSend(tr('cf_send_kda_x', { a: esc(amt), c1: esc(chain), c2: esc(tochain), to: esc(to) }), async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return t('xchain_done') + r.pactId; }, to);
     } else {
       // No cabe en una sola chain → BARRIDO: juntar de varias hacia la chain destino
       const disponible = Object.values(per).reduce((s, x) => s + Math.max(0, x - RES), 0);
-      if (num > disponible) return msg($('wallet-msg'), `No hay saldo suficiente ni sumando todas las chains (disponible ~${disponible.toFixed(2)} KDA dejando gas).`, 'err');
+      if (num > disponible) return msg($('wallet-msg'), tr('err_sweep_bal', { b: disponible.toFixed(2) }), 'err');
       const nchains = Object.keys(per).filter(k => (per[k] || 0) > RES).length;
-      askSend(`Enviar <b>${esc(amt)} KDA</b> recibidos en la <b>chain ${esc(tochain)}</b>.<br>Se juntará de varias chains (~${nchains}) mediante cross-chain — <b>tarda unos minutos</b>.<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendKdaSmart(pass, wid, knet, tochain, to, amt); return 'Barrido completado. requestKey: ' + r.requestKey; }, to);
+      askSend(tr('cf_send_kda_sweep', { a: esc(amt), c: esc(tochain), n: nchains, to: esc(to) }), async (pass) => { const r = await window.api.sendKdaSmart(pass, wid, knet, tochain, to, amt); return t('sweep_done') + r.requestKey; }, to);
     }
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
-    if (!to || !amt) return msg($('wallet-msg'), 'Rellena destino y cantidad.', 'err');
+    if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
     const wid = btn.dataset.wid;
-    askSend(`Enviar <b>${esc(amt)} ${esc(label)}</b> en ${esc(btn.dataset.netname)}<br>a <span class="mono">${esc(to)}</span>`, async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return 'Enviado. tx: ' + r.hash; }, to);
+    askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to);
   });
 }
 // confirmación de envío con contraseña
@@ -699,7 +876,7 @@ function askSend(summary, fn, recipient) {
   } else { chk.hidden = true; btn.disabled = false; ok.onchange = null; }
   $('modal-send').hidden = false;
 }
-$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), 'Firmando y enviando… (puede tardar)'); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { msg($('send-msg'), e.message, 'err'); } };
+$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), t('signing')); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { msg($('send-msg'), e.message, 'err'); } };
 $('send-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-confirm-send').click(); });
 $('btn-refresh').onclick = loadBalances;
 
@@ -718,7 +895,7 @@ async function refreshHistory() {
     // on-chain: campos estructurados (amt/chain se fuerzan a número); locales EVM/puente usan title/sub
     const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${esc(Number(h.amt))} ${esc(h.tok)}` : esc(h.title);
     const sub = h.dir ? `${esc(h.wlabel)} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${esc(h.other)} · chain ${esc(Number(h.chain))}` : esc(h.sub);
-    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${esc(fecha)}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${esc(h.id)}" title="copiar id">⧉</button>` : ''}</div>`;
+    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${esc(fecha)}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${esc(h.id)}" title="${t('ttl_copy_id')}">⧉</button>` : ''}</div>`;
   }).join('') : `<div class="muted xs" style="padding:10px 2px">${t('hist_empty')}</div>`;
 }
 function fillHistWallet() {
@@ -733,7 +910,7 @@ $('hist-close').onclick = () => { $('history-panel').hidden = true; };
 
 // CREAR
 $('btn-create').onclick = () => { $('create-step1').hidden = false; $('create-step2').hidden = true; $('cr-label').value = ''; msg($('cr-msg'), ''); $('modal-create').hidden = false; };
-$('btn-do-create').onclick = async () => { try { msg($('cr-msg'), 'Generando…'); const { kind, net } = parseNet($('cr-net').value); const r = await window.api.createWallet($('cr-label').value.trim(), kind, net); window._pv = r.view; $('cr-seed').textContent = r.mnemonic; $('create-step1').hidden = true; $('create-step2').hidden = false; msg($('cr-msg'), ''); } catch (e) { msg($('cr-msg'), 'Error: ' + e.message, 'err'); } };
+$('btn-do-create').onclick = async () => { try { msg($('cr-msg'), t('generating')); const { kind, net } = parseNet($('cr-net').value); const r = await window.api.createWallet($('cr-label').value.trim(), kind, net); window._pv = r.view; $('cr-seed').textContent = r.mnemonic; $('create-step1').hidden = true; $('create-step2').hidden = false; msg($('cr-msg'), ''); } catch (e) { msg($('cr-msg'), 'Error: ' + e.message, 'err'); } };
 $('btn-create-done').onclick = () => { $('modal-create').hidden = true; $('cr-seed').textContent = ''; applyView(window._pv); nav('dashboard'); };
 
 // RENOMBRAR
@@ -777,14 +954,14 @@ function wireSeedRows() {
 }
 async function scanSeed(reset) {
   const mn = $('imp-mn').value.trim(); const { kind, net } = parseNet($('imp-net').value);
-  if (!mn) return msg($('imp-msg'), 'Pega la semilla primero.', 'err');
+  if (!mn) return msg($('imp-msg'), t('err_paste_seed'), 'err');
   if (reset) { seedOffset = 0; seedRowsHtml = ''; }
-  $('seed-accts').innerHTML = seedRowsHtml + '<div class="muted xs">Buscando cuentas y saldos… (unos segundos)</div>';
+  $('seed-accts').innerHTML = seedRowsHtml + `<div class="muted xs">${t('seed_scanning')}</div>`;
   try {
     const accts = await window.api.seedAccounts(mn, kind, net, seedOffset, 5);
     seedOffset += 5;
-    seedRowsHtml += accts.map(a => { const tag = METHOD_TAG[a.method] ? ` <span class="mtag">${METHOD_TAG[a.method]}</span>` : ''; return `<div class="seedrow"><div class="sr-acc"><b>#${a.index}</b>${tag} <span class="mono">${a.id.slice(0, 12)}…${a.id.slice(-6)}</span></div><div class="sr-bal ${a.amount > 0 ? 'has' : ''}">${a.amount.toFixed(4)} ${a.unit}</div><button class="tiny seed-imp" data-idx="${a.index}" data-method="${a.method}">Importar</button></div>`; }).join('');
-    $('seed-accts').innerHTML = seedRowsHtml + `<button id="btn-seed-more" class="ghost tiny">Ver 5 cuentas más (desde #${seedOffset})</button>`;
+    seedRowsHtml += accts.map(a => { const tag = METHOD_TAG[a.method] ? ` <span class="mtag">${METHOD_TAG[a.method]}</span>` : ''; return `<div class="seedrow"><div class="sr-acc"><b>#${a.index}</b>${tag} <span class="mono">${a.id.slice(0, 12)}…${a.id.slice(-6)}</span></div><div class="sr-bal ${a.amount > 0 ? 'has' : ''}">${a.amount.toFixed(4)} ${a.unit}</div><button class="tiny seed-imp" data-idx="${a.index}" data-method="${a.method}">${t('import')}</button></div>`; }).join('');
+    $('seed-accts').innerHTML = seedRowsHtml + `<button id="btn-seed-more" class="ghost tiny">${tr('seed_more', { n: seedOffset })}</button>`;
     wireSeedRows();
   } catch (e) { $('seed-accts').innerHTML = seedRowsHtml; msg($('imp-msg'), 'Error: ' + e.message, 'err'); }
 }
@@ -792,30 +969,30 @@ $('btn-seed-scan').onclick = () => scanSeed(true);
 // Buscar una cuenta concreta dentro de la semilla (encuentra método+índice exactos)
 $('btn-seed-find').onclick = async () => {
   const mn = $('imp-mn').value.trim(); const { kind, net } = parseNet($('imp-net').value); const target = $('imp-target').value.trim();
-  if (!mn) return msg($('imp-msg'), 'Pega la semilla primero.', 'err');
-  if (!target) return msg($('imp-msg'), 'Pega la cuenta que buscas.', 'err');
-  $('seed-accts').innerHTML = '<div class="muted xs">Buscando la cuenta en los índices (0-40, ambos métodos)…</div>';
+  if (!mn) return msg($('imp-msg'), t('err_paste_seed'), 'err');
+  if (!target) return msg($('imp-msg'), t('err_paste_target'), 'err');
+  $('seed-accts').innerHTML = `<div class="muted xs">${t('seed_finding')}</div>`;
   try {
     const r = await window.api.seedFind(mn, kind, net, target, 40);
     if (r.found) {
-      seedRowsHtml = `<div class="seedrow"><div class="sr-acc">✅ <b>${METHOD_TAG[r.method] || 'EVM'} · #${r.index}</b> <span class="mono">${r.id.slice(0, 14)}…${r.id.slice(-6)}</span></div><button class="tiny seed-imp" data-idx="${r.index}" data-method="${r.method}">Importar esta</button></div>`;
+      seedRowsHtml = `<div class="seedrow"><div class="sr-acc">✅ <b>${METHOD_TAG[r.method] || 'EVM'} · #${r.index}</b> <span class="mono">${r.id.slice(0, 14)}…${r.id.slice(-6)}</span></div><button class="tiny seed-imp" data-idx="${r.index}" data-method="${r.method}">${t('import_this')}</button></div>`;
       $('seed-accts').innerHTML = seedRowsHtml; wireSeedRows();
-    } else { $('seed-accts').innerHTML = `<div class="muted xs">No aparece en los primeros ${r.scanned} índices con ninguno de los dos métodos. Tu wallet usa otra derivación — dímelo y la añado.</div>`; }
+    } else { $('seed-accts').innerHTML = `<div class="muted xs">${tr('seed_notfound', { n: r.scanned })}</div>`; }
   } catch (e) { $('seed-accts').innerHTML = ''; msg($('imp-msg'), 'Error: ' + e.message, 'err'); }
 };
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); $('tab-mn').hidden = t.dataset.tab !== 'mn'; $('tab-pk').hidden = t.dataset.tab !== 'pk'; });
-$('btn-do-import').onclick = async () => { const label = $('imp-label').value.trim(); const { kind, net } = parseNet($('imp-net').value); const mnMode = document.querySelector('.tab.on').dataset.tab === 'mn'; try { msg($('imp-msg'), 'Importando…'); const v = mnMode ? await window.api.importMnemonic(label, $('imp-mn').value, kind, net) : await window.api.importPrivkey(label, kind, net, $('imp-pk').value); $('modal-import').hidden = true; $('imp-mn').value = ''; $('imp-pk').value = ''; $('imp-label').value = ''; applyView(v); nav('dashboard'); } catch (e) { msg($('imp-msg'), 'Error: ' + e.message, 'err'); } };
+$('btn-do-import').onclick = async () => { const label = $('imp-label').value.trim(); const { kind, net } = parseNet($('imp-net').value); const mnMode = document.querySelector('.tab.on').dataset.tab === 'mn'; try { msg($('imp-msg'), t('importing')); const v = mnMode ? await window.api.importMnemonic(label, $('imp-mn').value, kind, net) : await window.api.importPrivkey(label, kind, net, $('imp-pk').value); $('modal-import').hidden = true; $('imp-mn').value = ''; $('imp-pk').value = ''; $('imp-label').value = ''; applyView(v); nav('dashboard'); } catch (e) { msg($('imp-msg'), 'Error: ' + e.message, 'err'); } };
 
 // EXPORTAR
 let expChain = null, expWid = null;
 function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : 'EVM'; $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
 $('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : 'eth'); };
-$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), 'Revelada. Cópiala y cierra.', 'ok'); } catch (e) { msg($('exp-msg'), e.message, 'err'); } };
+$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), e.message, 'err'); } };
 
 // borrar wallet: paso 1 (consejo semilla) → paso 2 (última confirmación) → borrar
 $('btn-del-next').onclick = () => { $('del-step1').hidden = true; $('del-step2').hidden = false; };
 $('btn-del-do').onclick = async () => {
-  try { applyView(await window.api.walletRemove(window._delId)); $('modal-del').hidden = true; msg($('wallet-msg'), 'Wallet borrada.', 'ok'); }
+  try { applyView(await window.api.walletRemove(window._delId)); $('modal-del').hidden = true; msg($('wallet-msg'), t('wallet_deleted'), 'ok'); }
   catch (e) { msg($('del-msg'), e.message, 'err'); }
 };
 
@@ -830,7 +1007,7 @@ function initEyes() {
   document.querySelectorAll('input[type="password"]').forEach(inp => {
     let wrap = inp.closest('.auth-input');
     if (!wrap) { wrap = document.createElement('span'); wrap.className = 'pwdwrap'; inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp); }
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'eye'; b.title = 'Ver / ocultar'; b.innerHTML = EYE;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'eye'; b.title = t('ttl_eye'); b.innerHTML = EYE;
     b.onclick = () => { const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.innerHTML = show ? EYE_OFF : EYE; inp.focus(); };
     wrap.appendChild(b);
   });
@@ -841,7 +1018,7 @@ initEyes();
 function toast(text, ms) { const el = $('toast'); if (!el) return; el.textContent = text; el.hidden = false; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 300); }, ms || 4500); }
 
 // ===== Idea 15: etiqueta + nota por wallet =====
-function wTagBadge(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; if (m.tag === 'fria') return '<span class="wtag cold">❄️ Fría</span>'; if (m.tag === 'caliente') return '<span class="wtag hot">🔥 Caliente</span>'; return ''; }
+function wTagBadge(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; if (m.tag === 'fria') return `<span class="wtag cold">${t('tag_cold')}</span>`; if (m.tag === 'caliente') return `<span class="wtag hot">${t('tag_hot')}</span>`; return ''; }
 function wNote(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; return m.note ? ` · <span class="wnote">📝 ${esc(m.note)}</span>` : ''; }
 
 // ===== Idea 12: copia de seguridad / restaurar bóveda =====
