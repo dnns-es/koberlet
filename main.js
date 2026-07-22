@@ -30,8 +30,8 @@ const DEFAULT_CONFIG = {
   // Redes Kadena: la OFICIAL (donde están los fondos reales de la mayoría) y el FORK comunitario. Se activan como las EVM.
   kda: {
     networks: [
-      { key: 'mainnet', name: 'Kadena', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: true, fork: false },
-      { key: 'fork', name: 'Kadena Fork', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true },
+      { key: 'mainnet', name: 'Kadena (Inc)', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: false, fork: false },
+      { key: 'fork', name: 'Kadena', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true },
       { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
@@ -99,6 +99,15 @@ const loadConfig = () => {
     chains: (c.kda && c.kda.chains) || DEFAULT_CONFIG.kda.chains,
     networks: DEFAULT_CONFIG.kda.networks.map(n => { const s = savedNets ? savedNets.find(x => x.key === n.key) : null; return { ...n, enabled: s ? !!s.enabled : n.enabled }; })
   };
+  // Simplificación de nombres (2026-07): la Community pasa a llamarse simplemente "Kadena" (es la red real
+  // de la comunidad y donde vive todo el ecosistema) y la rama de Kadena Inc queda apagada por defecto,
+  // disponible en Red por si hiciera falta. Se aplica UNA sola vez sobre configuraciones ya existentes.
+  if (!c.kdaSimple) {
+    const _inc = c.kda.networks.find(n => n.key === 'mainnet');
+    if (_inc) _inc.enabled = false;
+    c.kdaSimple = true;
+    try { saveConfig(c); } catch (_) { /* si aún no se puede escribir, se persistirá al siguiente guardado */ }
+  }
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
   // Auditoría Alex #4: las redes EVM se reconstruyen desde DEFAULT (routers, tokens, símbolos fijos del código);
   // del usuario solo se conserva `enabled` y un `rpc` que sea https válido. Así el renderer no puede repuntar
@@ -542,11 +551,11 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     const before = await kb().catch(() => 0);
     const res = await bridge.sendEvm2Kda({ rpc: b.evm.rpc, secretHex: w.eth.secret, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
     // Esperar la llegada a Kadena (relayer)
-    onStep({ step: 'kadena', status: 'run', detail: 'Esperando al relayer del fork…' });
+    onStep({ step: 'kadena', status: 'run', detail: 'Esperando al relayer del puente…' });
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     let arrived = false;
     for (let i = 0; i < 24 && !arrived; i++) { await sleep(15000); const now = await kb().catch(() => before); if (now > before + 1e-9) { onStep({ step: 'kadena', status: 'ok', detail: 'recibido · saldo ' + now }); arrived = true; } }
-    if (!arrived) onStep({ step: 'kadena', status: 'pending', detail: 'aún no entregado; el relayer del fork puede tardar (fondos no perdidos)' });
+    if (!arrived) onStep({ step: 'kadena', status: 'pending', detail: 'aún no entregado; el relayer del puente puede tardar (fondos no perdidos)' });
     logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Ethereum → Kadena${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.txHash });
     return { ...res, arrived };
   }

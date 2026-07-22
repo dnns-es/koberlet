@@ -25,3 +25,4 @@ claves/
 .env
 .env.*
 .keys/
+_backups/
