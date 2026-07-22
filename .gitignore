@@ -1,6 +1,9 @@
 # Dependencias
 node_modules/
 
+# macOS
+.DS_Store
+
 # Builds y paquetes
 portable-build/
 build-app/

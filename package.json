@@ -8,7 +8,10 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js"
+    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js",
+    "build:mac": "./build-mac.sh",
+    "dmg:mac": "./package-dmg.sh",
+    "dist:mac": "./build-mac.sh && ./package-dmg.sh"
   },
   "dependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
