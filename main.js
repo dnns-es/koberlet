@@ -10,7 +10,11 @@ const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
+const ktime = require('./lib/kdatime');
 const QRCode = require('qrcode');
+// Ledger: carga PEREZOSA (node-hid es un módulo nativo; si fallara en algún equipo, la app debe arrancar igual).
+let _ledger = null;
+function ledger() { if (!_ledger) _ledger = require('./lib/ledger'); return _ledger; }
 
 // Modo PORTABLE: la bóveda va JUNTO al ejecutable (M.2/USB), no en AppData.
 const _exeDir = path.dirname(app.getPath('exe'));
@@ -200,7 +204,7 @@ function view() {
   if (!unlocked) return null;
   const shown = new Set(shownIds());
   return {
-    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : 'Kadena', shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null })),
+    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : 'Kadena', shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null, ledger: !!x.ledger })),
     shown: shownIds().slice()
   };
 }
@@ -368,6 +372,25 @@ ipcMain.handle('seed:accounts', async (_e, { mnemonic, kind, net, start, count }
     return { index: i, method: m, id: k.account, amount, unit: 'KDA' };
   }));
 });
+// ---- Ledger: leer cuenta del aparato e importarla como wallet (sin clave en la bóveda; firma el aparato) ----
+ipcMain.handle('ledger:peek', async (_e, { kind, index, verify }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const acc = await ledger().getAccount(kind === 'evm' ? 'evm' : 'kda', Math.max(0, index | 0), !!verify);
+  return { account: acc.account || acc.address, index: acc.index };
+});
+ipcMain.handle('ledger:import', async (_e, { label, kind, net, index }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const k = kind === 'evm' ? 'evm' : 'kda';
+  const acc = await ledger().getAccount(k, Math.max(0, index | 0), false);
+  const w = { id: crypto.randomUUID(), label: label || ('Ledger #' + (index | 0)), kind: k, ledger: true, hwIndex: Math.max(0, index | 0), kda: null, eth: null };
+  if (k === 'kda') w.kda = { account: acc.account, public: acc.public }; // SIN secret: la privada vive en el aparato
+  else { w.eth = { address: acc.address, public: acc.public }; w.net = net || 'eth'; enableEvmNet(w.net); }
+  const dup = unlocked.data.wallets.find(x => (w.kda && x.kda && x.kda.account === w.kda.account) || (w.eth && x.eth && x.eth.address === w.eth.address));
+  if (dup) throw new Error('Esa cuenta ya está añadida como "' + dup.label + '".');
+  unlocked.data.wallets.push(w); addShown(w.id); unlocked.data.active = w.id; saveVault();
+  return { view: view(), account: w.kda ? w.kda.account : w.eth.address };
+});
+
 ipcMain.handle('wallet:import-privkey', (_e, { label, kind, net, priv }) => {
   const w = { id: crypto.randomUUID(), label: label || 'Importada', kda: null, eth: null };
   if (kind === 'kda') { w.kind = 'kda'; w.kda = wallets.kdaFromPriv(priv); }
@@ -381,6 +404,7 @@ ipcMain.handle('wallet:export', (_e, { passphrase, walletId, chain }) => {
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (w.ledger) throw new Error('Esta wallet es de Ledger: su clave privada vive dentro del aparato y no se puede exportar desde aquí.');
   const acc = w[chain];
   if (!acc) throw new Error('Esta wallet no tiene cuenta ' + chain.toUpperCase() + '.');
   return { chain, secret: acc.secret, public: acc.public, id: chain === 'kda' ? acc.account : acc.address };
@@ -453,9 +477,23 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  // Para destinos k: usamos transfer-create (crea la cuenta si no existe; si existe, exige su mismo guard).
-  const fn = to.startsWith('k:') ? kda.transferCreate : kda.transfer;
-  const r = await fn({ node: net.node, networkId: net.networkId, chain, from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public });
+  let r;
+  if (w.ledger) {
+    // Wallet Ledger: la app Kadena del aparato construye y firma la transferencia (solo destinos k:).
+    if (!String(to).startsWith('k:')) throw new Error('Con Ledger el destino debe ser una cuenta k:… (la app del aparato firma contra su pubkey).');
+    kda.assertKdaAccount(to, 'destino');
+    const amt = kda.canonDecimal(amount).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '.0'); // recortado: es lo que muestra la pantallita
+    const pact = await ledger().signKdaTransfer({
+      index: w.hwIndex, isCreate: true, toPubkey: String(to).slice(2), amount: amt,
+      chainId: Number(chain), networkId: net.networkId, gasPrice: '1.0e-8', gasLimit: '2500', ttl: '600',
+      creationTime: await ktime.creationTime(net.node, net.networkId, chain), nonce: 'koberlet-ledger:' + Date.now()
+    });
+    r = await kda.sendSigned({ node: net.node, networkId: net.networkId, chain, cmdObj: pact });
+  } else {
+    // Para destinos k: usamos transfer-create (crea la cuenta si no existe; si existe, exige su mismo guard).
+    const fn = to.startsWith('k:') ? kda.transferCreate : kda.transfer;
+    r = await fn({ node: net.node, networkId: net.networkId, chain, from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public });
+  }
   // Esperamos al minado para poder avisar si la tx falla en cadena (antes el fallo era silencioso)
   const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain, requestKey: r.requestKey, tries: net.key === 'devnet' ? 8 : 20 });
   if (res && res.result && res.result.status === 'failure') {
@@ -475,6 +513,7 @@ ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sou
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  if (w.ledger) throw new Error('Los envíos entre chains con Ledger llegarán más adelante. De momento usa la misma chain de origen y destino.');
   // Gas de la redención en destino: lo paga el propio remitente si tiene saldo allí; si no
   // y estamos en la devnet, lo paga sender00 (clave pública de desarrollo).
   let gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
@@ -498,6 +537,7 @@ ipcMain.handle('send:kda-smart', async (_e, { passphrase, walletId, kdaNet, targ
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  if (w.ledger) throw new Error('El barrido multi-chain con Ledger llegará más adelante. Envía desde una chain con saldo suficiente.');
   // El gas de las redenciones cross-chain lo paga sender00 en la devnet; en otras redes, el propio remitente.
   const gasPayer = net.key === 'devnet' ? DEV_SENDERS.sender00 : { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
   const r = await kda.sendSmart({
@@ -515,8 +555,11 @@ ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to
   if (!w.eth) throw new Error('Esta wallet no tiene cuenta EVM.');
   const n = c.evm.find(x => x.key === network); if (!n) throw new Error('Red no válida.');
   const nativo = !token || token === n.symbol;
-  const r = nativo ? await eth.sendNative({ rpc: n.rpc, secretHex: w.eth.secret, to, amount })
-                   : await eth.sendToken({ rpc: n.rpc, secretHex: w.eth.secret, token, to, amount });
+  const r = w.ledger
+    ? (nativo ? await ledger().sendNative({ index: w.hwIndex, rpc: n.rpc, to, amount })
+              : await ledger().sendToken({ index: w.hwIndex, rpc: n.rpc, token, to, amount }))
+    : (nativo ? await eth.sendNative({ rpc: n.rpc, secretHex: w.eth.secret, to, amount })
+              : await eth.sendToken({ rpc: n.rpc, secretHex: w.eth.secret, token, to, amount }));
   logHistory({ type: 'send-evm', wallet: w.label, desc: `Envío ${amount} ${nativo ? n.symbol : 'token'} · ${n.name}`, to, id: r.hash });
   return r;
 });
@@ -546,6 +589,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(fromWalletId) || active(); const b = loadConfig().bridge;
+  if (w.ledger) throw new Error('El puente con wallets Ledger llegará más adelante (necesita firma de código Pact arbitrario). Usa una wallet normal.');
   const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
@@ -588,6 +632,7 @@ ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount, m
   if (!unlocked) throw new Error('bloqueado');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(walletId); if (!w || !w.eth) throw new Error('Wallet EVM no válida.');
+  if (w.ledger) throw new Error('El swap de Uniswap con wallets Ledger llegará más adelante. Usa una wallet normal.');
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
   const r = await ethswap.swap({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, secretHex: w.eth.secret, dir, amount, minOut }, onStep);
   logHistory({ type: 'send-evm', wallet: w.label || '', desc: `Swap ${amount} ${dir === 'usdc2eth' ? 'USDC → ETH' : 'ETH → USDC'} (Uniswap)`, to: w.eth.address, id: r.txHash });
@@ -598,6 +643,7 @@ ipcMain.handle('swap:exec', async (_e, { passphrase, walletId, dir, amount, slip
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
   if (!w || !w.kda) throw new Error('Necesitas una wallet Kadena para operar en el mercado.');
+  if (w.ledger) throw new Error('El Mercado con wallets Ledger llegará más adelante (necesita firma de código Pact arbitrario). Usa una wallet normal.');
   const r = await swap.swap({ dir, amountIn: amount, account: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret, slippage });
   logHistory({ type: 'swap', wallet: w.label, desc: `Swap ${amount} ${dir === 'compra' ? 'kb-USDC → KDA' : 'KDA → kb-USDC'} · mín ${r.minOut}`, id: r.requestKey });
   return r;

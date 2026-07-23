@@ -126,7 +126,7 @@
       <!-- WALLETS -->
       <section id="view-wallets" class="view" hidden>
         <div class="row-between"><h3 data-i18n="h_wallets">Wallets</h3>
-          <div><button id="btn-create" class="primary" data-i18n="create_new">＋ Crear nueva</button> <button id="btn-import" class="ghost" data-i18n="import">Importar</button></div>
+          <div><button id="btn-create" class="primary" data-i18n="create_new">＋ Crear nueva</button> <button id="btn-import" class="ghost" data-i18n="import">Importar</button> <button id="btn-ledger" class="ghost" data-i18n="ledger_btn">🔐 Ledger</button></div>
         </div>
         <div id="wallet-list" class="list"></div>
       </section>
@@ -458,6 +458,21 @@
       </div>
       <div class="btnrow2"><button id="btn-do-import" class="primary" data-i18n="import">Importar</button><button class="ghost" data-close data-i18n="cancel">Cancelar</button></div>
       <div id="imp-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL Ledger (importar cuenta del monedero físico) -->
+  <div id="modal-ledger" class="modal" hidden>
+    <div class="card narrow">
+      <h2 data-i18n="ledger_title">Conectar Ledger</h2>
+      <p class="muted xs" data-i18n="ledger_hint">Conecta el Ledger por USB, desbloquéalo con el PIN y abre la app de la red (Kadena o Ethereum). Cierra Ledger Live si está abierto. La clave privada nunca sale del aparato: cada envío se confirma en su pantalla.</p>
+      <label data-i18n="lbl_name">Nombre</label><input id="lg-label" data-i18n-ph="ph_lg_label" placeholder="p.ej. Ledger ahorro" />
+      <label data-i18n="lbl_net">Red</label><select id="lg-net"></select>
+      <label data-i18n="lbl_lg_index">Índice de cuenta (0 = la primera)</label><input id="lg-index" type="number" value="0" min="0" step="1" />
+      <button id="btn-lg-peek" class="ghost tiny" data-i18n="ledger_read">🔍 Leer cuenta del Ledger</button>
+      <div id="lg-acct" class="addr" hidden><span class="mono" id="lg-acct-txt"></span></div>
+      <div class="btnrow2"><button id="btn-lg-add" class="primary" disabled data-i18n="ledger_add">Añadir esta cuenta</button><button class="ghost" data-close data-i18n="cancel">Cancelar</button></div>
+      <div id="lg-msg" class="msg"></div>
     </div>
   </div>
 
