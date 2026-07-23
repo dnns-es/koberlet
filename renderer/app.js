@@ -147,7 +147,14 @@ const LANG = {
     btn_seed_scan: '🔍 Ver cuentas de esta semilla', lbl_seed_target: '¿Buscas una cuenta concreta? (opcional)', ph_seed_target: 'k:… (Kadena) o 0x… (EVM)', btn_seed_find: '🎯 Buscar esa cuenta en la semilla',
     exp_title: 'Ver clave privada', exp_intro: 'Introduce la contraseña de la bóveda para revelar la privada. No la compartas.', reveal: 'Revelar', close_btn: 'Cerrar',
     send_title: 'Confirmar envío', lbl_vault_pass: 'Contraseña de la bóveda', btn_sign_send: 'Firmar y enviar',
-    ttl_invert: 'Invertir', ttl_theme: 'Tema claro / oscuro'
+    ttl_invert: 'Invertir', ttl_theme: 'Tema claro / oscuro',
+    ledger_btn: '🔐 Ledger', ledger_title: 'Conectar Ledger',
+    ledger_hint: 'Conecta el Ledger por USB, desbloquéalo con el PIN y abre la app de la red (Kadena o Ethereum). Cierra Ledger Live si está abierto. La clave privada nunca sale del aparato: cada envío se confirma en su pantalla.',
+    ph_lg_label: 'p.ej. Ledger ahorro', lbl_lg_index: 'Índice de cuenta (0 = la primera)',
+    ledger_read: '🔍 Leer cuenta del Ledger', ledger_add: 'Añadir esta cuenta',
+    ledger_reading: 'Leyendo del aparato… (mira el Ledger)', ledger_added: 'Cuenta del Ledger añadida.',
+    ledger_badge: '🔐 Ledger',
+    ledger_confirm_note: '🔐 Wallet Ledger: revisa y confirma la operación en la pantalla del aparato.'
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
@@ -290,7 +297,14 @@ const LANG = {
     btn_seed_scan: "🔍 View this seed's accounts", lbl_seed_target: 'Looking for a specific account? (optional)', ph_seed_target: 'k:… (Kadena) or 0x… (EVM)', btn_seed_find: '🎯 Find that account in the seed',
     exp_title: 'View private key', exp_intro: 'Enter the vault password to reveal the private key. Do not share it.', reveal: 'Reveal', close_btn: 'Close',
     send_title: 'Confirm send', lbl_vault_pass: 'Vault password', btn_sign_send: 'Sign and send',
-    ttl_invert: 'Reverse', ttl_theme: 'Light / dark theme'
+    ttl_invert: 'Reverse', ttl_theme: 'Light / dark theme',
+    ledger_btn: '🔐 Ledger', ledger_title: 'Connect Ledger',
+    ledger_hint: 'Plug in your Ledger via USB, unlock it with the PIN and open the network app (Kadena or Ethereum). Close Ledger Live if it is running. The private key never leaves the device: every send is confirmed on its screen.',
+    ph_lg_label: 'e.g. Savings Ledger', lbl_lg_index: 'Account index (0 = first)',
+    ledger_read: '🔍 Read account from Ledger', ledger_add: 'Add this account',
+    ledger_reading: 'Reading from the device… (check the Ledger)', ledger_added: 'Ledger account added.',
+    ledger_badge: '🔐 Ledger',
+    ledger_confirm_note: '🔐 Ledger wallet: review and confirm the operation on the device screen.'
   }
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
@@ -703,7 +717,7 @@ async function applyView(v) {
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
     <label class="wshow" title="${t('ttl_show_dash')}"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
-    <div class="wmeta"><div class="wl">${esc(w.label)} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ` · <span class="grn">${t('on_dash')}</span>` : ''}${wNote(w.id)}</div></div>
+    <div class="wmeta"><div class="wl">${esc(w.label)} ${w.ledger ? `<span class="wtag ledger">${t('ledger_badge')}</span>` : ''} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ` · <span class="grn">${t('on_dash')}</span>` : ''}${wNote(w.id)}</div></div>
     <div class="wact"><button class="copy" data-ren="${w.id}" title="${t('ttl_rename')}">✏️</button><button class="copy" data-del="${w.id}" title="${t('ttl_del')}">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
   $('wallet-list').querySelectorAll('[data-ren]').forEach(b => b.onclick = () => { const w = WALLETS.find(x => x.id === b.dataset.ren); openRename(b.dataset.ren, w ? w.label : ''); });
@@ -807,6 +821,8 @@ function renderGasWarnings(blocks) {
   el.innerHTML = warns.length ? warns.map(w => `<div class="gwrow">⛽ ${esc(w)}</div>`).join('') : '';
   el.hidden = !warns.length;
 }
+// Aviso extra en la confirmación cuando la wallet es de Ledger (hay que aprobar en el aparato)
+function ledgerNote(wid) { const w = WALLETS.find(x => x.id === wid); return (w && w.ledger) ? `<br><span class="warn" style="display:block;margin-top:8px">${t('ledger_confirm_note')}</span>` : ''; }
 function wireCards() {
   // Título → despliega tokens/chains
   document.querySelectorAll('.netcard .nc-head[data-toggle]').forEach(h => h.onclick = () => {
@@ -845,7 +861,7 @@ function wireCards() {
     const enChainOrigen = per[chain] || 0;
     if (chain === tochain && num <= enChainOrigen - RES) {
       // Cabe en la propia chain: envío normal
-      askSend(tr('cf_send_kda', { a: esc(amt), c: esc(chain), to: esc(to) }), async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return t('sent_rk') + r.requestKey; }, to);
+      askSend(tr('cf_send_kda', { a: esc(amt), c: esc(chain), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return t('sent_rk') + r.requestKey; }, to);
     } else if (chain !== tochain && num <= enChainOrigen - RES) {
       // Cross-chain simple: la chain origen tiene bastante
       askSend(tr('cf_send_kda_x', { a: esc(amt), c1: esc(chain), c2: esc(tochain), to: esc(to) }), async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return t('xchain_done') + r.pactId; }, to);
@@ -861,7 +877,7 @@ function wireCards() {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
     const wid = btn.dataset.wid;
-    askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to);
+    askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to);
   });
 }
 // confirmación de envío con contraseña
@@ -931,6 +947,36 @@ $('btn-do-rename').onclick = async () => {
   } catch (e) { msg($('ren-msg'), e.message, 'err'); }
 };
 $('ren-label').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-do-rename').click(); });
+
+// LEDGER: leer cuenta del aparato y añadirla como wallet (la clave se queda en el aparato)
+$('btn-ledger').onclick = () => {
+  $('lg-net').innerHTML = netOptions();
+  $('lg-label').value = ''; $('lg-index').value = '0';
+  $('lg-acct').hidden = true; $('lg-acct-txt').textContent = ''; $('btn-lg-add').disabled = true;
+  msg($('lg-msg'), ''); $('modal-ledger').hidden = false;
+};
+$('btn-lg-peek').onclick = async () => {
+  const { kind } = parseNet($('lg-net').value);
+  $('btn-lg-peek').disabled = true; $('btn-lg-add').disabled = true; $('lg-acct').hidden = true;
+  msg($('lg-msg'), t('ledger_reading'));
+  try {
+    const r = await window.api.ledgerPeek(kind, Number($('lg-index').value || 0), false);
+    $('lg-acct-txt').textContent = r.account; $('lg-acct').hidden = false;
+    $('btn-lg-add').disabled = false; msg($('lg-msg'), '');
+  } catch (e) { msg($('lg-msg'), e.message, 'err'); }
+  finally { $('btn-lg-peek').disabled = false; }
+};
+$('btn-lg-add').onclick = async () => {
+  const { kind, net } = parseNet($('lg-net').value);
+  $('btn-lg-add').disabled = true;
+  try {
+    const r = await window.api.ledgerImport($('lg-label').value.trim(), kind, net, Number($('lg-index').value || 0));
+    $('modal-ledger').hidden = true; applyView(r.view); nav('dashboard'); msg($('wallet-msg'), t('ledger_added'), 'ok');
+  } catch (e) { msg($('lg-msg'), e.message, 'err'); $('btn-lg-add').disabled = false; }
+};
+// El selector de red del modal Ledger cambia la cuenta → invalidar la leída
+$('lg-net').onchange = () => { $('lg-acct').hidden = true; $('btn-lg-add').disabled = true; };
+$('lg-index').oninput = () => { $('lg-acct').hidden = true; $('btn-lg-add').disabled = true; };
 
 // IMPORTAR
 $('btn-import').onclick = () => {

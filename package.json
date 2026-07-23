@@ -12,6 +12,9 @@
   "dependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
     "@kadena/hd-wallet": "^0.6.2",
+    "@ledgerhq/hw-app-eth": "^7.8.10",
+    "@ledgerhq/hw-transport-node-hid-noevents": "^6.36.0",
+    "@zondax/ledger-kadena": "^0.0.4",
     "blakejs": "^1.2.1",
     "ethers": "^6.13.2",
     "qrcode": "^1.5.4",
