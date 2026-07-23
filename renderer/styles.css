@@ -343,3 +343,12 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 .amtrow{display:flex;gap:8px;align-items:center}
 .amtrow input{flex:1}
 .amtrow .tiny{flex:none;padding:8px 10px}
+
+/* ===== Modo privacidad (👁): saldos tapados con ••••• ===== */
+body.hidebal .total,body.hidebal .nc-sub,body.hidebal .a-amt,body.hidebal .a-usd{font-size:0 !important}
+body.hidebal .total::after{content:'•••••';font-size:38px;font-weight:800}
+body.hidebal .nc-sub::after{content:'•••••';font-size:15px;font-weight:800}
+body.hidebal .a-amt::after{content:'•••••';font-size:13px}
+body.hidebal .a-usd::after{content:'••••';font-size:13px}
+body.hidebal .a-chg,body.hidebal .legend,body.hidebal .perline,body.hidebal #br-tokhint{display:none !important}
+body.hidebal .sr-bal{visibility:hidden}

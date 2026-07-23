@@ -155,7 +155,7 @@ const LANG = {
     ledger_reading: 'Leyendo del aparato… (mira el Ledger)', ledger_added: 'Cuenta del Ledger añadida.',
     ledger_badge: '🔐 Ledger',
     ledger_confirm_note: '🔐 Wallet Ledger: revisa y confirma la operación en la pantalla del aparato.',
-    ttl_max: 'Máximo enviable (descontando el gas)'
+    ttl_max: 'Máximo enviable (descontando el gas)', ttl_priv: 'Ocultar / mostrar saldos'
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
@@ -306,7 +306,7 @@ const LANG = {
     ledger_reading: 'Reading from the device… (check the Ledger)', ledger_added: 'Ledger account added.',
     ledger_badge: '🔐 Ledger',
     ledger_confirm_note: '🔐 Ledger wallet: review and confirm the operation on the device screen.',
-    ttl_max: 'Max sendable (minus gas)'
+    ttl_max: 'Max sendable (minus gas)', ttl_priv: 'Hide / show balances'
   }
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
@@ -330,6 +330,12 @@ function setLang(l) {
   // Re-renderizar las secciones dinámicas (montadas por JS) para que cambien de idioma al vuelo
   if ($('app') && !$('app').hidden && WALLETS.length) { renderBridge(); renderMercado(); renderEthSwap(); updateNetContext(); loadBalances(); }
 }
+
+// ===== Privacidad: ocultar saldos con ••••• (como en las apps de banca) =====
+let HIDEBAL = localStorage.getItem('koberlet-hidebal') === '1';
+function applyPriv() { document.body.classList.toggle('hidebal', HIDEBAL); const b = $('btn-priv'); if (b) b.textContent = HIDEBAL ? '🙈' : '👁'; }
+if ($('btn-priv')) $('btn-priv').onclick = () => { HIDEBAL = !HIDEBAL; localStorage.setItem('koberlet-hidebal', HIDEBAL ? '1' : '0'); applyPriv(); };
+applyPriv();
 
 // ===== Idea 7: tema claro / oscuro =====
 let THEME = localStorage.getItem('koberlet-theme') || 'light';
@@ -746,7 +752,7 @@ function cardBlock(bl, qr) {
     const kdaUsd = (bl.usd || 0) - toks.reduce((s, t) => s + t.usd, 0);
     rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : t('no_bal_yet');
-    extra = `<div class="muted xs">${per}</div>`;
+    extra = `<div class="muted xs perline">${per}</div>`;
     sendForm = `<div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
       <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
       <label>${t('lbl_dest_k')}</label><input class="k-to" list="dl-kda" placeholder="${t('ph_kda_dest')}"/>
