@@ -170,7 +170,8 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 .dot{color:var(--ok);font-size:12px}
 /* msg + modales */
 .msgbar{position:sticky;bottom:0;padding:8px 0}
-.msg{font-size:13px;min-height:18px} .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+.msg{font-size:13px;min-height:18px} .msg.ok{color:var(--ok)} .msg.err{color:var(--err)} .msg.warn{color:#b78a00}
+:root[data-theme="dark"] .msg.warn{color:#e6c37a}
 .modal{position:fixed;inset:0;background:rgba(20,21,24,.5);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal[hidden]{display:none}
 .modal .card{max-width:480px;width:92%}
