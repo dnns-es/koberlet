@@ -255,6 +255,14 @@ function ensureDesktopShortcut() {
     const marker = path.join(app.getPath('userData'), 'shortcut.flag');
     if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf8').trim() === MARK) return;
     const lnk = path.join(app.getPath('desktop'), 'Koberlet.lnk');
+    // Si ya hay un Koberlet.lnk apuntando a OTRA instalación, NO pisarlo (incidente 2026-07-22: extraer
+    // una copia nueva en otra carpeta secuestraba el acceso directo y el usuario "perdía" sus wallets).
+    if (fs.existsSync(lnk)) {
+      try {
+        const cur = shell.readShortcutLink(lnk);
+        if (cur && cur.target && path.resolve(cur.target) !== path.resolve(app.getPath('exe'))) { fs.mkdirSync(path.dirname(marker), { recursive: true }); fs.writeFileSync(marker, MARK); return; }
+      } catch (_) { /* ilegible → se actualiza abajo */ }
+    }
     shell.writeShortcutLink(lnk, fs.existsSync(lnk) ? 'update' : 'create', {
       target: app.getPath('exe'), cwd: _exeDir,
       icon: path.join(__dirname, 'renderer', 'icon.ico'), iconIndex: 0,
@@ -473,8 +481,9 @@ ipcMain.handle('devnet:faucet', async (_e, { walletId }) => {
 
 ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  // Wallet Ledger: la confirmación es FÍSICA en el aparato; la contraseña de la bóveda no aplica (la clave no está en ella).
+  if (!w.ledger && !passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
   let r;
@@ -509,11 +518,11 @@ const DEV_SENDERS = {
 };
 ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (w.ledger) throw new Error('Los envíos entre chains con Ledger llegarán más adelante. De momento usa la misma chain de origen y destino.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  if (w.ledger) throw new Error('Los envíos entre chains con Ledger llegarán más adelante. De momento usa la misma chain de origen y destino.');
   // Gas de la redención en destino: lo paga el propio remitente si tiene saldo allí; si no
   // y estamos en la devnet, lo paga sender00 (clave pública de desarrollo).
   let gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
@@ -533,11 +542,11 @@ ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sou
 // Envío inteligente: junta saldo de varias chains en la de destino si una sola no llega.
 ipcMain.handle('send:kda-smart', async (_e, { passphrase, walletId, kdaNet, targetChain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (w.ledger) throw new Error('El barrido multi-chain con Ledger llegará más adelante. Envía desde una chain con saldo suficiente.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  if (w.ledger) throw new Error('El barrido multi-chain con Ledger llegará más adelante. Envía desde una chain con saldo suficiente.');
   // El gas de las redenciones cross-chain lo paga sender00 en la devnet; en otras redes, el propio remitente.
   const gasPayer = net.key === 'devnet' ? DEV_SENDERS.sender00 : { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
   const r = await kda.sendSmart({
@@ -550,8 +559,8 @@ ipcMain.handle('send:kda-smart', async (_e, { passphrase, walletId, kdaNet, targ
 });
 ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w.ledger && !passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   if (!w.eth) throw new Error('Esta wallet no tiene cuenta EVM.');
   const n = c.evm.find(x => x.key === network); if (!n) throw new Error('Red no válida.');
   const nativo = !token || token === n.symbol;
