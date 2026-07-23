@@ -2,6 +2,10 @@ const $ = (id) => document.getElementById(id);
 function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textContent = text; }
 // L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Limpia el prefijo técnico de Electron ("Error invoking remote method 'x': Error: …") de los errores IPC.
+const cleanErr = (e) => String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+// Estados del Ledger que NO son fallos sino situaciones reintenables (PIN, sin conectar, app cerrada).
+const isLedgerWait = (m) => /Ledger está bloqueado|introduce el PIN|No veo ningún Ledger|Abre la app correcta|Blind signing/i.test(m);
 let CFG = null, WALLETS = [], SHOWN = [];
 
 // ===== i18n ES/EN =====
@@ -921,7 +925,7 @@ function askSend(summary, fn, recipient, opts) {
   } else { chk.hidden = true; btn.disabled = false; ok.onchange = null; }
   $('modal-send').hidden = false;
 }
-$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), t('signing')); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { msg($('send-msg'), e.message, 'err'); } };
+$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), t('signing')); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { const m = cleanErr(e); msg($('send-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err'); } };
 $('send-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-confirm-send').click(); });
 $('btn-refresh').onclick = loadBalances;
 
@@ -992,7 +996,7 @@ $('btn-lg-peek').onclick = async () => {
     const r = await window.api.ledgerPeek(kind, Number($('lg-index').value || 0), false);
     $('lg-acct-txt').textContent = r.account; $('lg-acct').hidden = false;
     $('btn-lg-add').disabled = false; msg($('lg-msg'), '');
-  } catch (e) { msg($('lg-msg'), e.message, 'err'); }
+  } catch (e) { const m = cleanErr(e); msg($('lg-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err'); }
   finally { $('btn-lg-peek').disabled = false; }
 };
 $('btn-lg-add').onclick = async () => {
