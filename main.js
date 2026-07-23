@@ -596,16 +596,18 @@ ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipien
 // ENVÍO REAL del puente (mueve fondos). Exige la contraseña de la bóveda.
 ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol, recipient, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
-  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const w = walletById(fromWalletId) || active(); const b = loadConfig().bridge;
-  if (w.ledger) throw new Error('El puente con wallets Ledger llegará más adelante (necesita firma de código Pact arbitrario). Usa una wallet normal.');
+  // Con Ledger: Ethereum→Kadena SÍ (approve+transferRemote son txs EVM que el aparato firma);
+  // Kadena→EVM NO todavía (el dispatch es código Pact arbitrario → firma ciega, fase futura).
+  if (w.ledger && dir !== 'evm2kda') throw new Error('El puente Kadena→EVM con Ledger llegará más adelante (necesita firmar código Pact en el aparato). El sentido Ethereum→Kadena sí funciona con Ledger.');
+  if (!w.ledger && !passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
     const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
     const kb = async () => (await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: [route], account: recipient }))[0].balance;
     const before = await kb().catch(() => 0);
-    const res = await bridge.sendEvm2Kda({ rpc: b.evm.rpc, secretHex: w.eth.secret, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
+    const res = await bridge.sendEvm2Kda({ rpc: b.evm.rpc, secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
     // Esperar la llegada a Kadena (relayer)
     onStep({ step: 'kadena', status: 'run', detail: 'Esperando al relayer del puente…' });
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -840,6 +842,8 @@ ipcMain.handle('update:apply', async () => {
   const vbs = path.join(upd, 'apply.vbs');
   fs.writeFileSync(vbs, 'CreateObject("WScript.Shell").Run "cmd.exe /c ""' + bat + '""", 0, False\r\n', 'latin1');
   spawn('wscript.exe', [vbs], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
-  setTimeout(() => { unlocked = null; app.quit(); }, 400);
+  // Cierre en dos tiempos: quit educado y, si algo lo retiene (visto 2026-07-23: la app no se cerraba
+  // y el bat esperaba eternamente), exit forzado — el bat necesita que el proceso MUERA para aplicar.
+  setTimeout(() => { unlocked = null; app.quit(); setTimeout(() => { try { app.exit(0); } catch (_) {} }, 1500); }, 400);
   return { ok: true };
 });
