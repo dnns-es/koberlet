@@ -339,3 +339,7 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 /* Envío: dos chains (origen/destino) lado a lado */
 .row2{display:flex;gap:10px}
 .row2>div{flex:1}
+/* Cantidad + botón MAX en línea */
+.amtrow{display:flex;gap:8px;align-items:center}
+.amtrow input{flex:1}
+.amtrow .tiny{flex:none;padding:8px 10px}
