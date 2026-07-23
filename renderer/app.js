@@ -154,7 +154,8 @@ const LANG = {
     ledger_read: '🔍 Leer cuenta del Ledger', ledger_add: 'Añadir esta cuenta',
     ledger_reading: 'Leyendo del aparato… (mira el Ledger)', ledger_added: 'Cuenta del Ledger añadida.',
     ledger_badge: '🔐 Ledger',
-    ledger_confirm_note: '🔐 Wallet Ledger: revisa y confirma la operación en la pantalla del aparato.'
+    ledger_confirm_note: '🔐 Wallet Ledger: revisa y confirma la operación en la pantalla del aparato.',
+    ttl_max: 'Máximo enviable (descontando el gas)'
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
@@ -304,7 +305,8 @@ const LANG = {
     ledger_read: '🔍 Read account from Ledger', ledger_add: 'Add this account',
     ledger_reading: 'Reading from the device… (check the Ledger)', ledger_added: 'Ledger account added.',
     ledger_badge: '🔐 Ledger',
-    ledger_confirm_note: '🔐 Ledger wallet: review and confirm the operation on the device screen.'
+    ledger_confirm_note: '🔐 Ledger wallet: review and confirm the operation on the device screen.',
+    ttl_max: 'Max sendable (minus gas)'
   }
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
@@ -748,15 +750,15 @@ function cardBlock(bl, qr) {
     sendForm = `<div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
       <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
       <label>${t('lbl_dest_k')}</label><input class="k-to" list="dl-kda" placeholder="${t('ph_kda_dest')}"/>
-      <label>${t('lbl_amount')}</label><input class="k-amt" type="number" step="0.0001"/>
+      <label>${t('lbl_amount')}</label><div class="amtrow"><input class="k-amt" type="number" step="0.0001"/><button type="button" class="tiny ghost k-max" title="${t('ttl_max')}">MAX</button></div>
       <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
       <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>${t('send')}</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
-    const opts = `<option value="${bl.symbol}">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-    sendForm = `<label>${t('lbl_asset')}</label><select class="e-asset">${opts}</select>
+    const opts = `<option value="${bl.symbol}" data-amt="${bl.native}" data-native="1">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}" data-amt="${t.amount}">${t.symbol}</option>`).join('');
+    sendForm = `<label>${t('lbl_asset')}</label><select class="e-asset" data-sym="${bl.symbol}">${opts}</select>
       <label>${t('lbl_dest_0x')}</label><input class="e-to" list="dl-evm" placeholder="${t('ph_evm_dest')}"/>
-      <label>${t('lbl_amount')}</label><input class="e-amt" type="number" step="0.0001"/>
+      <label>${t('lbl_amount')}</label><div class="amtrow"><input class="e-amt" type="number" step="0.0001"/><button type="button" class="tiny ghost e-max" title="${t('ttl_max')}">MAX</button></div>
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
@@ -844,6 +846,22 @@ function wireCards() {
     btn.disabled = true; msg($('wallet-msg'), t('faucet_wait'));
     try { const r = await window.api.devnetFaucet(btn.dataset.wid); msg($('wallet-msg'), t('faucet_ok').replace('{n}', r.amount).replace('{c}', r.chain), 'ok'); loadBalances(); }
     catch (e) { msg($('wallet-msg'), t('faucet_err') + ' ' + e.message, 'err'); btn.disabled = false; }
+  });
+  // MAX: rellena la cantidad con el máximo enviable, DESCONTANDO la reserva de gas.
+  // KDA: saldo de la chain origen − 0,11 (colchón del gas). EVM nativo: saldo − GAS_MIN de esa red. Token: saldo entero (el gas va en el nativo).
+  document.querySelectorAll('.k-max').forEach(btn => btn.onclick = () => {
+    const c = btn.closest('.netcard'); const send = c.querySelector('.k-send');
+    let per = {}; try { per = JSON.parse(send.dataset.perchain || '{}'); } catch (_) {}
+    const chain = Number(c.querySelector('.k-chain').value || 0);
+    const max = Math.max(0, (per[chain] || 0) - 0.11);
+    c.querySelector('.k-amt').value = max > 0 ? (Math.floor(max * 1e6) / 1e6) : '';
+  });
+  document.querySelectorAll('.e-max').forEach(btn => btn.onclick = () => {
+    const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset');
+    const o = sel.selectedOptions[0]; if (!o) return;
+    const amt = Number(o.dataset.amt || 0);
+    const max = o.dataset.native ? Math.max(0, amt - (GAS_MIN[sel.dataset.sym] ?? 0.002)) : amt;
+    c.querySelector('.e-amt').value = max > 0 ? (Math.floor(max * 1e6) / 1e6) : '';
   });
   // Aviso visual cuando origen ≠ destino (cross-chain)
   document.querySelectorAll('.netcard').forEach(card => {
