@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld('api', {
   seedAccounts: (mnemonic, kind, net, start, count) => ipcRenderer.invoke('seed:accounts', { mnemonic, kind, net, start, count }),
   seedFind: (mnemonic, kind, net, target, maxIndex) => ipcRenderer.invoke('seed:find', { mnemonic, kind, net, target, maxIndex }),
   importPrivkey: (label, kind, net, priv) => ipcRenderer.invoke('wallet:import-privkey', { label, kind, net, priv }),
+  ledgerPeek: (kind, index, verify) => ipcRenderer.invoke('ledger:peek', { kind, index, verify }),
+  ledgerImport: (label, kind, net, index) => ipcRenderer.invoke('ledger:import', { label, kind, net, index }),
   exportKey: (passphrase, walletId, chain) => ipcRenderer.invoke('wallet:export', { passphrase, walletId, chain }),
   bridgeConfig: () => ipcRenderer.invoke('bridge:config'),
   bridgeTokens: (walletId, dir) => ipcRenderer.invoke('bridge:tokens', { walletId, dir }),

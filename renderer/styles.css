@@ -288,6 +288,8 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 /* ===== Etiquetas + notas de wallet (idea 15) ===== */
 .wtag{font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:6px;white-space:nowrap}
 .wtag.cold{background:#e6f0ff;color:#2b62c9} .wtag.hot{background:#ffe9e0;color:#c2470f}
+.wtag.ledger{background:#eef7ea;color:#2f6d1c;border:1px solid #cde8c0}
+:root[data-theme="dark"] .wtag.ledger{background:#1e2a1a;color:#63e038;border-color:#2f4527}
 :root[data-theme="dark"] .wtag.cold{background:#1c2b45;color:#7fa8ee} :root[data-theme="dark"] .wtag.hot{background:#3a1f16;color:#e88a5f}
 .wnote{font-style:italic}
 /* ===== Bienvenida (idea 14) ===== */
