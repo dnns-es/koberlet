@@ -822,7 +822,8 @@ function renderGasWarnings(blocks) {
   el.hidden = !warns.length;
 }
 // Aviso extra en la confirmación cuando la wallet es de Ledger (hay que aprobar en el aparato)
-function ledgerNote(wid) { const w = WALLETS.find(x => x.id === wid); return (w && w.ledger) ? `<br><span class="warn" style="display:block;margin-top:8px">${t('ledger_confirm_note')}</span>` : ''; }
+function isLedgerW(wid) { const w = WALLETS.find(x => x.id === wid); return !!(w && w.ledger); }
+function ledgerNote(wid) { return isLedgerW(wid) ? `<br><span class="warn" style="display:block;margin-top:8px">${t('ledger_confirm_note')}</span>` : ''; }
 function wireCards() {
   // Título → despliega tokens/chains
   document.querySelectorAll('.netcard .nc-head[data-toggle]').forEach(h => h.onclick = () => {
@@ -861,30 +862,34 @@ function wireCards() {
     const enChainOrigen = per[chain] || 0;
     if (chain === tochain && num <= enChainOrigen - RES) {
       // Cabe en la propia chain: envío normal
-      askSend(tr('cf_send_kda', { a: esc(amt), c: esc(chain), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return t('sent_rk') + r.requestKey; }, to);
+      askSend(tr('cf_send_kda', { a: esc(amt), c: esc(chain), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendKda(pass, wid, knet, chain, to, amt); return t('sent_rk') + r.requestKey; }, to, { ledger: isLedgerW(wid) });
     } else if (chain !== tochain && num <= enChainOrigen - RES) {
       // Cross-chain simple: la chain origen tiene bastante
-      askSend(tr('cf_send_kda_x', { a: esc(amt), c1: esc(chain), c2: esc(tochain), to: esc(to) }), async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return t('xchain_done') + r.pactId; }, to);
+      askSend(tr('cf_send_kda_x', { a: esc(amt), c1: esc(chain), c2: esc(tochain), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendKdaXchain(pass, wid, knet, chain, tochain, to, amt); return t('xchain_done') + r.pactId; }, to, { ledger: isLedgerW(wid) });
     } else {
       // No cabe en una sola chain → BARRIDO: juntar de varias hacia la chain destino
       const disponible = Object.values(per).reduce((s, x) => s + Math.max(0, x - RES), 0);
       if (num > disponible) return msg($('wallet-msg'), tr('err_sweep_bal', { b: disponible.toFixed(2) }), 'err');
       const nchains = Object.keys(per).filter(k => (per[k] || 0) > RES).length;
-      askSend(tr('cf_send_kda_sweep', { a: esc(amt), c: esc(tochain), n: nchains, to: esc(to) }), async (pass) => { const r = await window.api.sendKdaSmart(pass, wid, knet, tochain, to, amt); return t('sweep_done') + r.requestKey; }, to);
+      askSend(tr('cf_send_kda_sweep', { a: esc(amt), c: esc(tochain), n: nchains, to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendKdaSmart(pass, wid, knet, tochain, to, amt); return t('sweep_done') + r.requestKey; }, to, { ledger: isLedgerW(wid) });
     }
   });
   document.querySelectorAll('.e-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const sel = c.querySelector('.e-asset'); const asset = sel.value, label = sel.options[sel.selectedIndex].textContent, to = c.querySelector('.e-to').value.trim(), amt = c.querySelector('.e-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
     const wid = btn.dataset.wid;
-    askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to);
+    askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to, { ledger: isLedgerW(wid) });
   });
 }
 // confirmación de envío con contraseña
 // Idea 3: si se pasa `recipient`, se muestra la dirección destacada (cabeza/cola) y se exige marcar el visto bueno antes de firmar.
 function fmtAddr(a) { const s = String(a || ''); if (s.length <= 16) return esc(s); return `<span class="ah">${esc(s.slice(0, 8))}</span>${esc(s.slice(8, -6))}<span class="ah">${esc(s.slice(-6))}</span>`; }
-function askSend(summary, fn, recipient) {
+function askSend(summary, fn, recipient, opts) {
   window._sendFn = fn; $('send-summary').innerHTML = summary; $('send-pass').value = ''; msg($('send-msg'), ''); $('send-steps').innerHTML = '';
+  // Wallet Ledger: sin contraseña de bóveda (la clave no está en ella; la confirmación es física, en el aparato)
+  const isLedger = !!(opts && opts.ledger);
+  const pw = $('send-pass'); const pwWrap = pw.closest('.pwdwrap') || pw;
+  pwWrap.hidden = isLedger; if ($('send-pass-lbl')) $('send-pass-lbl').hidden = isLedger;
   const chk = $('send-addr-check'), ok = $('send-addr-ok'), btn = $('btn-confirm-send');
   if (recipient) {
     $('send-addr-big').innerHTML = fmtAddr(recipient); ok.checked = false; chk.hidden = false; btn.disabled = true;
