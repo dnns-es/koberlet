@@ -453,7 +453,7 @@ $('btn-check-upd').onclick = async () => {
     if (u.newer) {
       $('upd-status').innerHTML = t('upd_new').replace('{v}', esc(u.latest)) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`
         + (u.notes ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>${notesToHtml(u.notes)}</div>` : '');
-      $('upd-dl-link').onclick = (e) => { e.preventDefault(); doUpdate(u, $('upd-status')); };
+      $('upd-dl-link').onclick = (e) => { e.preventDefault(); e.target.style.pointerEvents = 'none'; e.target.style.opacity = .5; doUpdate(u, $('upd-status')); }; // un solo intento: dos a la vez se pisan la carpeta _update
     }
     else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
     else msg($('upd-status'), t('upd_nocheck'), 'err');
@@ -579,7 +579,7 @@ $('btn-bridge-send').onclick = () => {
   const avisoTxt = DIR === 'evm2kda' ? t('br_warn_e2k') : t('br_warn_k2e');
   const _bt = window._brToll; // solo si la simulación fue de ESTOS mismos parámetros (si no, se muestra sin toll)
   const tollTxt = (DIR === 'kda2evm' && _bt && _bt.dir === DIR && _bt.key === (String(amt) + '|' + symbol + '|' + to)) ? tr('br_toll_line', { t: Number(_bt.toll).toFixed(2) }) : '';
-  askSend(tr('br_confirm', { r: rutaTxt, a: esc(amt), s: esc(symbol), to: esc(to) }) + `${tollTxt}<br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>`,
+  askSend(tr('br_confirm', { r: rutaTxt, a: esc(amt), s: esc(symbol), to: esc(to) }) + `${tollTxt}<br><span class="warn" style="display:block;margin-top:8px">${avisoTxt}</span>` + ledgerNote(from),
     async (pass) => {
       initSteps(DIR);
       const off = window.api.onBridgeStep(updateStep);
@@ -591,7 +591,7 @@ $('btn-bridge-send').onclick = () => {
         return okTxt + ' tx: ' + (r.txHash || '').slice(0, 14) + '…';
       }
       finally { off(); }
-    }, to);
+    }, to, { ledger: isLedgerW(from) });
 };
 
 // Refleja el estado de las redes Kadena (enabled) en el selector de Ajustes y en los interruptores de Red.
