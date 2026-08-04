@@ -44,6 +44,8 @@ contextBridge.exposeInMainWorld('api', {
   prices: () => ipcRenderer.invoke('prices'),
   vaultBackup: () => ipcRenderer.invoke('vault:backup'),
   vaultRestore: (passphrase) => ipcRenderer.invoke('vault:restore', { passphrase }),
+  backupExport: (password) => ipcRenderer.invoke('backup:export', { password }),
+  backupImport: (password) => ipcRenderer.invoke('backup:import', { password }),
   getConfig: () => ipcRenderer.invoke('config:get'),
   setConfig: (c) => ipcRenderer.invoke('config:set', c),
   appInfo: () => ipcRenderer.invoke('app:info'),

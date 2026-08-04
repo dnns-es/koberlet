@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const vault = require('./lib/vault');
+const backup = require('./lib/backup');
 const kda = require('./lib/kda');
 const eth = require('./lib/eth');
 const wallets = require('./lib/wallets');
@@ -302,6 +303,56 @@ ipcMain.handle('vault:unlock', (_e, { passphrase }) => {
   return { ok: true, view: view() };
 });
 ipcMain.handle('vault:lock', () => { unlocked = null; if (lockTimer) { clearTimeout(lockTimer); lockTimer = null; } return { ok: true }; });
+
+// ---- Copia de seguridad cifrada, portable (lib/backup.js) ----
+// Exportar: cifra TODAS las wallets (semillas/claves) con una contraseña DEDICADA elegida por el
+// usuario y las guarda en un archivo .kbk donde él elija. Requiere la bóveda desbloqueada.
+ipcMain.handle('backup:export', async (_e, { password }) => {
+  if (!unlocked) throw new Error('Desbloquea la bóveda antes de exportar la copia.');
+  const text = backup.crearBackup(password, unlocked.data, { creado: new Date().toISOString(), app: 'Koberlet ' + app.getVersion() });
+  const win = BrowserWindow.getFocusedWindow();
+  const stamp = new Date().toISOString().slice(0, 10);
+  const { canceled, filePath } = await dialog.showSaveDialog(win, {
+    title: 'Guardar copia de seguridad cifrada',
+    defaultPath: `koberlet-backup-${stamp}.kbk`,
+    filters: [{ name: 'Copia Koberlet', extensions: ['kbk'] }]
+  });
+  if (canceled || !filePath) return { ok: false, canceled: true };
+  fs.writeFileSync(filePath, text, { mode: 0o600 });
+  return { ok: true, path: filePath, count: unlocked.data.wallets.length };
+});
+
+// Importar/RESTAURAR: elige un .kbk, lo descifra con su contraseña. Si NO hay bóveda (PC nuevo,
+// recuperación desde cero) crea la bóveda local con ESA MISMA contraseña -> el usuario solo
+// recuerda una. Si ya hay bóveda abierta, FUSIONA las wallets que falten (no borra nada).
+ipcMain.handle('backup:import', async (_e, { password }) => {
+  const win = BrowserWindow.getFocusedWindow();
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Elegir copia de seguridad',
+    properties: ['openFile'],
+    filters: [{ name: 'Copia Koberlet', extensions: ['kbk', 'json'] }]
+  });
+  if (canceled || !filePaths || !filePaths[0]) return { ok: false, canceled: true };
+  const text = fs.readFileSync(filePaths[0], 'utf8');
+  const { data } = backup.abrirBackup(text, password); // lanza si la contraseña es mala o el archivo fue manipulado
+  if (!data || !Array.isArray(data.wallets) || !data.wallets.length) throw new Error('La copia no contiene wallets.');
+  const restored = migrate(data).data; // normaliza el formato (una wallet = una red)
+  if (unlocked) {
+    const dup = (w) => unlocked.data.wallets.some(x => (w.kda && x.kda && x.kda.account === w.kda.account) || (w.eth && x.eth && x.eth.address === w.eth.address));
+    let added = 0;
+    for (const w of restored.wallets) { if (!dup(w)) { if (!unlocked.data.wallets.some(x => x.id === w.id)) { unlocked.data.wallets.push(w); added++; } } }
+    unlocked.data.shown = unlocked.data.wallets.map(w => w.id);
+    saveVault();
+    return { ok: true, mode: 'merge', added, total: unlocked.data.wallets.length, view: view() };
+  }
+  // recuperación desde cero: la contraseña del backup pasa a ser la de la bóveda local
+  if (vault.existe(VAULT())) backupVault();
+  vault.crear(VAULT(), password, restored);
+  const opened = vault.abrir(VAULT(), password);
+  unlocked = { key: opened.key, salt: opened.salt, params: opened.params, data: opened.data };
+  armAutoLock();
+  return { ok: true, mode: 'restore', total: restored.wallets.length, view: view() };
+});
 // M-2: el renderer avisa de actividad del usuario (throttled) para reiniciar el temporizador de auto-bloqueo.
 ipcMain.on('activity:ping', () => touchActivity());
 
