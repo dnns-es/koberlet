@@ -109,6 +109,7 @@ const LANG = {
     ph_kda_dest: 'k:... o elige de la libreta', ph_evm_dest: '0x... o elige de la libreta',
     xchain_hint: '↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).',
     send: 'Enviar', btn_recv: '📥 Recibir', btn_send: '📤 Enviar', btn_faucet: '🚰 +1.000 KDA', offline: 'sin conexión',
+    btn_expand: 'Ampliar', btn_back: '← Volver al panel',
     loading_balances: 'Cargando saldos…',
     no_wallets_visible: 'No hay wallets visibles. Marca alguna en la sección Wallets.',
     err_fill_dest_amt: 'Rellena destino y cantidad.',
@@ -262,6 +263,7 @@ const LANG = {
     ph_kda_dest: 'k:... or pick from the book', ph_evm_dest: '0x... or pick from the book',
     xchain_hint: '↔ Send between different chains (cross-chain): takes a bit longer (two steps + SPV proof).',
     send: 'Send', btn_recv: '📥 Receive', btn_send: '📤 Send', btn_faucet: '🚰 +1,000 KDA', offline: 'offline',
+    btn_expand: 'Expand', btn_back: '← Back to panel',
     loading_balances: 'Loading balances…',
     no_wallets_visible: 'No visible wallets. Tick one in the Wallets section.',
     err_fill_dest_amt: 'Fill in destination and amount.',
@@ -787,6 +789,7 @@ function cardBlock(bl, qr) {
     <div class="nc-actions">
       <button class="act-btn" data-panel="recv">${t('btn_recv')}</button>
       <button class="act-btn" data-panel="send">${t('btn_send')}</button>
+      <button class="act-btn nc-expand" title="${t('btn_expand')}">⛶ ${t('btn_expand')}</button>
       ${bl.kind === 'kda' && bl.knet === 'devnet' ? `<button class="act-btn k-faucet" data-wid="${bl.walletId}">${t('btn_faucet')}</button>` : ''}
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
@@ -807,6 +810,7 @@ function donut(segs, total) {
 
 async function loadBalances() {
   msg($('wallet-msg'), t('loading_balances'));
+  document.body.classList.remove('focus-mode'); // un refresco de saldos regenera las tarjetas → volver al panel
   try {
     PRICES = await window.api.prices().catch(() => PRICES); // idea 5/6: variación 24h + fiat
     const b = await window.api.balances();
@@ -843,21 +847,38 @@ function renderGasWarnings(blocks) {
 // Aviso extra en la confirmación cuando la wallet es de Ledger (hay que aprobar en el aparato)
 function isLedgerW(wid) { const w = WALLETS.find(x => x.id === wid); return !!(w && w.ledger); }
 function ledgerNote(wid) { return isLedgerW(wid) ? `<br><span class="warn" style="display:block;margin-top:8px">${t('ledger_confirm_note')}</span>` : ''; }
+// Vista ampliada: una wallet ocupa todo el dashboard para trabajar cómodo con ella.
+function enterFocus(card) {
+  if (!card) return;
+  document.querySelectorAll('.netcard').forEach(c => c.classList.toggle('focused', c === card));
+  const body = card.querySelector('.nc-body'); // desplegar sus saldos al ampliar
+  if (body) { body.hidden = false; const ch = card.querySelector('.chev'); if (ch) ch.textContent = '▾'; }
+  document.body.classList.add('focus-mode');
+  window.scrollTo(0, 0);
+}
+function exitFocus() {
+  document.body.classList.remove('focus-mode');
+  document.querySelectorAll('.netcard.focused').forEach(c => c.classList.remove('focused'));
+}
 function wireCards() {
   // Título → despliega tokens/chains
   document.querySelectorAll('.netcard .nc-head[data-toggle]').forEach(h => h.onclick = () => {
     const b = h.parentElement.querySelector('.nc-body'); if (!b) return;
     b.hidden = !b.hidden; const c = h.querySelector('.chev'); if (c) c.textContent = b.hidden ? '▸' : '▾';
   });
-  // Botones Recibir/Enviar → despliegan su panel (uno u otro)
-  document.querySelectorAll('.netcard .act-btn').forEach(btn => btn.onclick = () => {
+  // Botones Recibir/Enviar → despliegan su panel (uno u otro). Solo los que llevan data-panel
+  // (así NO entra el botón Ampliar, que también es .act-btn).
+  document.querySelectorAll('.netcard .act-btn[data-panel]').forEach(btn => btn.onclick = () => {
     const card = btn.closest('.netcard'); const which = btn.dataset.panel;
     const panel = card.querySelector(`.nc-panel[data-pan="${which}"]`);
     const other = card.querySelector(`.nc-panel[data-pan="${which === 'recv' ? 'send' : 'recv'}"]`);
     if (other) other.hidden = true;
     panel.hidden = !panel.hidden;
-    card.querySelectorAll('.act-btn').forEach(b => b.classList.toggle('on', b === btn && !panel.hidden));
+    card.querySelectorAll('.act-btn[data-panel]').forEach(b => b.classList.toggle('on', b === btn && !panel.hidden));
   });
+  // Ampliar: la wallet ocupa todo el dashboard (vista de trabajo). Vuelve con "← Volver al panel".
+  document.querySelectorAll('.netcard .nc-expand').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); enterFocus(btn.closest('.netcard')); });
+  const back = $('focus-back'); if (back) back.onclick = exitFocus;
   // Grifo devnet: pide 1.000 KDA de prueba a sender00 (sin contraseña: no toca claves propias)
   document.querySelectorAll('.k-faucet').forEach(btn => btn.onclick = async () => {
     btn.disabled = true; msg($('wallet-msg'), t('faucet_wait'));
