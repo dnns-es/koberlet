@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   lock: () => ipcRenderer.invoke('vault:lock'),
   balances: () => ipcRenderer.invoke('balances'),
   sendKda: (passphrase, walletId, kdaNet, chain, to, amount) => ipcRenderer.invoke('send:kda', { passphrase, walletId, kdaNet, chain, to, amount }),
+  sendKdaToken: (passphrase, walletId, symbol, to, amount) => ipcRenderer.invoke('send:kdatoken', { passphrase, walletId, symbol, to, amount }),
   sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
   devnetFaucet: (walletId) => ipcRenderer.invoke('devnet:faucet', { walletId }),
   sendKdaXchain: (passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount) => ipcRenderer.invoke('send:kda-xchain', { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }),

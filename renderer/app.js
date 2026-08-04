@@ -113,6 +113,8 @@ const LANG = {
     no_wallets_visible: 'No hay wallets visibles. Marca alguna en la sección Wallets.',
     err_fill_dest_amt: 'Rellena destino y cantidad.',
     cf_send_kda: 'Enviar <b>{a} KDA</b> (chain {c})<br>a <span class="mono">{to}</span>',
+    cf_send_tok: 'Enviar <b>{a} {s}</b> (token de Kadena)<br>a <span class="mono">{to}</span>',
+    err_tok_ledger: 'El envío de tokens KDA con Ledger aún no está disponible. Usa una wallet de semilla o clave privada.',
     cf_send_kda_x: 'Enviar <b>{a} KDA</b> de <b>chain {c1} → {c2}</b> (cross-chain)<br>a <span class="mono">{to}</span>',
     cf_send_kda_sweep: 'Enviar <b>{a} KDA</b> recibidos en la <b>chain {c}</b>.<br>Se juntará de varias chains (~{n}) mediante cross-chain — <b>tarda unos minutos</b>.<br>a <span class="mono">{to}</span>',
     cf_send_evm: 'Enviar <b>{a} {s}</b> en {net}<br>a <span class="mono">{to}</span>',
@@ -264,6 +266,8 @@ const LANG = {
     no_wallets_visible: 'No visible wallets. Tick one in the Wallets section.',
     err_fill_dest_amt: 'Fill in destination and amount.',
     cf_send_kda: 'Send <b>{a} KDA</b> (chain {c})<br>to <span class="mono">{to}</span>',
+    cf_send_tok: 'Send <b>{a} {s}</b> (Kadena token)<br>to <span class="mono">{to}</span>',
+    err_tok_ledger: 'Sending KDA tokens with Ledger is not available yet. Use a seed or private-key wallet.',
     cf_send_kda_x: 'Send <b>{a} KDA</b> from <b>chain {c1} → {c2}</b> (cross-chain)<br>to <span class="mono">{to}</span>',
     cf_send_kda_sweep: 'Send <b>{a} KDA</b> received on <b>chain {c}</b>.<br>It will be gathered from several chains (~{n}) via cross-chain — <b>takes a few minutes</b>.<br>to <span class="mono">{to}</span>',
     cf_send_evm: 'Send <b>{a} {s}</b> on {net}<br>to <span class="mono">{to}</span>',
@@ -753,12 +757,15 @@ function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
   if (bl.kind === 'kda') {
     const toks = bl.tokens || [];
+    // Enviables por transfer normal = tokens del catálogo (PCO…); los kb-* van por el puente, no aquí.
+    const sendable = toks.filter(x => !String(x.symbol).startsWith('kb-'));
     const kdaUsd = (bl.usd || 0) - toks.reduce((s, t) => s + t.usd, 0);
     rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : t('no_bal_yet');
     extra = `<div class="muted xs perline">${per}</div>`;
-    sendForm = `<div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
-      <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div>
+    const assetSel = sendable.length ? `<label>${t('lbl_asset')}</label><select class="k-asset"><option value="__kda__" data-native="1">KDA</option>${sendable.map(x => `<option value="${esc(x.symbol)}" data-bal="${x.amount}">${esc(x.symbol)}</option>`).join('')}</select>` : '';
+    sendForm = `${assetSel}<div class="k-chainrow"><div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
+      <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div></div>
       <label>${t('lbl_dest_k')}</label><input class="k-to" list="dl-kda" placeholder="${t('ph_kda_dest')}"/>
       <label>${t('lbl_amount')}</label><div class="amtrow"><input class="k-amt" type="number" step="0.0001"/><button type="button" class="tiny ghost k-max" title="${t('ttl_max')}">MAX</button></div>
       <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
@@ -861,6 +868,11 @@ function wireCards() {
   // KDA: saldo de la chain origen − 0,11 (colchón del gas). EVM nativo: saldo − GAS_MIN de esa red. Token: saldo entero (el gas va en el nativo).
   document.querySelectorAll('.k-max').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const send = c.querySelector('.k-send');
+    const aSel = c.querySelector('.k-asset');
+    if (aSel && aSel.value !== '__kda__') { // token: MAX = saldo entero del token (el gas se paga en KDA aparte)
+      const o = aSel.selectedOptions[0]; const bal = o ? Number(o.dataset.bal || 0) : 0;
+      c.querySelector('.k-amt').value = bal > 0 ? (Math.floor(bal * 1e6) / 1e6) : ''; return;
+    }
     let per = {}; try { per = JSON.parse(send.dataset.perchain || '{}'); } catch (_) {}
     const chain = Number(c.querySelector('.k-chain').value || 0);
     const max = Math.max(0, (per[chain] || 0) - 0.11);
@@ -878,12 +890,28 @@ function wireCards() {
     const src = card.querySelector('.k-chain'), tgt = card.querySelector('.k-tochain'), hint = card.querySelector('.k-xhint');
     if (src && tgt && hint) { const upd = () => { hint.hidden = src.value === tgt.value; }; src.oninput = upd; tgt.oninput = upd; }
   });
+  // Selector de activo KDA: al elegir un token (PCO), oculta las chains (el token vive en su chain fija).
+  document.querySelectorAll('.k-asset').forEach(sel => {
+    const c = sel.closest('.netcard');
+    const upd = () => { const tok = sel.value !== '__kda__'; const cr = c.querySelector('.k-chainrow'); if (cr) cr.hidden = tok; const xh = c.querySelector('.k-xhint'); if (xh && tok) xh.hidden = true; };
+    sel.onchange = upd; upd();
+  });
   document.querySelectorAll('.k-send').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard');
+    const wid = btn.dataset.wid, knet = btn.dataset.knet;
+    // Rama TOKEN (PCO…): envío del fungible por su módulo, en su chain fija; sin cross-chain ni barrido.
+    const aSel = c.querySelector('.k-asset');
+    if (aSel && aSel.value !== '__kda__') {
+      const symbol = aSel.value;
+      const toT = c.querySelector('.k-to').value.trim(), amtT = c.querySelector('.k-amt').value;
+      if (!toT || !amtT) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
+      if (isLedgerW(wid)) return msg($('wallet-msg'), t('err_tok_ledger'), 'err');
+      return askSend(tr('cf_send_tok', { a: esc(amtT), s: esc(symbol), to: esc(toT) }),
+        async (pass) => { const r = await window.api.sendKdaToken(pass, wid, symbol, toT, amtT); return t('sent_rk') + r.requestKey; }, toT, {});
+    }
     const chain = Number(c.querySelector('.k-chain').value), tochain = Number(c.querySelector('.k-tochain').value);
     const to = c.querySelector('.k-to').value.trim(), amt = c.querySelector('.k-amt').value;
     if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
-    const wid = btn.dataset.wid, knet = btn.dataset.knet;
     const num = Number(amt);
     let per = {}; try { per = JSON.parse(btn.dataset.perchain || '{}'); } catch (_) {}
     const RES = 0.11;

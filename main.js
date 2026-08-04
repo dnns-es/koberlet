@@ -524,6 +524,26 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
   return { ...r, status: res ? 'success' : 'pending' };
 });
 
+// Envío de un TOKEN fungible KDA (PCO y futuros). El símbolo llega del renderer, pero el
+// MÓDULO/chain/precisión se leen del catálogo del DEFAULT (no del renderer) — modelo Alex #4.
+ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, amount }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  // Ledger: el aparato no puede mostrar código Pact arbitrario (firma ciega) → bloqueado, como mercado/puente.
+  if (w.ledger) throw new Error('El envío de tokens KDA con Ledger no está disponible todavía (la app del aparato no muestra código de contrato). Usa una wallet de semilla o clave privada.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  let tok = null, net = null;
+  for (const n of c.kda.networks) { const f = (n.tokens || []).find(t => t.symbol === symbol); if (f) { tok = f; net = n; break; } }
+  if (!tok) throw new Error('Token KDA no reconocido: ' + symbol);
+  const r = await kda.transferToken({ node: net.node, networkId: net.networkId, chain: tok.chain, module: tok.module,
+    from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public, precision: tok.precision });
+  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: tok.chain, requestKey: r.requestKey, tries: 20 });
+  if (res && res.result && res.result.status === 'failure') throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
+  logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${tok.chain} · ${net.name}`, to, id: r.requestKey });
+  return { ...r, status: res ? 'success' : 'pending' };
+});
+
 // Cuentas de desarrollo con claves PÚBLICAS (solo existen en la devnet): sirven de pagador de gas
 const DEV_SENDERS = {
   sender00: { account: 'sender00', publicHex: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca', secretHex: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898' }
