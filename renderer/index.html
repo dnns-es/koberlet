@@ -25,6 +25,7 @@
         <label data-i18n="lbl_net_first">Red de tu primera wallet</label><select id="setup-net"></select>
         <button id="btn-setup" class="primary auth-btn" data-i18n="btn_setup">Crear bóveda y wallet</button>
         <div id="setup-msg" class="msg"></div>
+        <a href="#" id="lnk-restore-s" class="authlink grn" data-i18n="restore_from_backup">↻ Restaurar desde una copia de seguridad</a>
       </div>
       <div id="setup-step2" hidden>
         <p class="warn" data-i18n="seed_warn">⚠️ Apunta esta frase de recuperación en papel y guárdala a salvo. Es la ÚNICA forma de recuperar tu wallet. No se volverá a mostrar.</p>
@@ -48,6 +49,7 @@
       <div class="auth-input"><svg class="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><input id="unlock-pass" type="password" autocomplete="current-password" data-i18n-ph="ph_pass" placeholder="tu contraseña" /></div>
       <button id="btn-unlock" class="primary auth-btn" data-i18n="btn_unlock">Desbloquear</button>
       <div id="unlock-msg" class="msg"></div>
+      <a href="#" id="lnk-restore-u" class="authlink grn" data-i18n="restore_from_backup">↻ Restaurar desde una copia de seguridad</a>
       <div class="auth-foot"><svg viewBox="0 0 24 24" class="i-mini"><rect x="5" y="10.5" width="14" height="9" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg> <span data-i18n="foot_unlock">Cifrado local AES-256</span> · <span id="auth-ver"></span></div>
     </div>
   </section>
@@ -225,13 +227,17 @@
           <button id="btn-sec-export" class="primary" data-i18n="sec_view_pk">🔑 Ver clave privada</button>
         </div>
         <div class="card">
-          <div class="row-between"><b data-i18n="backup_title">Copia de seguridad de la bóveda</b></div>
-          <p class="muted xs" data-i18n="backup_hint">Guarda una copia cifrada de tu bóveda (a un USB, disco o carpeta segura) para poder recuperarla en otro equipo. La copia está cifrada con tu contraseña: sin ella no sirve de nada.</p>
+          <div class="row-between"><b data-i18n="backup_title">Copia de seguridad cifrada</b></div>
+          <p class="muted xs" data-i18n="backup_hint">Crea un archivo cifrado con TODAS tus wallets. Elige una contraseña fuerte: guarda el archivo donde quieras (USB, disco, nube) — sin esa contraseña no se puede abrir, y con ella recuperas todo en cualquier equipo desde cero.</p>
+          <label data-i18n="lbl_bk_newpass">Contraseña para la copia</label>
+          <input id="bk-pass" type="password" autocomplete="new-password" data-i18n-ph="ph_bk_pass" placeholder="mínimo 10 caracteres, cuanto más larga mejor" />
+          <input id="bk-pass2" type="password" autocomplete="new-password" data-i18n-ph="ph_bk_pass2" placeholder="repite la contraseña" />
+          <div id="bk-strength" class="muted xs"></div>
           <div class="btnrow2"><button id="btn-backup" class="primary" data-i18n="backup_do">⬇ Exportar copia cifrada</button></div>
           <div id="backup-msg" class="msg"></div>
           <hr class="soft"/>
-          <p class="muted xs" data-i18n="restore_hint">Restaurar: elige un fichero de copia y su contraseña. Se respalda tu bóveda actual antes de sustituirla.</p>
-          <label data-i18n="lbl_backup_pass">Contraseña de la copia</label><input id="restore-pass" type="password" />
+          <p class="muted xs" data-i18n="restore_hint">Restaurar: elige un archivo de copia y su contraseña. Se respalda tu bóveda actual antes de tocar nada.</p>
+          <label data-i18n="lbl_backup_pass">Contraseña de la copia</label><input id="restore-pass" type="password" autocomplete="off" />
           <div class="btnrow2"><button id="btn-restore" class="ghost" data-i18n="restore_do">⬆ Restaurar copia…</button></div>
           <div id="restore-msg" class="msg"></div>
         </div>
