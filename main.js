@@ -536,9 +536,15 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
   let tok = null, net = null;
   for (const n of c.kda.networks) { const f = (n.tokens || []).find(t => t.symbol === symbol); if (f) { tok = f; net = n; break; } }
   if (!tok) throw new Error('Token KDA no reconocido: ' + symbol);
-  const r = await kda.transferToken({ node: net.node, networkId: net.networkId, chain: tok.chain, module: tok.module,
+  // El token puede vivir en cualquier chain: enviar desde la que tenga más saldo del remitente.
+  const bal = await kda.getTokenBalances(w.kda.account, { node: net.node, networkId: net.networkId, tokens: [tok] });
+  const pc = (bal[0] && bal[0].perChain) || {};
+  const sendChain = Object.keys(pc).sort((a, b) => pc[b] - pc[a])[0];
+  if (sendChain === undefined) throw new Error('No tienes saldo de ' + symbol + ' en ninguna chain.');
+  if (Number(amount) > (pc[sendChain] || 0) + 1e-12) throw new Error(`En la chain ${sendChain} solo tienes ${pc[sendChain]} ${symbol}. Envía como mucho eso (el saldo no se junta entre chains todavía).`);
+  const r = await kda.transferToken({ node: net.node, networkId: net.networkId, chain: sendChain, module: tok.module,
     from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public, precision: tok.precision });
-  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: tok.chain, requestKey: r.requestKey, tries: 20 });
+  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: sendChain, requestKey: r.requestKey, tries: 20 });
   if (res && res.result && res.result.status === 'failure') throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
   logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${tok.chain} · ${net.name}`, to, id: r.requestKey });
   return { ...r, status: res ? 'success' : 'pending' };
