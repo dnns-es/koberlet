@@ -365,3 +365,13 @@ body.focus-mode #net-cards.grid{display:block}
 body.focus-mode #net-cards .netcard:not(.focused){display:none}
 body.focus-mode #net-cards .netcard.focused{max-width:820px;margin:0 auto}
 body.focus-mode #net-cards .netcard.focused .nc-body{padding:4px 0}
+/* saldos más grandes y remarcados al ampliar */
+body.focus-mode .netcard.focused .assets{margin:8px 0 12px}
+body.focus-mode .netcard.focused .asset{padding:12px 6px;border-radius:10px}
+body.focus-mode .netcard.focused .asset:nth-child(odd){background:rgba(99,224,56,.06)}
+body.focus-mode .netcard.focused .a-sym{font-size:1.15em;font-weight:700}
+body.focus-mode .netcard.focused .a-amt{font-size:1.3em;font-weight:700}
+body.focus-mode .netcard.focused .a-usd{font-size:1.1em}
+/* ambos paneles (recibir + enviar) visibles a la vez */
+body.focus-mode .netcard.focused .nc-panel{display:block}
+body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliado */

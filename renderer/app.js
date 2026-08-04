@@ -853,12 +853,20 @@ function enterFocus(card) {
   document.querySelectorAll('.netcard').forEach(c => c.classList.toggle('focused', c === card));
   const body = card.querySelector('.nc-body'); // desplegar sus saldos al ampliar
   if (body) { body.hidden = false; const ch = card.querySelector('.chev'); if (ch) ch.textContent = '▾'; }
+  // Al ampliar, mostrar TODO a la vez: Recibir y Enviar desplegados (y sus botones marcados).
+  card.querySelectorAll('.nc-panel').forEach(p => { p.hidden = false; });
+  card.querySelectorAll('.act-btn[data-panel]').forEach(b => b.classList.add('on'));
   document.body.classList.add('focus-mode');
   window.scrollTo(0, 0);
 }
 function exitFocus() {
   document.body.classList.remove('focus-mode');
-  document.querySelectorAll('.netcard.focused').forEach(c => c.classList.remove('focused'));
+  document.querySelectorAll('.netcard.focused').forEach(c => {
+    c.classList.remove('focused');
+    // dejar la tarjeta recogida como estaba (paneles cerrados, botones sin marcar)
+    c.querySelectorAll('.nc-panel').forEach(p => { p.hidden = true; });
+    c.querySelectorAll('.act-btn[data-panel]').forEach(b => b.classList.remove('on'));
+  });
 }
 function wireCards() {
   // Título → despliega tokens/chains
