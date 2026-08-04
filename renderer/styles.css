@@ -353,3 +353,15 @@ body.hidebal .a-amt::after{content:'•••••';font-size:13px}
 body.hidebal .a-usd::after{content:'••••';font-size:13px}
 body.hidebal .a-chg,body.hidebal .legend,body.hidebal .perline,body.hidebal #br-tokhint{display:none !important}
 body.hidebal .sr-bal{visibility:hidden}
+
+/* Vista ampliada: una wallet ocupa todo el dashboard para trabajar con ella */
+#focus-back{display:none}
+body.focus-mode #view-dashboard>.total-card,
+body.focus-mode #view-dashboard>#gas-warn,
+body.focus-mode #view-dashboard>#conv,
+body.focus-mode #view-dashboard>h3{display:none !important}
+body.focus-mode #focus-back{display:inline-flex;align-items:center;margin:0 0 14px;cursor:pointer}
+body.focus-mode #net-cards.grid{display:block}
+body.focus-mode #net-cards .netcard:not(.focused){display:none}
+body.focus-mode #net-cards .netcard.focused{max-width:820px;margin:0 auto}
+body.focus-mode #net-cards .netcard.focused .nc-body{padding:4px 0}
