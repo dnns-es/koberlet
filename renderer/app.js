@@ -58,6 +58,8 @@ const LANG = {
     backup_hint: 'Guarda una copia cifrada de tu bóveda (a un USB, disco o carpeta segura) para recuperarla en otro equipo. Va cifrada con tu contraseña.',
     restore_hint: 'Restaurar: elige un fichero de copia y su contraseña. Se respalda tu bóveda actual antes de sustituirla.',
     backup_ok: 'Copia guardada en {path}', restore_ok: 'Bóveda restaurada. Desbloquea con la contraseña de esa copia.', restore_need_pass: 'Escribe la contraseña de la copia primero.',
+    lbl_bk_newpass: 'Contraseña para la copia', bk_short: 'La contraseña debe tener al menos 10 caracteres.', bk_mismatch: 'Las dos contraseñas no coinciden.', bk_working: 'Trabajando… (el cifrado tarda un momento)', restore_from_backup: '↻ Restaurar desde una copia de seguridad', restore_merged: 'Copia importada: {n} wallet(s) nuevas añadidas.',
+    pw_short: 'Muy corta (mínimo 10)', pw_weak: 'Débil — alárgala o mézclala más', pw_ok: 'Aceptable', pw_strong: 'Fuerte 💪',
     upd_verified: '🔒 Actualizaciones firmadas y verificadas (Ed25519) antes de instalarse.',
     edit_wallet: 'Editar wallet', wtag: 'Etiqueta', wtag_none: '— sin etiqueta —', wtag_cold: '❄️ Fría (ahorro)', wtag_hot: '🔥 Caliente (uso diario)', wnote: 'Nota privada',
     welcome_title: 'Bienvenido a Koberlet 👛', welcome_ok: 'Entendido, empezar',
@@ -212,6 +214,8 @@ const LANG = {
     backup_hint: 'Save an encrypted copy of your vault (to a USB, disk or safe folder) to recover it on another computer. It is encrypted with your password.',
     restore_hint: 'Restore: pick a backup file and its password. Your current vault is backed up before being replaced.',
     backup_ok: 'Backup saved to {path}', restore_ok: 'Vault restored. Unlock with that backup\'s password.', restore_need_pass: 'Enter the backup password first.',
+    lbl_bk_newpass: 'Password for the backup', bk_short: 'The password must be at least 10 characters.', bk_mismatch: 'The two passwords do not match.', bk_working: 'Working… (encryption takes a moment)', restore_from_backup: '↻ Restore from a backup', restore_merged: 'Backup imported: {n} new wallet(s) added.',
+    pw_short: 'Too short (min 10)', pw_weak: 'Weak — make it longer or mix it more', pw_ok: 'Acceptable', pw_strong: 'Strong 💪',
     upd_verified: '🔒 Updates are signed and verified (Ed25519) before installing.',
     edit_wallet: 'Edit wallet', wtag: 'Tag', wtag_none: '— no tag —', wtag_cold: '❄️ Cold (savings)', wtag_hot: '🔥 Hot (daily use)', wnote: 'Private note',
     welcome_title: 'Welcome to Koberlet 👛', welcome_ok: 'Got it, start',
@@ -1157,17 +1161,51 @@ function toast(text, ms) { const el = $('toast'); if (!el) return; el.textConten
 function wTagBadge(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; if (m.tag === 'fria') return `<span class="wtag cold">${t('tag_cold')}</span>`; if (m.tag === 'caliente') return `<span class="wtag hot">${t('tag_hot')}</span>`; return ''; }
 function wNote(id) { const m = (CFG && CFG.walletMeta && CFG.walletMeta[id]) || {}; return m.note ? ` · <span class="wnote">📝 ${esc(m.note)}</span>` : ''; }
 
-// ===== Idea 12: copia de seguridad / restaurar bóveda =====
+// ===== Copia de seguridad cifrada portable (contraseña dedicada) =====
+// Medidor simple de fortaleza: longitud + variedad de tipos de carácter.
+function pwStrength(p) {
+  p = String(p || '');
+  let score = 0;
+  if (p.length >= 10) score++; if (p.length >= 14) score++; if (p.length >= 20) score++;
+  if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score++;
+  if (/[0-9]/.test(p)) score++; if (/[^a-zA-Z0-9]/.test(p)) score++;
+  if (p.length < 10) return { txt: t('pw_short'), color: '#c0392b' };
+  if (score <= 2) return { txt: t('pw_weak'), color: '#c0392b' };
+  if (score <= 4) return { txt: t('pw_ok'), color: '#b8860b' };
+  return { txt: t('pw_strong'), color: '#2e8b3e' };
+}
+if ($('bk-pass')) $('bk-pass').oninput = () => { const s = pwStrength($('bk-pass').value); const el = $('bk-strength'); el.textContent = $('bk-pass').value ? s.txt : ''; el.style.color = s.color; };
 $('btn-backup').onclick = async () => {
-  try { const r = await window.api.vaultBackup(); if (r.ok) msg($('backup-msg'), t('backup_ok').replace('{path}', r.path), 'ok'); }
-  catch (e) { msg($('backup-msg'), e.message, 'err'); }
+  const p = $('bk-pass').value, p2 = $('bk-pass2').value;
+  if (p.length < 10) return msg($('backup-msg'), t('bk_short'), 'err');
+  if (p !== p2) return msg($('backup-msg'), t('bk_mismatch'), 'err');
+  msg($('backup-msg'), t('bk_working'));
+  try {
+    const r = await window.api.backupExport(p);
+    if (r.ok) { msg($('backup-msg'), t('backup_ok').replace('{path}', r.path), 'ok'); $('bk-pass').value = ''; $('bk-pass2').value = ''; $('bk-strength').textContent = ''; }
+    else msg($('backup-msg'), '', '');
+  } catch (e) { msg($('backup-msg'), 'Error: ' + e.message, 'err'); }
 };
 $('btn-restore').onclick = async () => {
   const p = $('restore-pass').value;
   if (!p) return msg($('restore-msg'), t('restore_need_pass'), 'err');
-  try { const r = await window.api.vaultRestore(p); if (r.ok) { msg($('restore-msg'), t('restore_ok'), 'ok'); setTimeout(() => location.reload(), 1500); } }
-  catch (e) { msg($('restore-msg'), e.message, 'err'); }
+  msg($('restore-msg'), t('bk_working'));
+  try {
+    const r = await window.api.backupImport(p);
+    if (r.ok) { msg($('restore-msg'), (r.mode === 'merge' ? t('restore_merged').replace('{n}', r.added) : t('restore_ok')), 'ok'); setTimeout(() => location.reload(), 1500); }
+    else msg($('restore-msg'), '', '');
+  } catch (e) { msg($('restore-msg'), 'Error: ' + e.message, 'err'); }
 };
+// Restaurar desde la pantalla de arranque (recuperación en un equipo nuevo, sin bóveda).
+async function restoreFromAuth(passId, msgId) {
+  const p = $(passId).value;
+  if (!p) return msg($(msgId), t('restore_need_pass'), 'err');
+  msg($(msgId), t('bk_working'));
+  try { const r = await window.api.backupImport(p); if (r.ok) location.reload(); else msg($(msgId), '', ''); }
+  catch (e) { msg($(msgId), 'Error: ' + e.message, 'err'); }
+}
+if ($('lnk-restore-u')) $('lnk-restore-u').onclick = (e) => { e.preventDefault(); restoreFromAuth('unlock-pass', 'unlock-msg'); };
+if ($('lnk-restore-s')) $('lnk-restore-s').onclick = (e) => { e.preventDefault(); restoreFromAuth('setup-pass', 'setup-msg'); };
 
 // ===== Idea 14: bienvenida la primera vez =====
 function maybeWelcome() { if (!localStorage.getItem('koberlet-welcomed')) { $('modal-welcome').hidden = false; } }

@@ -375,3 +375,8 @@ body.focus-mode .netcard.focused .a-usd{font-size:1.1em}
 /* ambos paneles (recibir + enviar) visibles a la vez */
 body.focus-mode .netcard.focused .nc-panel{display:block}
 body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliado */
+
+/* enlace restaurar en pantallas de arranque */
+.authlink{display:inline-block;margin:10px 0 2px;font-size:13px;text-decoration:none;cursor:pointer}
+.authlink:hover{text-decoration:underline}
+#bk-strength{margin:2px 0 6px;font-weight:600}
