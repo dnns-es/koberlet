@@ -19,7 +19,7 @@ const LANG = {
     nft_encontradas: '{n} piezas en {red}.', nft_ninguna: 'Ninguna pieza en {red} de momento.',
     nft_ninguna_manual: 'En {red} no hay quien liste tus piezas: añádelas por su identificador.',
     nft_sin_soporte: '{red} todavía no tiene ledger de NFT configurado.',
-    nft_sin_imagen: 'sin imagen', nft_quitar: 'quitar', nft_vacio: 'Aquí aparecerán tus piezas.',
+    nft_sin_imagen: 'sin imagen', nft_quitar: 'quitar', nft_vacio: 'Aquí aparecerán tus piezas.', nft_sueltas: 'Sin colección',
     nft_pide_id: 'Pega el identificador de la pieza (token id):',
     auth_tag_setup: 'Crea tu bóveda cifrada', auth_tag_unlock: 'Tu monedero multi-cadena',
     auth_lead: 'Protege tus claves con una contraseña. Se cifran con AES-256-GCM + scrypt y no se guardan en ningún sitio.',
@@ -184,7 +184,7 @@ const LANG = {
     nft_encontradas: '{n} pieces on {red}.', nft_ninguna: 'No pieces on {red} yet.',
     nft_ninguna_manual: 'Nothing lists your pieces on {red}: add them by identifier.',
     nft_sin_soporte: '{red} has no NFT ledger configured yet.',
-    nft_sin_imagen: 'no image', nft_quitar: 'remove', nft_vacio: 'Your pieces will show up here.',
+    nft_sin_imagen: 'no image', nft_quitar: 'remove', nft_vacio: 'Your pieces will show up here.', nft_sueltas: 'No collection',
     nft_pide_id: 'Paste the piece identifier (token id):',
     auth_tag_setup: 'Create your encrypted vault', auth_tag_unlock: 'Your multi-chain wallet',
     auth_lead: 'Protect your keys with a password. They are encrypted with AES-256-GCM + scrypt and never stored anywhere.',
@@ -508,6 +508,7 @@ $('btn-lock').onclick = async () => { await window.api.lock(); location.reload()
 // Solo lectura de momento: enseña lo que la cadena confirma que tiene la wallet.
 // Las imágenes llegan del main ya como data URL (la CSP no deja cargar remotas).
 let NFT_CACHE = [];
+const NFT_PLEGADAS = new Set();   // colecciones cerradas por el usuario
 
 function nftRellenarSelectores() {
     const wsel = $('nft-wallet'), rsel = $('nft-red');
@@ -533,18 +534,50 @@ function nftPintar(d) {
     aviso.textContent = piezas.length
         ? tr('nft_encontradas', { n: piezas.length, red: d.red })
         : (d && d.conDescubridor ? tr('nft_ninguna', { red: d.red }) : tr('nft_ninguna_manual', { red: d.red }));
-    grid.innerHTML = piezas.map((p, i) => `
-        <div class="nft-card">
-            ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
-            ${p.imagen ? `<img src="${p.imagen}" alt="">`
-                       : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
-            <div class="nft-body">
-                <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
-                <div class="nft-col" title="${esc(p.id)}">${esc(p.coleccion || p.id)}</div>
-                ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
-                    `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
-            </div>
-        </div>`).join('') || `<div class="nft-vacio">${t('nft_vacio')}</div>`;
+    // agrupadas por colección: una cabecera por colección, plegable, con su
+    // número de piezas. Dentro, ordenadas por el #N del nombre.
+    const grupos = new Map();
+    piezas.forEach((p, i) => {
+        const clave = p.coleccion || t('nft_sueltas');
+        if (!grupos.has(clave)) grupos.set(clave, []);
+        grupos.get(clave).push({ p, i });
+    });
+    const numero = (x) => {
+        const m = /#\s*(\d+)/.exec(x.p.nombre || '');
+        return m ? Number(m[1]) : 1e9;
+    };
+    grid.innerHTML = [...grupos.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+        .map(([nombre, items]) => {
+            items.sort((a, b) => numero(a) - numero(b));
+            const cerrada = NFT_PLEGADAS.has(nombre);
+            return `<section class="nft-col">
+                <header class="nft-col-cab" data-col="${esc(nombre)}">
+                    <span class="nft-col-fl">${cerrada ? '▸' : '▾'}</span>
+                    <b>${esc(nombre)}</b>
+                    <span class="nft-col-n">${items.length}</span>
+                </header>
+                <div class="nft-grid"${cerrada ? ' hidden' : ''}>
+                    ${items.map(({ p, i }) => `
+                        <div class="nft-card">
+                            ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
+                            ${p.imagen ? `<img src="${p.imagen}" alt="">`
+                                       : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
+                            <div class="nft-body">
+                                <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
+                                ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
+                                    `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
+                            </div>
+                        </div>`).join('')}
+                </div>
+            </section>`;
+        }).join('') || `<div class="nft-vacio">${t('nft_vacio')}</div>`;
+
+    grid.querySelectorAll('.nft-col-cab').forEach(h => h.onclick = () => {
+        const nombre = h.dataset.col;
+        if (NFT_PLEGADAS.has(nombre)) NFT_PLEGADAS.delete(nombre); else NFT_PLEGADAS.add(nombre);
+        nftPintar(d);
+    });
 
     grid.querySelectorAll('.nft-quitar').forEach(b => b.onclick = async () => {
         const p = NFT_CACHE[Number(b.dataset.i)];
