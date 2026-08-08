@@ -862,15 +862,14 @@ function saldoDe(walletId, simbolo) {
     return total;
 }
 
-// Pinta "disponible: X SÍMBOLO" bajo los botones del par.
-function pintarDisponible(idZona, walletId, simbolos) {
+// Pinta "Disponible: X" justo bajo el botón de un token del par.
+// Cada lado pinta el símbolo que tenga en ese momento, así al invertir el sentido
+// el saldo viaja con su token (renderMercado/renderEthSwap repintan los dos lados).
+function pintarDisponible(idZona, walletId, simbolo) {
     const el = $(idZona);
     if (!el) return;
-    const partes = simbolos.map(s => {
-        const v = saldoDe(walletId, s);
-        return `${esc(s)}: <b>${v === null ? '—' : v.toLocaleString('es-ES', { maximumFractionDigits: 6 })}</b>`;
-    });
-    el.innerHTML = t('mk_disponible') + ' ' + partes.join(' · ');
+    const v = saldoDe(walletId, simbolo);
+    el.innerHTML = t('mk_disponible') + ' <b>' + (v === null ? '—' : v.toLocaleString('es-ES', { maximumFractionDigits: 6 })) + '</b>';
 }
 
 function renderMercado() {
@@ -880,11 +879,20 @@ function renderMercado() {
   $('mk-from').textContent = compra ? 'kb-USDC' : 'KDA';
   $('mk-to').textContent = compra ? 'KDA' : 'kb-USDC';
   $('mk-lbl-amt').textContent = t('mk_amount') + ' (' + (compra ? 'kb-USDC' : 'KDA') + ')';
-  pintarDisponible('mk-bal', $('mk-wallet').value, ['KDA', 'kb-USDC']);
+  pintarSaldosMercado();
   mkQuote();
 }
-if ($('mk-wallet')) $('mk-wallet').addEventListener('change', () => pintarDisponible('mk-bal', $('mk-wallet').value, ['KDA', 'kb-USDC']));
-if ($('es-wallet')) $('es-wallet').addEventListener('change', () => pintarDisponible('es-bal', $('es-wallet').value, ['ETH', 'USDC']));
+// Saldos de cada lado del par según el sentido actual (lee el símbolo del propio chip).
+function pintarSaldosMercado() {
+  pintarDisponible('mk-bal-from', $('mk-wallet').value, $('mk-from').textContent);
+  pintarDisponible('mk-bal-to', $('mk-wallet').value, $('mk-to').textContent);
+}
+function pintarSaldosEthSwap() {
+  pintarDisponible('es-bal-from', $('es-wallet').value, $('es-from').textContent);
+  pintarDisponible('es-bal-to', $('es-wallet').value, $('es-to').textContent);
+}
+if ($('mk-wallet')) $('mk-wallet').addEventListener('change', pintarSaldosMercado);
+if ($('es-wallet')) $('es-wallet').addEventListener('change', pintarSaldosEthSwap);
 $('mk-invert').onclick = () => { MKDIR = MKDIR === 'compra' ? 'venta' : 'compra'; renderMercado(); };
 let _mkT = null;
 $('mk-amt').oninput = () => { clearTimeout(_mkT); _mkT = setTimeout(mkQuote, 400); };
@@ -916,7 +924,7 @@ function renderEthSwap() {
   $('es-from').textContent = u2e ? 'USDC' : 'ETH';
   $('es-to').textContent = u2e ? 'ETH' : 'USDC';
   $('es-lbl-amt').textContent = t('mk_amount') + ' (' + (u2e ? 'USDC' : 'ETH') + ')';
-  pintarDisponible('es-bal', $('es-wallet').value, ['ETH', 'USDC']);
+  pintarSaldosEthSwap();
   esQuote();
 }
 $('es-invert').onclick = () => { ESDIR = ESDIR === 'usdc2eth' ? 'eth2usdc' : 'usdc2eth'; renderEthSwap(); };

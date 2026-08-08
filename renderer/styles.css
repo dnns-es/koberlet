@@ -190,7 +190,11 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 .stp .sd{font-size:11px;font-family:Consolas,monospace;color:var(--kda-d)}
 .sendsum{background:#f4f6f2;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;margin-bottom:8px}
 .sendsum .mono{background:none;padding:0}
-.dir-row{display:flex;align-items:center;gap:12px;justify-content:center;margin:4px 0 8px}
+.dir-row{display:flex;align-items:flex-start;gap:12px;justify-content:center;margin:4px 0 8px}
+.dir-col{flex:1;min-width:0}
+.dir-bal{text-align:center;margin-top:4px}
+.dir-bal b{color:var(--fg)}
+.dir-row .invert{margin-top:2px}
 .dir-chip{flex:1;text-align:center;background:#f1f5ee;border:1px solid var(--line);border-radius:10px;padding:10px;font-weight:700}
 .invert{background:var(--kda);color:#08210a;border-radius:50%;width:38px;height:38px;font-size:16px;flex-shrink:0}
 #br-code{display:block;white-space:pre-wrap}
@@ -429,5 +433,3 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .nft-env button { font-size:.72rem; padding:5px 0; }
 .nft-env-msg { line-height:1.35; }
 
-.mk-bal { margin:8px 0 2px; }
-.mk-bal b { color:var(--fg); }
