@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   nftList: (a) => ipcRenderer.invoke('nft:list', a),
   nftAdd: (a) => ipcRenderer.invoke('nft:add', a),
   nftRemove: (a) => ipcRenderer.invoke('nft:remove', a),
+  nftComprobar: (a) => ipcRenderer.invoke('nft:comprobar', a),
+  nftEnviar: (a) => ipcRenderer.invoke('nft:enviar', a),
   sendKda: (passphrase, walletId, kdaNet, chain, to, amount) => ipcRenderer.invoke('send:kda', { passphrase, walletId, kdaNet, chain, to, amount }),
   sendKdaToken: (passphrase, walletId, symbol, to, amount) => ipcRenderer.invoke('send:kdatoken', { passphrase, walletId, symbol, to, amount }),
   sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
