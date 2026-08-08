@@ -397,9 +397,27 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .nft-vacio { border:1px dashed var(--line); border-radius:14px; padding:26px; text-align:center; color:var(--muted); font-size:.85rem; }
 
 /* piezas agrupadas por colección */
-.nft-col { margin-bottom: 18px; }
-.nft-col-cab { display:flex; align-items:center; gap:9px; cursor:pointer; user-select:none;
-               padding:8px 2px; border-bottom:1px solid var(--line); margin-bottom:10px; }
-.nft-col-fl { width:12px; color:var(--muted); font-size:.8rem; }
+
+
+
 .nft-col-n { margin-left:auto; font-size:.72rem; color:var(--muted);
              background:var(--soft); border:1px solid var(--line); border-radius:999px; padding:1px 9px; }
+
+/* colecciones como tarjetas con portada: la abierta ocupa la fila entera */
+#nft-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+.nft-col { display:contents; }
+.nft-col.abierta { display:block; grid-column:1/-1; }
+.nft-portada { position:relative; border:1px solid var(--line); border-radius:16px; overflow:hidden;
+               background:var(--card); cursor:pointer; transition:transform .12s, box-shadow .12s; }
+.nft-portada:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.16); }
+.nft-portada img, .nft-portada .sinimg { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.nft-portada .sinimg { display:flex; align-items:center; justify-content:center;
+                       background:var(--soft); color:var(--muted); font-size:.75rem; }
+.nft-portada-pie { position:absolute; left:0; right:0; bottom:0; display:flex; align-items:center; gap:8px;
+                   padding:22px 12px 10px; color:#fff;
+                   background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.78) 65%); }
+.nft-portada-tit { font-weight:600; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.nft-portada-pie .nft-col-n { margin-left:auto; background:rgba(255,255,255,.18); border:0; color:#fff; }
+.nft-col.abierta .nft-portada { margin-bottom:14px; }
+.nft-col.abierta .nft-portada img, .nft-col.abierta .nft-portada .sinimg { aspect-ratio:auto; height:120px; object-position:center 35%; }
+.nft-desplegado { border-left:2px solid var(--brand,#63e038); padding-left:14px; margin-bottom:22px; }
