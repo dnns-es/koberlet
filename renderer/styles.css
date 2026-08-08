@@ -395,3 +395,11 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .nft-card .nft-quitar { position:absolute; top:6px; right:6px; background:rgba(0,0,0,.55); color:#fff;
                         border:0; border-radius:6px; font-size:.62rem; padding:2px 6px; cursor:pointer; }
 .nft-vacio { border:1px dashed var(--line); border-radius:14px; padding:26px; text-align:center; color:var(--muted); font-size:.85rem; }
+
+/* piezas agrupadas por colección */
+.nft-col { margin-bottom: 18px; }
+.nft-col-cab { display:flex; align-items:center; gap:9px; cursor:pointer; user-select:none;
+               padding:8px 2px; border-bottom:1px solid var(--line); margin-bottom:10px; }
+.nft-col-fl { width:12px; color:var(--muted); font-size:.8rem; }
+.nft-col-n { margin-left:auto; font-size:.72rem; color:var(--muted);
+             background:var(--soft); border:1px solid var(--line); border-radius:999px; padding:1px 9px; }
