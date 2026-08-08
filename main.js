@@ -944,7 +944,18 @@ ipcMain.handle('update:check', async () => {
     const ver = (j && typeof j.version === 'string' && /^\d+\.\d+\.\d+$/.test(j.version)) ? j.version : null;
     const newer = ver && cmpVer(ver, APP_VERSION) > 0;
     const url = (j && typeof j.url === 'string' && j.url.startsWith(UPDATE_URL + '/')) ? j.url : (UPDATE_URL + '/');
-    return { current: APP_VERSION, latest: ver, newer: !!newer, url, canAuto: !!j.appUrl, notes: j.notes || '' };
+    // `notes` puede ser un texto suelto o un objeto por idioma {es, en}: se
+    // acepta lo uno o lo otro, saneado, y el renderer elige según el idioma.
+    let notes = '';
+    if (typeof j.notes === 'string') notes = j.notes.slice(0, 4000);
+    else if (j.notes && typeof j.notes === 'object' && !Array.isArray(j.notes)) {
+      notes = {};
+      for (const k of ['es', 'en']) {
+        if (typeof j.notes[k] === 'string') notes[k] = j.notes[k].slice(0, 4000);
+      }
+      if (!Object.keys(notes).length) notes = '';
+    }
+    return { current: APP_VERSION, latest: ver, newer: !!newer, url, canAuto: !!j.appUrl, notes };
   } catch (_) { return { current: APP_VERSION, latest: null, newer: false }; }
 });
 // SEGURIDAD (revisión 2026-07-21 #1b): el único uso de open:external es el botón de descarga del update, que apunta
