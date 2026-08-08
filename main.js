@@ -1,5 +1,5 @@
 // Proceso principal. Las privadas viven SOLO aquí (nunca en el renderer). Se firma y se exporta aquí.
-const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -35,15 +35,23 @@ const DEFAULT_CONFIG = {
   // Redes Kadena: la OFICIAL (donde están los fondos reales de la mayoría) y el FORK comunitario. Se activan como las EVM.
   kda: {
     networks: [
-      { key: 'mainnet', name: 'Kadena (Inc)', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: false, fork: false },
+      // `nft`: dónde vive el ledger de NFT de esa red, quién sabe qué tiene una
+      // cuenta (descubridor, opcional) y por dónde se leen los ipfs://. Igual que
+      // `tokens`, va en el código y no en la config del usuario (modelo Alex #4).
+      { key: 'mainnet', name: 'Kadena (Inc)', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: false, fork: false,
+        nft: { ledger: 'marmalade-v2.ledger', chain: '0', descubridor: null, pasarela: 'https://ipfs.io/ipfs/' } },
       // `tokens`: fungibles KDA a mostrar además del kb-* del puente. Lista FIJA del código (no de la
       // config del usuario) — modelo Alex #4: el renderer no puede inyectar contratos de token.
       // Cada uno: {module (namespace.contrato fungible-v2), symbol, precision, chain, cg (id CoinGecko o null si sin precio)}.
       { key: 'fork', name: 'Kadena', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true,
+        nft: { ledger: 'marmalade-v2.ledger', chain: '0', descubridor: null, pasarela: 'https://ipfs.io/ipfs/' },
         tokens: [
           { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null }
         ] },
-      { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false }
+      { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false,
+        nft: { ledger: 'n_84b9f9aa6a2665fd8c8ca80cc9b252d818fdfbac.ledger', chain: '0',
+               descubridor: 'https://nft.dnns.es/api/mis-piezas?cuenta=',
+               pasarela: 'https://nft.dnns.es/ipfs/' } }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
   },
@@ -838,6 +846,76 @@ ipcMain.handle('history:export', async (_e, { rows, filename }) => {
   fs.writeFileSync(filePath, csv, 'utf8');
   return { ok: true, path: filePath };
 });
+
+// ===== NFT: piezas de las wallets (lectura) =====
+// El ledger de Kadena no sabe listar los tokens de una cuenta, así que las piezas
+// salen del descubridor de la red (si lo hay) y de las que el usuario añade a
+// mano, y SIEMPRE se confirman contra la cadena antes de enseñarlas.
+const nftLib = require('./lib/nft');
+
+function nftManualPath() { return path.join(app.getPath('userData'), 'nft-manual.json'); }
+
+function leerManuales() {
+    try { return JSON.parse(fs.readFileSync(nftManualPath(), 'utf8')); } catch (e) { return {}; }
+}
+function guardarManuales(m) {
+    fs.writeFileSync(nftManualPath(), JSON.stringify(m, null, 2), 'utf8');
+}
+function redKdaPorClave(clave) {
+    const c = loadConfig();
+    return (c.kda.networks || []).find(r => r.key === clave) || null;
+}
+// Miniatura con lo que ya trae Electron: nada de dependencias nuevas. Si el
+// formato no lo entiende (algún WebP raro), devuelve null y se usa el original.
+async function miniatura(datos, tipo) {
+    const img = nativeImage.createFromBuffer(datos);
+    if (img.isEmpty()) return null;
+    const { width } = img.getSize();
+    const chica = width > 420 ? img.resize({ width: 420, quality: 'good' }) : img;
+    return chica.toDataURL();
+}
+
+function localDeRed(red) {
+    // lib/kda.local(node, networkId, chain, code) -> aquí se fija la red
+    return (code, chain) => kda.local(red.node, red.networkId, chain || '0', code);
+}
+
+ipcMain.handle('nft:list', async (_e, { walletId, redKey } = {}) => {
+    const w = unlocked.data.wallets.find(x => x.id === walletId);
+    if (!w || w.kind !== 'kda') throw new Error('Elige una wallet de Kadena');
+    const red = redKdaPorClave(redKey);
+    if (!red) throw new Error('Red no encontrada');
+    if (!red.nft || !red.nft.ledger) return { piezas: [], sinSoporte: true, red: red.name };
+    const cuenta = w.kda.account;
+    const manuales = (leerManuales()[`${redKey}|${cuenta}`]) || [];
+    const piezas = await nftLib.piezasDe(localDeRed(red), red, cuenta, manuales, { reducir: miniatura });
+    return { piezas, cuenta, red: red.name, redKey, conDescubridor: !!red.nft.descubridor };
+});
+
+ipcMain.handle('nft:add', async (_e, { walletId, redKey, id } = {}) => {
+    const w = unlocked.data.wallets.find(x => x.id === walletId);
+    if (!w || w.kind !== 'kda') throw new Error('Elige una wallet de Kadena');
+    const red = redKdaPorClave(redKey);
+    if (!red || !red.nft || !red.nft.ledger) throw new Error('Esta red no tiene NFT configurados');
+    const cuenta = w.kda.account;
+    const pieza = await nftLib.comprobarPieza(localDeRed(red), red, cuenta, String(id || '').trim(), { reducir: miniatura });
+    const m = leerManuales();
+    const clave = `${redKey}|${cuenta}`;
+    m[clave] = [...new Set([...(m[clave] || []), pieza.id])].slice(0, 200);
+    guardarManuales(m);
+    return { ok: true, pieza };
+});
+
+ipcMain.handle('nft:remove', (_e, { walletId, redKey, id } = {}) => {
+    const w = unlocked.data.wallets.find(x => x.id === walletId);
+    if (!w) throw new Error('wallet no encontrada');
+    const m = leerManuales();
+    const clave = `${redKey}|${w.kda.account}`;
+    m[clave] = (m[clave] || []).filter(x => x !== id);
+    guardarManuales(m);
+    return { ok: true };
+});
+
 ipcMain.handle('config:get', () => loadConfig());
 ipcMain.handle('config:set', (_e, c) => {
   if (!c || typeof c !== 'object' || Array.isArray(c)) throw new Error('config inválida');

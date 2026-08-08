@@ -26,3 +26,6 @@ claves/
 .env.*
 .keys/
 _backups/
+
+_seed.txt
+diag-deriv.js

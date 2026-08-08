@@ -61,6 +61,7 @@
       <nav>
         <a class="nav on" data-nav="dashboard"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></span> <span data-i18n="nav_dashboard">Dashboard</span></a>
         <a class="nav" data-nav="wallets"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3.5 8a2 2 0 0 1 2-2H17a1.5 1.5 0 0 1 1.5 1.5V9"/><path d="M3.5 8v8.5a2 2 0 0 0 2 2H18a1.5 1.5 0 0 0 1.5-1.5V13"/><path d="M20.5 9.5H17a2 2 0 0 0 0 4h3.5a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1z"/></svg></span> <span data-i18n="nav_wallets">Wallets</span></a>
+        <a class="nav" data-nav="nft"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 15l4.2-4.2 3.3 3.3 3-3 6.5 6.4"/><circle cx="9" cy="9" r="1.4"/></svg></span> <span data-i18n="nav_nft">NFT</span></a>
         <a class="nav" data-nav="red"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18.5" r="2.2"/><circle cx="19" cy="18.5" r="2.2"/><path d="M12 7.2 6 16.6M12 7.2l6 9.4M7 18.5h10"/></svg></span> <span data-i18n="nav_red">Red</span></a>
         <a class="nav" data-nav="mercado"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9h13"/><path d="M14 6l3 3-3 3"/><path d="M20 15H7"/><path d="M10 12l-3 3 3 3"/></svg></span> <span data-i18n="nav_mercado">Mercado</span></a>
         <a class="nav" data-nav="puente"><span class="ic"><svg viewBox="0 0 24 24"><path d="M2.5 11.5a9.5 9.5 0 0 1 19 0"/><path d="M4 11.5V18M20 11.5V18M4 18h16M9 13.5V18M15 13.5V18"/></svg></span> <span data-i18n="nav_puente">Puente</span></a>
@@ -157,6 +158,20 @@
             </div>
           </details>
         </div>
+      </section>
+
+      <!-- NFT -->
+      <section id="view-nft" class="view" hidden>
+        <h3 data-i18n="h_nft">NFT</h3>
+        <p class="muted xs" data-i18n="nft_sub">Las piezas que hay en tu wallet, leídas de la cadena. Cada red tiene su propio ledger de NFT.</p>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;margin:12px 0">
+          <label class="fld"><span data-i18n="nft_wallet">Wallet</span><select id="nft-wallet"></select></label>
+          <label class="fld"><span data-i18n="nft_red">Red</span><select id="nft-red"></select></label>
+          <button class="ghost" id="nft-recargar" data-i18n="nft_recargar">Buscar mis piezas</button>
+          <button class="ghost" id="nft-anadir" data-i18n="nft_anadir">Añadir por identificador</button>
+        </div>
+        <div id="nft-aviso" class="muted xs"></div>
+        <div id="nft-grid" class="nft-grid"></div>
       </section>
 
       <!-- MERCADO -->

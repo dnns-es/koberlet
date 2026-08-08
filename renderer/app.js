@@ -12,6 +12,15 @@ let CFG = null, WALLETS = [], SHOWN = [];
 const LANG = {
   es: {
     nav_dashboard: 'Panel', nav_wallets: 'Wallets', nav_red: 'Red', nav_mercado: 'Mercado', nav_puente: 'Puente', nav_seguridad: 'Seguridad', nav_ajustes: 'Ajustes', nav_info: 'Info',
+    nav_nft: 'NFT', h_nft: 'NFT',
+    nft_sub: 'Las piezas que hay en tu wallet, leídas de la cadena. Cada red tiene su propio ledger de NFT.',
+    nft_wallet: 'Wallet', nft_red: 'Red', nft_recargar: 'Buscar mis piezas', nft_anadir: 'Añadir por identificador',
+    nft_buscando: 'Preguntando a la cadena…', nft_sin_wallet: 'No tienes ninguna wallet de Kadena',
+    nft_encontradas: '{n} piezas en {red}.', nft_ninguna: 'Ninguna pieza en {red} de momento.',
+    nft_ninguna_manual: 'En {red} no hay quien liste tus piezas: añádelas por su identificador.',
+    nft_sin_soporte: '{red} todavía no tiene ledger de NFT configurado.',
+    nft_sin_imagen: 'sin imagen', nft_quitar: 'quitar', nft_vacio: 'Aquí aparecerán tus piezas.',
+    nft_pide_id: 'Pega el identificador de la pieza (token id):',
     auth_tag_setup: 'Crea tu bóveda cifrada', auth_tag_unlock: 'Tu monedero multi-cadena',
     auth_lead: 'Protege tus claves con una contraseña. Se cifran con AES-256-GCM + scrypt y no se guardan en ningún sitio.',
     lbl_pass: 'Contraseña', lbl_pass2: 'Repite la contraseña', lbl_net_first: 'Red de tu primera wallet',
@@ -168,6 +177,15 @@ const LANG = {
   },
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
+    nav_nft: 'NFT', h_nft: 'NFT',
+    nft_sub: 'The pieces held by your wallet, read from the chain. Each network has its own NFT ledger.',
+    nft_wallet: 'Wallet', nft_red: 'Network', nft_recargar: 'Find my pieces', nft_anadir: 'Add by identifier',
+    nft_buscando: 'Asking the chain…', nft_sin_wallet: 'You have no Kadena wallet',
+    nft_encontradas: '{n} pieces on {red}.', nft_ninguna: 'No pieces on {red} yet.',
+    nft_ninguna_manual: 'Nothing lists your pieces on {red}: add them by identifier.',
+    nft_sin_soporte: '{red} has no NFT ledger configured yet.',
+    nft_sin_imagen: 'no image', nft_quitar: 'remove', nft_vacio: 'Your pieces will show up here.',
+    nft_pide_id: 'Paste the piece identifier (token id):',
     auth_tag_setup: 'Create your encrypted vault', auth_tag_unlock: 'Your multi-chain wallet',
     auth_lead: 'Protect your keys with a password. They are encrypted with AES-256-GCM + scrypt and never stored anywhere.',
     lbl_pass: 'Password', lbl_pass2: 'Repeat password', lbl_net_first: 'Network for your first wallet',
@@ -396,7 +414,7 @@ function initConverter() {
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
 
 function screen(name) { ['scr-setup', 'scr-unlock'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
-function nav(v) { ['dashboard', 'wallets', 'red', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
+function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
 
 // Opciones de red para crear/importar: KDA + cada red EVM. value = 'kda' o 'evm:<key>'.
 function netOptions() { return '<option value="kda">Kadena (KDA)</option>' + CFG.evm.map(n => `<option value="evm:${n.key}">${n.name}</option>`).join(''); }
@@ -485,7 +503,90 @@ $('btn-setup-done').onclick = () => screen('scr-unlock');
 $('btn-unlock').onclick = async () => { try { const r = await window.api.unlock($('unlock-pass').value); enter(r.view); } catch (_) { msg($('unlock-msg'), t('err_wrong_pass'), 'err'); } };
 $('unlock-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-unlock').click(); });
 $('btn-lock').onclick = async () => { await window.api.lock(); location.reload(); };
+
+// ===== NFT =====
+// Solo lectura de momento: enseña lo que la cadena confirma que tiene la wallet.
+// Las imágenes llegan del main ya como data URL (la CSP no deja cargar remotas).
+let NFT_CACHE = [];
+
+function nftRellenarSelectores() {
+    const wsel = $('nft-wallet'), rsel = $('nft-red');
+    if (!wsel || !rsel) return;
+    const kdas = (WALLETS || []).filter(w => w.kind === 'kda');
+    wsel.innerHTML = kdas.map(w => `<option value="${esc(w.id)}">${esc(w.label)}</option>`).join('')
+                     || `<option value="">${t('nft_sin_wallet')}</option>`;
+    const redes = ((CFG && CFG.kda && CFG.kda.networks) || []).filter(r => r.nft && r.nft.ledger);
+    rsel.innerHTML = redes.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('')
+                     || `<option value="">—</option>`;
+}
+
+function nftPintar(d) {
+    const grid = $('nft-grid'), aviso = $('nft-aviso');
+    if (!grid) return;
+    if (d && d.sinSoporte) {
+        aviso.textContent = tr('nft_sin_soporte', { red: d.red });
+        grid.innerHTML = '';
+        return;
+    }
+    const piezas = (d && d.piezas) || [];
+    NFT_CACHE = piezas;
+    aviso.textContent = piezas.length
+        ? tr('nft_encontradas', { n: piezas.length, red: d.red })
+        : (d && d.conDescubridor ? tr('nft_ninguna', { red: d.red }) : tr('nft_ninguna_manual', { red: d.red }));
+    grid.innerHTML = piezas.map((p, i) => `
+        <div class="nft-card">
+            ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
+            ${p.imagen ? `<img src="${p.imagen}" alt="">`
+                       : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
+            <div class="nft-body">
+                <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
+                <div class="nft-col" title="${esc(p.id)}">${esc(p.coleccion || p.id)}</div>
+                ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
+                    `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
+            </div>
+        </div>`).join('') || `<div class="nft-vacio">${t('nft_vacio')}</div>`;
+
+    grid.querySelectorAll('.nft-quitar').forEach(b => b.onclick = async () => {
+        const p = NFT_CACHE[Number(b.dataset.i)];
+        await window.api.nftRemove({ walletId: $('nft-wallet').value, redKey: $('nft-red').value, id: p.id });
+        nftCargar();
+    });
+}
+
+async function nftCargar() {
+    const grid = $('nft-grid'), aviso = $('nft-aviso');
+    const walletId = $('nft-wallet').value, redKey = $('nft-red').value;
+    if (!walletId || !redKey) { nftPintar({ piezas: [] }); return; }
+    aviso.textContent = t('nft_buscando');
+    grid.innerHTML = '';
+    try {
+        nftPintar(await window.api.nftList({ walletId, redKey }));
+    } catch (e) {
+        aviso.textContent = '⚠️ ' + (e.message || e);
+    }
+}
+
+function initNft() {
+    if (!$('nft-recargar')) return;
+    $('nft-recargar').onclick = nftCargar;
+    $('nft-wallet').onchange = nftCargar;
+    $('nft-red').onchange = nftCargar;
+    $('nft-anadir').onclick = async () => {
+        const id = (prompt(t('nft_pide_id')) || '').trim();
+        if (!id) return;
+        try {
+            await window.api.nftAdd({ walletId: $('nft-wallet').value, redKey: $('nft-red').value, id });
+            nftCargar();
+        } catch (e) { alert(e.message || e); }
+    };
+}
+
 document.querySelectorAll('.nav').forEach(a => a.onclick = () => nav(a.dataset.nav));
+document.querySelectorAll('.nav[data-nav="nft"]').forEach(a => a.addEventListener('click', () => {
+  nftRellenarSelectores();
+  if (!NFT_CACHE.length) nftCargar();
+}));
+initNft();
 
 async function enter(v) {
   screen('app'); nav('dashboard'); maybeWelcome();
