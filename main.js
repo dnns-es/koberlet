@@ -906,6 +906,35 @@ ipcMain.handle('nft:add', async (_e, { walletId, redKey, id } = {}) => {
     return { ok: true, pieza };
 });
 
+// ¿dejaría el contrato mover esta pieza? Se pregunta antes de pedir la contraseña
+ipcMain.handle('nft:comprobar', async (_e, { walletId, redKey, id, destino } = {}) => {
+    const w = unlocked.data.wallets.find(x => x.id === walletId);
+    if (!w || w.kind !== 'kda') throw new Error('Elige una wallet de Kadena');
+    const red = redKdaPorClave(redKey);
+    if (!red || !red.nft) throw new Error('Esta red no tiene NFT configurados');
+    const simular = (code, data, clist, chain) => kda.simularFirmada({
+        node: red.node, networkId: red.networkId, chain, code, data, clist,
+        from: w.kda.account, publicHex: w.kda.public });
+    return nftLib.comprobarEnvio(simular, red, w.kda.account, id, String(destino || '').trim());
+});
+
+ipcMain.handle('nft:enviar', async (_e, { walletId, redKey, id, destino, passphrase } = {}) => {
+    const w = unlocked.data.wallets.find(x => x.id === walletId);
+    if (!w || w.kind !== 'kda') throw new Error('Elige una wallet de Kadena');
+    if (w.ledger) throw new Error('Con Ledger todavía no: enviar un NFT firma código Pact y el '
+                                  + 'aparato lo mostraría como firma ciega.');
+    if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+    const red = redKdaPorClave(redKey);
+    if (!red || !red.nft) throw new Error('Esta red no tiene NFT configurados');
+    const partes = nftLib._tx(red.nft.ledger, id, w.kda.account, String(destino || '').trim());
+    const r = await kda.enviarNft({
+        node: red.node, networkId: red.networkId, chain: red.nft.chain || '0',
+        ...partes, from: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public });
+    const res = await kda.pollResult({ node: red.node, networkId: red.networkId,
+        chain: red.nft.chain || '0', requestKey: r.requestKey });
+    return { ...r, resultado: res };
+});
+
 ipcMain.handle('nft:remove', (_e, { walletId, redKey, id } = {}) => {
     const w = unlocked.data.wallets.find(x => x.id === walletId);
     if (!w) throw new Error('wallet no encontrada');

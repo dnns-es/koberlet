@@ -13,6 +13,13 @@ const LANG = {
   es: {
     nav_dashboard: 'Panel', nav_wallets: 'Wallets', nav_red: 'Red', nav_mercado: 'Mercado', nav_puente: 'Puente', nav_seguridad: 'Seguridad', nav_ajustes: 'Ajustes', nav_info: 'Info',
     nav_nft: 'NFT', h_nft: 'NFT',
+    nft_enviar: 'Enviar', nft_env_ir: 'Enviar', mk_disponible: 'Disponible:',
+    nft_env_malacuenta: 'Eso no parece una cuenta k: (k: y 64 caracteres).',
+    nft_env_comprobando: 'Comprobando si el contrato la deja mover…',
+    nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
+        + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
+    nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
+    nft_env_ok: '«{n}» enviada',
     nft_sub: 'Las piezas que hay en tu wallet, leídas de la cadena. Cada red tiene su propio ledger de NFT.',
     nft_wallet: 'Wallet', nft_red: 'Red', nft_recargar: 'Buscar mis piezas', nft_anadir: 'Añadir por identificador',
     nft_buscando: 'Preguntando a la cadena…', nft_sin_wallet: 'No tienes ninguna wallet de Kadena',
@@ -178,6 +185,13 @@ const LANG = {
   en: {
     nav_dashboard: 'Dashboard', nav_wallets: 'Wallets', nav_red: 'Network', nav_mercado: 'Market', nav_puente: 'Bridge', nav_seguridad: 'Security', nav_ajustes: 'Settings', nav_info: 'Info',
     nav_nft: 'NFT', h_nft: 'NFT',
+    nft_enviar: 'Send', nft_env_ir: 'Send', mk_disponible: 'Available:',
+    nft_env_malacuenta: 'That does not look like a k: account (k: plus 64 characters).',
+    nft_env_comprobando: 'Checking whether the contract allows moving it…',
+    nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
+        + 'transferring it, not even by its creator. It only changes hands through a sale.',
+    nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
+    nft_env_ok: '«{n}» sent',
     nft_sub: 'The pieces held by your wallet, read from the chain. Each network has its own NFT ledger.',
     nft_wallet: 'Wallet', nft_red: 'Network', nft_recargar: 'Find my pieces', nft_anadir: 'Add by identifier',
     nft_buscando: 'Asking the chain…', nft_sin_wallet: 'You have no Kadena wallet',
@@ -571,6 +585,12 @@ function nftPintar(d) {
                 <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
                 ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
                     `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
+                <button class="ghost nft-env-btn" onclick="nftAbrirEnvio(${i})">${t('nft_enviar')}</button>
+                <div class="nft-env" id="nft-env-${i}" hidden>
+                    <input placeholder="k:…" spellcheck="false">
+                    <button class="ghost" onclick="nftEnviarPieza(${i})">${t('nft_env_ir')}</button>
+                    <div class="nft-env-msg muted xs"></div>
+                </div>
             </div>
         </div>`;
 
@@ -819,6 +839,40 @@ function renderNodes() {
 
 // MERCADO (swap KDA <-> kb-USDC en el pool del fork)
 let MKDIR = 'compra'; // 'compra' = entregas kb-USDC, recibes KDA · 'venta' = al revés
+// Saldo disponible de una wallet para un símbolo concreto, sacado del último
+// refresco de saldos. Devuelve null si aún no se han cargado o no aparece.
+function saldoDe(walletId, simbolo) {
+    const b = window._bal;
+    if (!b || !b.blocks) return null;
+    const w = WALLETS.find(x => x.id === walletId);
+    if (!w) return null;
+    const dir = w.kind === 'kda' ? w.kdaAccount : w.ethAddress;
+    let total = null;
+    for (const bl of b.blocks) {
+        if (bl.address !== dir) continue;
+        if (simbolo === 'KDA' && bl.kind === 'kda') total = (total || 0) + (bl.native || 0);
+        else if ((simbolo === 'ETH' && bl.kind !== 'kda' && (bl.symbol === 'ETH' || bl.nativeSymbol === 'ETH'))) {
+            total = (total || 0) + (bl.native || 0);
+        } else {
+            for (const tk of (bl.tokens || [])) {
+                if (String(tk.symbol).toLowerCase() === String(simbolo).toLowerCase()) total = (total || 0) + tk.amount;
+            }
+        }
+    }
+    return total;
+}
+
+// Pinta "disponible: X SÍMBOLO" bajo los botones del par.
+function pintarDisponible(idZona, walletId, simbolos) {
+    const el = $(idZona);
+    if (!el) return;
+    const partes = simbolos.map(s => {
+        const v = saldoDe(walletId, s);
+        return `${esc(s)}: <b>${v === null ? '—' : v.toLocaleString('es-ES', { maximumFractionDigits: 6 })}</b>`;
+    });
+    el.innerHTML = t('mk_disponible') + ' ' + partes.join(' · ');
+}
+
 function renderMercado() {
   const kdaW = WALLETS.filter(w => w.kind === 'kda');
   $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('no_wallet_kda')}</option>`;
@@ -826,8 +880,11 @@ function renderMercado() {
   $('mk-from').textContent = compra ? 'kb-USDC' : 'KDA';
   $('mk-to').textContent = compra ? 'KDA' : 'kb-USDC';
   $('mk-lbl-amt').textContent = t('mk_amount') + ' (' + (compra ? 'kb-USDC' : 'KDA') + ')';
+  pintarDisponible('mk-bal', $('mk-wallet').value, ['KDA', 'kb-USDC']);
   mkQuote();
 }
+if ($('mk-wallet')) $('mk-wallet').addEventListener('change', () => pintarDisponible('mk-bal', $('mk-wallet').value, ['KDA', 'kb-USDC']));
+if ($('es-wallet')) $('es-wallet').addEventListener('change', () => pintarDisponible('es-bal', $('es-wallet').value, ['ETH', 'USDC']));
 $('mk-invert').onclick = () => { MKDIR = MKDIR === 'compra' ? 'venta' : 'compra'; renderMercado(); };
 let _mkT = null;
 $('mk-amt').oninput = () => { clearTimeout(_mkT); _mkT = setTimeout(mkQuote, 400); };
@@ -859,6 +916,7 @@ function renderEthSwap() {
   $('es-from').textContent = u2e ? 'USDC' : 'ETH';
   $('es-to').textContent = u2e ? 'ETH' : 'USDC';
   $('es-lbl-amt').textContent = t('mk_amount') + ' (' + (u2e ? 'USDC' : 'ETH') + ')';
+  pintarDisponible('es-bal', $('es-wallet').value, ['ETH', 'USDC']);
   esQuote();
 }
 $('es-invert').onclick = () => { ESDIR = ESDIR === 'usdc2eth' ? 'eth2usdc' : 'usdc2eth'; renderEthSwap(); };
@@ -977,6 +1035,7 @@ async function loadBalances() {
   try {
     PRICES = await window.api.prices().catch(() => PRICES); // idea 5/6: variación 24h + fiat
     const b = await window.api.balances();
+    window._bal = b;                       // el Mercado los usa para enseñar el disponible
     const blocks = b.blocks || [];
     const qrs = {};
     for (const bl of blocks) { if (!(bl.address in qrs)) qrs[bl.address] = await window.api.qr(bl.address); }
@@ -1414,3 +1473,50 @@ window.api.onLocked(() => { location.reload(); });
 if (window.api.onXchainProgress) window.api.onXchainProgress((m) => msg($('wallet-msg'), m));
 
 boot();
+
+    // ===== Enviar una pieza a otra wallet =====
+    // El destino se pide en la propia tarjeta y, antes de pedir la contraseña, se
+    // SIMULA en el nodo: muchas piezas con royalty se acuñan «sale-only» y el
+    // contrato no deja transferirlas (ni al creador). Mejor avisar con claridad
+    // que soltar el error crudo del contrato cuando ya has firmado.
+    window.nftAbrirEnvio = function (indice) {
+        const zona = document.getElementById('nft-env-' + indice);
+        if (!zona) return;
+        zona.hidden = !zona.hidden;
+        if (!zona.hidden) zona.querySelector('input').focus();
+    };
+
+    window.nftEnviarPieza = async function (indice) {
+        const p = NFT_CACHE[indice];
+        const zona = document.getElementById('nft-env-' + indice);
+        if (!p || !zona) return;
+        const destino = zona.querySelector('input').value.trim();
+        const aviso = zona.querySelector('.nft-env-msg');
+        const walletId = $('nft-wallet').value, redKey = $('nft-red').value;
+
+        if (!/^k:[0-9a-f]{64}$/.test(destino)) { aviso.textContent = t('nft_env_malacuenta'); return; }
+        aviso.textContent = t('nft_env_comprobando');
+
+        let veredicto;
+        try {
+            veredicto = await window.api.nftComprobar({ walletId, redKey, id: p.id, destino });
+        } catch (e) { aviso.textContent = '⚠️ ' + cleanErr(e); return; }
+
+        if (!veredicto.puede) {
+            aviso.innerHTML = veredicto.motivo === 'sale-only'
+                ? `<span class="warn">${t('nft_env_saleonly')}</span>`
+                : `<span class="warn">${esc(veredicto.mensaje || '')}</span>`;
+            return;
+        }
+
+        aviso.textContent = '';
+        askSend(tr('nft_env_conf', { n: esc(p.nombre), to: esc(destino) }), async (pass) => {
+            const r = await window.api.nftEnviar({ walletId, redKey, id: p.id, destino, passphrase: pass });
+            if (!r.resultado || r.resultado.status !== 'success') {
+                throw new Error(JSON.stringify((r.resultado || {}).error || {}).slice(0, 240));
+            }
+            zona.hidden = true;
+            setTimeout(nftCargar, 500);
+            return tr('nft_env_ok', { n: p.nombre });
+        }, destino, { ledger: false });
+    };
