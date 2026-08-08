@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('api', {
   unlock: (passphrase) => ipcRenderer.invoke('vault:unlock', { passphrase }),
   lock: () => ipcRenderer.invoke('vault:lock'),
   balances: () => ipcRenderer.invoke('balances'),
+  // NFT (solo lectura de momento): el main sale a la red y devuelve las imágenes
+  // ya como data URL, para no abrir la CSP del renderer
+  nftList: (a) => ipcRenderer.invoke('nft:list', a),
+  nftAdd: (a) => ipcRenderer.invoke('nft:add', a),
+  nftRemove: (a) => ipcRenderer.invoke('nft:remove', a),
   sendKda: (passphrase, walletId, kdaNet, chain, to, amount) => ipcRenderer.invoke('send:kda', { passphrase, walletId, kdaNet, chain, to, amount }),
   sendKdaToken: (passphrase, walletId, symbol, to, amount) => ipcRenderer.invoke('send:kdatoken', { passphrase, walletId, symbol, to, amount }),
   sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
