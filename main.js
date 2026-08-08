@@ -973,16 +973,17 @@ ipcMain.handle('update:check', async () => {
     const ver = (j && typeof j.version === 'string' && /^\d+\.\d+\.\d+$/.test(j.version)) ? j.version : null;
     const newer = ver && cmpVer(ver, APP_VERSION) > 0;
     const url = (j && typeof j.url === 'string' && j.url.startsWith(UPDATE_URL + '/')) ? j.url : (UPDATE_URL + '/');
-    // `notes` puede ser un texto suelto o un objeto por idioma {es, en}: se
-    // acepta lo uno o lo otro, saneado, y el renderer elige según el idioma.
-    let notes = '';
-    if (typeof j.notes === 'string') notes = j.notes.slice(0, 4000);
-    else if (j.notes && typeof j.notes === 'object' && !Array.isArray(j.notes)) {
-      notes = {};
+    // Novedades. `notes` es SIEMPRE un texto (las versiones antiguas lo pintan
+    // tal cual: si aquí llegara un objeto, enseñarían "[object Object]"), y el
+    // idioma va aparte en `notes_i18n = {es, en}`. Se prefiere el idioma si está.
+    let notes = typeof j.notes === 'string' ? j.notes.slice(0, 4000) : '';
+    const porIdioma = j.notes_i18n;
+    if (porIdioma && typeof porIdioma === 'object' && !Array.isArray(porIdioma)) {
+      const limpio = {};
       for (const k of ['es', 'en']) {
-        if (typeof j.notes[k] === 'string') notes[k] = j.notes[k].slice(0, 4000);
+        if (typeof porIdioma[k] === 'string') limpio[k] = porIdioma[k].slice(0, 4000);
       }
-      if (!Object.keys(notes).length) notes = '';
+      if (Object.keys(limpio).length) notes = limpio;
     }
     return { current: APP_VERSION, latest: ver, newer: !!newer, url, canAuto: !!j.appUrl, notes };
   } catch (_) { return { current: APP_VERSION, latest: null, newer: false }; }
