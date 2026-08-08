@@ -361,6 +361,15 @@ function setLang(l) {
   if ($('history-panel') && !$('history-panel').hidden) refreshHistory();
   // Re-renderizar las secciones dinámicas (montadas por JS) para que cambien de idioma al vuelo
   if ($('app') && !$('app').hidden && WALLETS.length) { renderBridge(); renderMercado(); renderEthSwap(); updateNetContext(); loadBalances(); }
+  // el aviso de actualización y sus novedades también cambian de idioma al vuelo
+  if (window._upd && window._upd.newer) {
+    if ($('update-text')) $('update-text').textContent = t('upd_available').replace('{v}', window._upd.latest);
+    if ($('btn-update-dl')) $('btn-update-dl').textContent = window._upd.canAuto ? t('update') : t('download');
+    const abierto = $('update-notes') && !$('update-notes').hidden;
+    setupNotes(window._upd);
+    if (abierto && $('update-notes')) $('update-notes').hidden = false;
+  }
+  if (typeof NFT_CACHE !== 'undefined' && NFT_CACHE.length && $('view-nft') && !$('view-nft').hidden) nftCargar();
 }
 
 // ===== Privacidad: ocultar saldos con ••••• (como en las apps de banca) =====
@@ -457,7 +466,14 @@ async function initUpdates() {
 }
 // Novedades de la versión nueva (campo `notes` de latest.json). Se renderiza escapado;
 // los saltos de línea y las viñetas "• / - / ·" al inicio de línea se muestran como lista.
+// las notas pueden venir por idioma: {es:'…', en:'…'}
+function notesDelIdioma(notes) {
+  if (!notes) return '';
+  if (typeof notes === 'string') return notes;
+  return notes[LNG] || notes.es || notes.en || '';
+}
 function notesToHtml(notes) {
+  notes = notesDelIdioma(notes);
   if (!notes) return '';
   const items = String(notes).split(/\r?\n|\s+·\s+|\s+•\s+/).map(s => s.trim()).filter(Boolean);
   if (items.length > 1) return '<ul class="nlist">' + items.map(i => `<li>${esc(i.replace(/^[-•·]\s*/, ''))}</li>`).join('') + '</ul>';
@@ -465,7 +481,7 @@ function notesToHtml(notes) {
 }
 function setupNotes(u) {
   const tog = $('update-notes-toggle'), box = $('update-notes');
-  if (!u.notes) { tog.hidden = true; box.hidden = true; box.innerHTML = ''; return; }
+  if (!notesDelIdioma(u.notes)) { tog.hidden = true; box.hidden = true; box.innerHTML = ''; return; }
   box.innerHTML = `<div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>` + notesToHtml(u.notes);
   tog.hidden = false; box.hidden = true;
   tog.onclick = () => { box.hidden = !box.hidden; tog.textContent = box.hidden ? t('whats_new') : '▲'; };
@@ -484,7 +500,7 @@ $('btn-check-upd').onclick = async () => {
     const u = await window.api.updateCheck();
     if (u.newer) {
       $('upd-status').innerHTML = t('upd_new').replace('{v}', esc(u.latest)) + ` <a href="#" id="upd-dl-link" class="grn">${u.canAuto ? t('upd_now') : t('download')}</a>`
-        + (u.notes ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>${notesToHtml(u.notes)}</div>` : '');
+        + (notesDelIdioma(u.notes) ? `<div class="updnotes" style="margin-top:8px"><div class="ntitle">${t('whats_new_title').replace('{v}', esc(u.latest))}</div>${notesToHtml(u.notes)}</div>` : '');
       $('upd-dl-link').onclick = (e) => { e.preventDefault(); e.target.style.pointerEvents = 'none'; e.target.style.opacity = .5; doUpdate(u, $('upd-status')); }; // un solo intento: dos a la vez se pisan la carpeta _update
     }
     else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
@@ -508,7 +524,7 @@ $('btn-lock').onclick = async () => { await window.api.lock(); location.reload()
 // Solo lectura de momento: enseña lo que la cadena confirma que tiene la wallet.
 // Las imágenes llegan del main ya como data URL (la CSP no deja cargar remotas).
 let NFT_CACHE = [];
-const NFT_PLEGADAS = new Set();   // colecciones cerradas por el usuario
+let NFT_ABIERTA = null;           // colección desplegada ahora mismo
 
 function nftRellenarSelectores() {
     const wsel = $('nft-wallet'), rsel = $('nft-red');
@@ -534,8 +550,9 @@ function nftPintar(d) {
     aviso.textContent = piezas.length
         ? tr('nft_encontradas', { n: piezas.length, red: d.red })
         : (d && d.conDescubridor ? tr('nft_ninguna', { red: d.red }) : tr('nft_ninguna_manual', { red: d.red }));
-    // agrupadas por colección: una cabecera por colección, plegable, con su
-    // número de piezas. Dentro, ordenadas por el #N del nombre.
+    // Cada colección es una TARJETA con la portada (su pieza #1), el título y
+    // cuántas piezas tiene. Al pulsarla se despliega ocupando la fila entera y
+    // enseña sus piezas; al volver a pulsar, se cierra.
     const grupos = new Map();
     piezas.forEach((p, i) => {
         const clave = p.coleccion || t('nft_sueltas');
@@ -546,37 +563,45 @@ function nftPintar(d) {
         const m = /#\s*(\d+)/.exec(x.p.nombre || '');
         return m ? Number(m[1]) : 1e9;
     };
+    const tarjetaPieza = ({ p, i }) => `
+        <div class="nft-card">
+            ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
+            ${p.imagen ? `<img src="${p.imagen}" alt="">` : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
+            <div class="nft-body">
+                <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
+                ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
+                    `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
+            </div>
+        </div>`;
+
     grid.innerHTML = [...grupos.entries()]
         .sort((a, b) => a[0].localeCompare(b[0], 'es'))
         .map(([nombre, items]) => {
             items.sort((a, b) => numero(a) - numero(b));
-            const cerrada = NFT_PLEGADAS.has(nombre);
-            return `<section class="nft-col">
-                <header class="nft-col-cab" data-col="${esc(nombre)}">
-                    <span class="nft-col-fl">${cerrada ? '▸' : '▾'}</span>
-                    <b>${esc(nombre)}</b>
-                    <span class="nft-col-n">${items.length}</span>
-                </header>
-                <div class="nft-grid"${cerrada ? ' hidden' : ''}>
-                    ${items.map(({ p, i }) => `
-                        <div class="nft-card">
-                            ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
-                            ${p.imagen ? `<img src="${p.imagen}" alt="">`
-                                       : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
-                            <div class="nft-body">
-                                <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
-                                ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
-                                    `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
-                            </div>
-                        </div>`).join('')}
+            const portada = (items.find(x => x.p.imagen) || items[0]).p;
+            const abierta = NFT_ABIERTA === nombre;
+            return `<section class="nft-col${abierta ? ' abierta' : ''}">
+                <div class="nft-portada" data-col="${esc(nombre)}" title="${esc(nombre)}">
+                    ${portada.imagen ? `<img src="${portada.imagen}" alt="">`
+                                     : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
+                    <div class="nft-portada-pie">
+                        <div class="nft-portada-tit">${esc(nombre)}</div>
+                        <span class="nft-col-n">${items.length}</span>
+                    </div>
                 </div>
+                ${abierta ? `<div class="nft-desplegado">
+                    <div class="nft-grid">${items.map(tarjetaPieza).join('')}</div>
+                </div>` : ''}
             </section>`;
         }).join('') || `<div class="nft-vacio">${t('nft_vacio')}</div>`;
 
-    grid.querySelectorAll('.nft-col-cab').forEach(h => h.onclick = () => {
-        const nombre = h.dataset.col;
-        if (NFT_PLEGADAS.has(nombre)) NFT_PLEGADAS.delete(nombre); else NFT_PLEGADAS.add(nombre);
+    grid.querySelectorAll('.nft-portada').forEach(h => h.onclick = () => {
+        NFT_ABIERTA = (NFT_ABIERTA === h.dataset.col) ? null : h.dataset.col;
         nftPintar(d);
+        if (NFT_ABIERTA) {
+            const abierta = grid.querySelector('.nft-col.abierta');
+            if (abierta) abierta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
     });
 
     grid.querySelectorAll('.nft-quitar').forEach(b => b.onclick = async () => {
