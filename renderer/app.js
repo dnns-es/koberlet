@@ -1568,6 +1568,10 @@ boot();
         const zona = document.getElementById('nft-env-' + indice);
         if (!zona) return;
         zona.hidden = !zona.hidden;
+        // Con el formulario abierto sobran dos botones «Enviar» seguidos: el de arriba
+        // pasa a ser el de cerrar, y el de dentro es el que envía de verdad.
+        const abrir = zona.parentElement.querySelector('.nft-env-btn');
+        if (abrir) abrir.textContent = zona.hidden ? t('nft_enviar') : t('cancel');
         if (!zona.hidden) zona.querySelector('input').focus();
     };
 
@@ -1589,8 +1593,8 @@ boot();
 
         if (!veredicto.puede) {
             aviso.innerHTML = veredicto.motivo === 'sale-only'
-                ? `<span class="warn">${t('nft_env_saleonly')}</span>`
-                : `<span class="warn">${esc(veredicto.mensaje || '')}</span>`;
+                ? `<div class="warn">${t('nft_env_saleonly')}</div>`
+                : `<div class="warn">${esc(veredicto.mensaje || '')}</div>`;
             return;
         }
 

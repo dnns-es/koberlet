@@ -432,4 +432,7 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
                  border-radius:8px; background:var(--soft); color:var(--fg); font-family:ui-monospace,monospace; }
 .nft-env button { font-size:.72rem; padding:5px 0; }
 .nft-env-msg { line-height:1.35; }
+/* En una tarjeta estrecha el aviso ocupa varias líneas: como bloque y con letra
+   más pequeña, para que el fondo no se monte sobre sí mismo. */
+.nft-env-msg .warn { display:block; font-size:.7rem; padding:7px 9px; line-height:1.4; }
 
