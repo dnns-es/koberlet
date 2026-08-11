@@ -26,6 +26,11 @@ const LANG = {
     nft_encontradas: '{n} piezas en {red}.', nft_ninguna: 'Ninguna pieza en {red} de momento.',
     nft_ninguna_manual: 'En {red} no hay quien liste tus piezas: añádelas por su identificador.',
     nft_desc_falla: 'Quien lista las piezas de {red} no ha contestado ({e}). Solo se ven las que hayas añadido a mano.',
+    share_tit: 'Pasar Koberlet a un compañero',
+    share_hint: 'Copia este enlace y pásaselo a quien quieras. Descarga el instalador oficial, el mismo que usas tú; al abrirlo por primera vez se pone al día solo con la última versión.',
+    share_open: 'Abrir la descarga', share_copiado: 'Enlace copiado',
+    share_nota: 'Instalador {v} · se actualiza solo al abrirlo',
+    share_nover: 'No se ha podido consultar el enlace del instalador. Inténtalo dentro de un rato.',
     nft_sin_soporte: '{red} todavía no tiene ledger de NFT configurado.',
     nft_sin_imagen: 'sin imagen', nft_quitar: 'quitar', nft_vacio: 'Aquí aparecerán tus piezas.', nft_sueltas: 'Sin colección',
     nft_pide_id: 'Pega el identificador de la pieza (token id):',
@@ -199,6 +204,11 @@ const LANG = {
     nft_encontradas: '{n} pieces on {red}.', nft_ninguna: 'No pieces on {red} yet.',
     nft_ninguna_manual: 'Nothing lists your pieces on {red}: add them by identifier.',
     nft_desc_falla: 'Whoever lists the pieces on {red} did not answer ({e}). You only see the ones you added by hand.',
+    share_tit: 'Pass Koberlet on to a mate',
+    share_hint: 'Copy this link and send it to whoever you like. It downloads the official installer, the same one you use; the first time it opens it brings itself up to the latest version.',
+    share_open: 'Open the download', share_copiado: 'Link copied',
+    share_nota: 'Installer {v} · updates itself when opened',
+    share_nover: 'Could not fetch the installer link. Try again in a while.',
     nft_sin_soporte: '{red} has no NFT ledger configured yet.',
     nft_sin_imagen: 'no image', nft_quitar: 'remove', nft_vacio: 'Your pieces will show up here.', nft_sueltas: 'No collection',
     nft_pide_id: 'Paste the piece identifier (token id):',
@@ -377,6 +387,7 @@ function setLang(l) {
   if ($('history-panel') && !$('history-panel').hidden) refreshHistory();
   // Re-renderizar las secciones dinámicas (montadas por JS) para que cambien de idioma al vuelo
   if ($('app') && !$('app').hidden && WALLETS.length) { renderBridge(); renderMercado(); renderEthSwap(); updateNetContext(); loadBalances(); }
+  pintarCompartir();                       // el texto del instalador, también
   // el aviso de actualización y sus novedades también cambian de idioma al vuelo
   if (window._upd && window._upd.newer) {
     if ($('update-text')) $('update-text').textContent = t('upd_available').replace('{v}', window._upd.latest);
@@ -465,6 +476,7 @@ async function initUpdates() {
   } catch (_) {}
   try {
     const u = await window.api.updateCheck();
+    pintarCompartir(u);
     if (u.newer) {
       window._upd = u;
       if (CFG && CFG.updateMode === 'auto' && u.canAuto) {
@@ -478,8 +490,33 @@ async function initUpdates() {
       setupNotes(u);
       $('update-banner').hidden = false;
     }
-  } catch (_) {}
+  } catch (_) { pintarCompartir(null); }
 }
+// Enlace para pasarle la app a otro. Sale del `url` de latest.json, que el main ya
+// ha validado contra el origen oficial (revisión 2026-07-21 #1): así el enlace que
+// se copia no puede acabar apuntando a otro sitio aunque el server mienta.
+let SHARE_URL = null;
+function pintarCompartir(u) {
+    const caja = $('share-url'), boton = $('share-copy'), nota = $('share-nota');
+    if (!caja) return;
+    if (u !== undefined) window._share = u;                 // para repintarlo al cambiar de idioma
+    u = window._share;
+    SHARE_URL = (u && typeof u.url === 'string') ? u.url : null;
+    if (!SHARE_URL) { caja.textContent = t('share_nover'); if (boton) boton.hidden = true; return; }
+    caja.textContent = SHARE_URL;
+    if (boton) { boton.hidden = false; boton.dataset.ct = SHARE_URL; }
+    // la versión sale del nombre del fichero (koberlet_v2.3.0.zip): es el instalador
+    // completo, que puede ir por detrás de la última actualización de código
+    const m = /_v(\d+\.\d+\.\d+)\.zip$/.exec(SHARE_URL);
+    if (nota) nota.textContent = m ? tr('share_nota', { v: 'v' + m[1] }) : '';
+}
+function initCompartir() {
+    if (!$('share-copy')) return;
+    $('share-copy').addEventListener('click', () => { if (SHARE_URL) toast(t('share_copiado')); });
+    $('share-open').onclick = () => { if (SHARE_URL) window.api.openExternal(SHARE_URL); };
+}
+initCompartir();
+
 // Novedades de la versión nueva (campo `notes` de latest.json). Se renderiza escapado;
 // los saltos de línea y las viñetas "• / - / ·" al inicio de línea se muestran como lista.
 // las notas pueden venir por idioma: {es:'…', en:'…'}

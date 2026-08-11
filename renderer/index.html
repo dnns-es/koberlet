@@ -302,6 +302,17 @@
           </select>
           <p class="muted xs" data-i18n="lock_hint">Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.</p>
         </div>
+        <!-- Compartir: el enlace del instalador sale de latest.json, así siempre
+             apunta al último publicado sin tocar la app. -->
+        <div class="card">
+          <div class="row-between"><b data-i18n="share_tit">Pasar Koberlet a un compañero</b></div>
+          <p class="muted xs" data-i18n="share_hint">Copia este enlace y pásaselo a quien quieras. Descarga el instalador oficial, el mismo que usas tú; al abrirlo por primera vez se pone al día solo con la última versión.</p>
+          <div class="addr"><span class="mono" id="share-url">—</span><button class="copy tiny" id="share-copy" data-ct="" data-i18n="copy">copiar</button></div>
+          <div class="row-between" style="margin-top:8px">
+            <span class="muted xs" id="share-nota"></span>
+            <button id="share-open" class="tiny ghost" data-i18n="share_open">Abrir la descarga</button>
+          </div>
+        </div>
         <div class="card">
           <div class="row-between"><b data-i18n="addrbook">Libreta de direcciones</b></div>
           <p class="muted xs" data-i18n="addrbook_hint">Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.</p>
