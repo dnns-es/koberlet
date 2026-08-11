@@ -28,7 +28,9 @@ const LANG = {
     nft_desc_falla: 'Quien lista las piezas de {red} no ha contestado ({e}). Solo se ven las que hayas añadido a mano.',
     share_tit: 'Pasar Koberlet a un compañero',
     share_hint: 'Copia este enlace y pásaselo a quien quieras. Descarga el instalador oficial, el mismo que usas tú; al abrirlo por primera vez se pone al día solo con la última versión.',
-    share_open: 'Abrir la descarga', share_copiado: 'Enlace copiado',
+    share_open: 'Abrir la descarga', share_copiado: 'Enlace copiado', share_huella_copiada: 'Huella copiada',
+    share_huella: 'Huella del archivo (SHA-256)',
+    share_huella_hint: 'Pásala junto al enlace, en el mismo mensaje. Quien lo descargue puede comprobar que el archivo es el nuestro con este comando de PowerShell: Get-FileHash koberlet_vX.Y.Z.zip. Si la huella no coincide, que NO lo abra.',
     share_nota: 'Instalador {v} · se actualiza solo al abrirlo',
     share_nover: 'No se ha podido consultar el enlace del instalador. Inténtalo dentro de un rato.',
     nft_sin_soporte: '{red} todavía no tiene ledger de NFT configurado.',
@@ -206,7 +208,9 @@ const LANG = {
     nft_desc_falla: 'Whoever lists the pieces on {red} did not answer ({e}). You only see the ones you added by hand.',
     share_tit: 'Pass Koberlet on to a mate',
     share_hint: 'Copy this link and send it to whoever you like. It downloads the official installer, the same one you use; the first time it opens it brings itself up to the latest version.',
-    share_open: 'Open the download', share_copiado: 'Link copied',
+    share_open: 'Open the download', share_copiado: 'Link copied', share_huella_copiada: 'Fingerprint copied',
+    share_huella: 'File fingerprint (SHA-256)',
+    share_huella_hint: 'Send it along with the link, in the same message. Whoever downloads it can check the file is ours with this PowerShell command: Get-FileHash koberlet_vX.Y.Z.zip. If the fingerprint does not match, they must NOT open it.',
     share_nota: 'Installer {v} · updates itself when opened',
     share_nover: 'Could not fetch the installer link. Try again in a while.',
     nft_sin_soporte: '{red} has no NFT ledger configured yet.',
@@ -505,6 +509,12 @@ function pintarCompartir(u) {
     if (!SHARE_URL) { caja.textContent = t('share_nover'); if (boton) boton.hidden = true; return; }
     caja.textContent = SHARE_URL;
     if (boton) { boton.hidden = false; boton.dataset.ct = SHARE_URL; }
+    // La huella solo se enseña si viene bien formada; si no, mejor nada que algo a medias
+    const huella = (u && typeof u.urlSha256 === 'string') ? u.urlSha256 : null;
+    if ($('share-huella-caja')) {
+        $('share-huella-caja').hidden = !huella;
+        if (huella) { $('share-huella').textContent = huella; $('share-huella-copy').dataset.ct = huella; }
+    }
     // la versión sale del nombre del fichero (koberlet_v2.3.0.zip): es el instalador
     // completo, que puede ir por detrás de la última actualización de código
     const m = /_v(\d+\.\d+\.\d+)\.zip$/.exec(SHARE_URL);
@@ -513,6 +523,7 @@ function pintarCompartir(u) {
 function initCompartir() {
     if (!$('share-copy')) return;
     $('share-copy').addEventListener('click', () => { if (SHARE_URL) toast(t('share_copiado')); });
+    if ($('share-huella-copy')) $('share-huella-copy').addEventListener('click', () => toast(t('share_huella_copiada')));
     $('share-open').onclick = () => { if (SHARE_URL) window.api.openExternal(SHARE_URL); };
 }
 initCompartir();
@@ -641,15 +652,15 @@ function nftPintar(d) {
     const tarjetaPieza = ({ p, i }) => `
         <div class="nft-card">
             ${p.manual ? `<button class="nft-quitar" data-i="${i}">${t('nft_quitar')}</button>` : ''}
-            ${p.imagen ? `<img src="${p.imagen}" alt="">` : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
+            ${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
             <div class="nft-body">
                 <div class="nft-nom" title="${esc(p.nombre)}">${esc(p.nombre)}</div>
                 ${p.atributos.length ? `<div class="nft-attrs">${p.atributos.slice(0, 3).map(a =>
                     `<span class="nft-at">${esc(a.value ?? '')}</span>`).join('')}</div>` : ''}
-                <button class="ghost nft-env-btn" onclick="nftAbrirEnvio(${i})">${t('nft_enviar')}</button>
+                <button class="ghost nft-env-btn" data-env="${i}">${t('nft_enviar')}</button>
                 <div class="nft-env" id="nft-env-${i}" hidden>
                     <input placeholder="k:…" spellcheck="false">
-                    <button class="ghost" onclick="nftEnviarPieza(${i})">${t('nft_env_ir')}</button>
+                    <button class="ghost" data-envir="${i}">${t('nft_env_ir')}</button>
                     <div class="nft-env-msg muted xs"></div>
                 </div>
             </div>
@@ -684,6 +695,11 @@ function nftPintar(d) {
             if (abierta) abierta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     });
+
+    // Enganchados aquí y no con onclick= en el HTML: la CSP de la app no permite
+    // scripts en línea, así que un onclick generado NO se ejecuta (auditoría F-1).
+    grid.querySelectorAll('[data-env]').forEach(b => b.onclick = () => nftAbrirEnvio(Number(b.dataset.env)));
+    grid.querySelectorAll('[data-envir]').forEach(b => b.onclick = () => nftEnviarPieza(Number(b.dataset.envir)));
 
     grid.querySelectorAll('.nft-quitar').forEach(b => b.onclick = async () => {
         const p = NFT_CACHE[Number(b.dataset.i)];
