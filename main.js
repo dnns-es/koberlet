@@ -48,9 +48,13 @@ const DEFAULT_CONFIG = {
         tokens: [
           { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null }
         ] },
+      // El descubridor es el CATÁLOGO PÚBLICO de piezas de la tienda (sin `?cuenta=`):
+      // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
+      // El panel privado `/api/mis-piezas` ya no sirve: desde 08/2026 exige sesión
+      // firmada en el navegador (se cerró un IDOR) y contestaba 401 a la wallet.
       { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false,
         nft: { ledger: 'n_84b9f9aa6a2665fd8c8ca80cc9b252d818fdfbac.ledger', chain: '0',
-               descubridor: 'https://nft.dnns.es/api/mis-piezas?cuenta=',
+               descubridor: 'https://nft.dnns.es/api/galeria',
                pasarela: 'https://nft.dnns.es/ipfs/' } }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
@@ -888,8 +892,8 @@ ipcMain.handle('nft:list', async (_e, { walletId, redKey } = {}) => {
     if (!red.nft || !red.nft.ledger) return { piezas: [], sinSoporte: true, red: red.name };
     const cuenta = w.kda.account;
     const manuales = (leerManuales()[`${redKey}|${cuenta}`]) || [];
-    const piezas = await nftLib.piezasDe(localDeRed(red), red, cuenta, manuales, { reducir: miniatura });
-    return { piezas, cuenta, red: red.name, redKey, conDescubridor: !!red.nft.descubridor };
+    const { piezas, avisoDescubridor } = await nftLib.piezasDe(localDeRed(red), red, cuenta, manuales, { reducir: miniatura });
+    return { piezas, cuenta, red: red.name, redKey, conDescubridor: !!red.nft.descubridor, avisoDescubridor };
 });
 
 ipcMain.handle('nft:add', async (_e, { walletId, redKey, id } = {}) => {

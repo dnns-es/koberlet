@@ -25,6 +25,7 @@ const LANG = {
     nft_buscando: 'Preguntando a la cadena…', nft_sin_wallet: 'No tienes ninguna wallet de Kadena',
     nft_encontradas: '{n} piezas en {red}.', nft_ninguna: 'Ninguna pieza en {red} de momento.',
     nft_ninguna_manual: 'En {red} no hay quien liste tus piezas: añádelas por su identificador.',
+    nft_desc_falla: 'Quien lista las piezas de {red} no ha contestado ({e}). Solo se ven las que hayas añadido a mano.',
     nft_sin_soporte: '{red} todavía no tiene ledger de NFT configurado.',
     nft_sin_imagen: 'sin imagen', nft_quitar: 'quitar', nft_vacio: 'Aquí aparecerán tus piezas.', nft_sueltas: 'Sin colección',
     nft_pide_id: 'Pega el identificador de la pieza (token id):',
@@ -197,6 +198,7 @@ const LANG = {
     nft_buscando: 'Asking the chain…', nft_sin_wallet: 'You have no Kadena wallet',
     nft_encontradas: '{n} pieces on {red}.', nft_ninguna: 'No pieces on {red} yet.',
     nft_ninguna_manual: 'Nothing lists your pieces on {red}: add them by identifier.',
+    nft_desc_falla: 'Whoever lists the pieces on {red} did not answer ({e}). You only see the ones you added by hand.',
     nft_sin_soporte: '{red} has no NFT ledger configured yet.',
     nft_sin_imagen: 'no image', nft_quitar: 'remove', nft_vacio: 'Your pieces will show up here.', nft_sueltas: 'No collection',
     nft_pide_id: 'Paste the piece identifier (token id):',
@@ -540,6 +542,16 @@ $('btn-lock').onclick = async () => { await window.api.lock(); location.reload()
 let NFT_CACHE = [];
 let NFT_ABIERTA = null;           // colección desplegada ahora mismo
 
+// La wallet y la red elegidas en NFT se recuerdan: quien tiene sus piezas en una
+// red concreta no quiere volver a elegirla cada vez que entra en la sección.
+const NFT_ELEC = { w: 'koberlet-nft-wallet', r: 'koberlet-nft-red' };
+function nftRecordar() {
+    try {
+        localStorage.setItem(NFT_ELEC.w, $('nft-wallet').value || '');
+        localStorage.setItem(NFT_ELEC.r, $('nft-red').value || '');
+    } catch (e) { /* sin localStorage: se elige a mano y ya */ }
+}
+
 function nftRellenarSelectores() {
     const wsel = $('nft-wallet'), rsel = $('nft-red');
     if (!wsel || !rsel) return;
@@ -549,6 +561,13 @@ function nftRellenarSelectores() {
     const redes = ((CFG && CFG.kda && CFG.kda.networks) || []).filter(r => r.nft && r.nft.ledger);
     rsel.innerHTML = redes.map(r => `<option value="${esc(r.key)}">${esc(r.name)}</option>`).join('')
                      || `<option value="">—</option>`;
+    // se recupera lo último elegido, pero solo si sigue existiendo (wallet borrada,
+    // red quitada del catálogo…); si no, se queda la primera opción de siempre
+    try {
+        const w = localStorage.getItem(NFT_ELEC.w), r = localStorage.getItem(NFT_ELEC.r);
+        if (w && kdas.some(x => x.id === w)) wsel.value = w;
+        if (r && redes.some(x => x.key === r)) rsel.value = r;
+    } catch (e) { /* idem */ }
 }
 
 function nftPintar(d) {
@@ -564,6 +583,11 @@ function nftPintar(d) {
     aviso.textContent = piezas.length
         ? tr('nft_encontradas', { n: piezas.length, red: d.red })
         : (d && d.conDescubridor ? tr('nft_ninguna', { red: d.red }) : tr('nft_ninguna_manual', { red: d.red }));
+    // Si quien lista las piezas no contesta, decirlo: si no, "ninguna pieza"
+    // parece que no tienes nada cuando en realidad no se ha podido preguntar.
+    if (d && d.avisoDescubridor) {
+        aviso.textContent += ' ⚠️ ' + tr('nft_desc_falla', { red: d.red, e: d.avisoDescubridor });
+    }
     // Cada colección es una TARJETA con la portada (su pieza #1), el título y
     // cuántas piezas tiene. Al pulsarla se despliega ocupando la fila entera y
     // enseña sus piezas; al volver a pulsar, se cierra.
@@ -647,8 +671,8 @@ async function nftCargar() {
 function initNft() {
     if (!$('nft-recargar')) return;
     $('nft-recargar').onclick = nftCargar;
-    $('nft-wallet').onchange = nftCargar;
-    $('nft-red').onchange = nftCargar;
+    $('nft-wallet').onchange = () => { nftRecordar(); nftCargar(); };
+    $('nft-red').onchange = () => { nftRecordar(); nftCargar(); };
     $('nft-anadir').onclick = async () => {
         const id = (prompt(t('nft_pide_id')) || '').trim();
         if (!id) return;
