@@ -308,6 +308,11 @@
           <div class="row-between"><b data-i18n="share_tit">Pasar Koberlet a un compañero</b></div>
           <p class="muted xs" data-i18n="share_hint">Copia este enlace y pásaselo a quien quieras. Descarga el instalador oficial, el mismo que usas tú; al abrirlo por primera vez se pone al día solo con la última versión.</p>
           <div class="addr"><span class="mono" id="share-url">—</span><button class="copy tiny" id="share-copy" data-ct="" data-i18n="copy">copiar</button></div>
+          <div id="share-huella-caja" hidden>
+            <label style="margin-top:6px" data-i18n="share_huella">Huella del archivo (SHA-256)</label>
+            <div class="addr"><span class="mono" id="share-huella">—</span><button class="copy tiny" id="share-huella-copy" data-ct="" data-i18n="copy">copiar</button></div>
+            <p class="muted xs" data-i18n="share_huella_hint">Pásala junto al enlace, en el mismo mensaje. Quien lo descargue puede comprobar que el archivo es el nuestro con este comando de PowerShell: Get-FileHash koberlet_vX.Y.Z.zip. Si la huella no coincide, que NO lo abra.</p>
+          </div>
           <div class="row-between" style="margin-top:8px">
             <span class="muted xs" id="share-nota"></span>
             <button id="share-open" class="tiny ghost" data-i18n="share_open">Abrir la descarga</button>
@@ -378,6 +383,17 @@
               <summary><b>🕘 Historial</b> — tus operaciones</summary>
               <p>El botón 🕘 del margen superior abre el historial: transacciones Kadena leídas de la cadena (vía el indexador) más el registro local de envíos EVM y puente. Elige la wallet en el desplegable. Si el indexador no responde, se muestra lo último que se pudo leer.</p>
             </details>
+            <details>
+              <summary><b>🔍 Privacidad</b> — quién ve qué</summary>
+              <p>Tus claves no salen de tu equipo: se quedan cifradas en la bóveda y solo se usan dentro de la app para firmar. Ahora bien, para enseñarte saldos y precios, Koberlet <b>pregunta a terceros</b>: los nodos de Kadena y de las redes EVM, CoinGecko para los precios y, en la sección NFT, quien lista las piezas de esa red.</p>
+              <p>En esas consultas viajan <b>tus direcciones y tu IP</b>. No es un fallo —le pasa a cualquier monedero ligero—, pero conviene saberlo: quien opere ese nodo puede relacionar tu IP con tus cuentas. Si manejas cantidades serias y te importa, usa un nodo propio (se cambia en la sección Red) o una VPN.</p>
+              <p>Las imágenes de los NFT se descargan del sitio que indicó quien acuñó la pieza. La app solo acepta imágenes, las encoge antes de enseñarlas y nunca ejecuta lo que venga de fuera.</p>
+            </details>
+            <details>
+              <summary><b>📦 Pasar la app a otro</b> — enlace y huella</summary>
+              <p>En Ajustes tienes el enlace del instalador con un botón para copiarlo y, debajo, la <b>huella (SHA-256)</b> del archivo. Manda las dos cosas en el mismo mensaje.</p>
+              <p>Quien lo reciba puede comprobar que el archivo es el nuestro antes de abrirlo: en PowerShell, <code>Get-FileHash koberlet_vX.Y.Z.zip</code> y comparar con la huella que le pasaste. Si no coincide, que no lo abra y avise. Las actualizaciones ya se verifican solas (firma Ed25519); el instalador completo es el único que hay que comprobar a mano.</p>
+            </details>
           </div>
           <p class="muted" style="margin-top:14px">Koberlet fue creada por el <b>TeamRed</b> · DNNS.</p>
         </div>
@@ -425,6 +441,17 @@
             <details>
               <summary><b>🕘 History</b> — your operations</summary>
               <p>The 🕘 button on the top bar opens the history: Kadena transactions read from the chain (via the indexer) plus the local log of EVM and bridge sends. Pick the wallet in the dropdown. If the indexer is down, the last data it could read is shown.</p>
+            </details>
+            <details>
+              <summary><b>🔍 Privacy</b> — who sees what</summary>
+              <p>Your keys never leave your machine: they stay encrypted in the vault and are only used inside the app to sign. That said, to show you balances and prices Koberlet <b>asks third parties</b>: Kadena and EVM nodes, CoinGecko for prices and, in the NFT section, whoever lists the pieces on that network.</p>
+              <p>Those requests carry <b>your addresses and your IP</b>. It is not a flaw — every light wallet works this way — but it is worth knowing: whoever runs that node can link your IP to your accounts. If you handle serious amounts and this matters to you, use your own node (you can change it under Network) or a VPN.</p>
+              <p>NFT images are downloaded from wherever the person who minted the piece pointed to. The app only accepts images, shrinks them before showing them and never runs anything that comes from outside.</p>
+            </details>
+            <details>
+              <summary><b>📦 Passing the app on</b> — link and fingerprint</summary>
+              <p>Settings shows the installer link with a button to copy it and, underneath, the <b>fingerprint (SHA-256)</b> of the file. Send both in the same message.</p>
+              <p>Whoever receives it can check the file is ours before opening it: in PowerShell, <code>Get-FileHash koberlet_vX.Y.Z.zip</code> and compare with the fingerprint you sent. If it does not match, they must not open it and should tell you. Updates already verify themselves (Ed25519 signature); the full installer is the only thing to check by hand.</p>
             </details>
           </div>
           <p class="muted" style="margin-top:14px">Koberlet was created by the <b>TeamRed</b> · DNNS.</p>

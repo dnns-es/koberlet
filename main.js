@@ -989,7 +989,13 @@ ipcMain.handle('update:check', async () => {
       }
       if (Object.keys(limpio).length) notes = limpio;
     }
-    return { current: APP_VERSION, latest: ver, newer: !!newer, url, canAuto: !!j.appUrl, notes };
+    // Huella del INSTALADOR completo (el zip que se pasa a otra persona). El instalador no
+    // se actualiza solo, así que no puede verificarse a sí mismo: la huella se enseña para
+    // que quien lo reparta la dicte aparte y el que lo baje pueda comprobarla con
+    // `Get-FileHash` antes de abrirlo (auditoría A-1). Formato validado en origen.
+    const urlSha256 = (typeof j.urlSha256 === 'string' && /^[0-9a-f]{64}$/.test(j.urlSha256.toLowerCase()))
+      ? j.urlSha256.toLowerCase() : null;
+    return { current: APP_VERSION, latest: ver, newer: !!newer, url, urlSha256, canAuto: !!j.appUrl, notes };
   } catch (_) { return { current: APP_VERSION, latest: null, newer: false }; }
 });
 // SEGURIDAD (revisión 2026-07-21 #1b): el único uso de open:external es el botón de descarga del update, que apunta
@@ -1027,7 +1033,10 @@ ipcMain.handle('update:apply', async () => {
   const zipPath = path.join(upd, 'app.zip');
   fs.writeFileSync(zipPath, bytes);
   // 2) extraer con PowerShell (queda upd/app)
-  await new Promise((resolve, reject) => spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${upd}' -Force`], { windowsHide: true })
+  // Las comillas simples de la ruta se duplican: el nombre de usuario de Windows puede
+  // llevar apóstrofo (O'Brien) y sin esto el comando se rompe por la mitad (auditoría M-3).
+  const ps = (p) => String(p).replace(/'/g, "''");
+  await new Promise((resolve, reject) => spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${ps(zipPath)}' -DestinationPath '${ps(upd)}' -Force`], { windowsHide: true })
     .on('exit', c => c === 0 ? resolve() : reject(new Error('unzip código ' + c))));
   if (!fs.existsSync(path.join(upd, 'app'))) throw new Error('el paquete no contiene la carpeta app.');
   // 3) .bat que espera al cierre, cambia resources/app (con respaldo) y reinicia
