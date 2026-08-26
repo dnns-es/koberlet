@@ -19,7 +19,7 @@ const LANG = {
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
-    nft_env_ok: '«{n}» enviada',
+    nft_env_ok: '🎉 «{n}» ya viaja a su nuevo dueño. ¡Envío completado!',
     nft_sub: 'Las piezas que hay en tu wallet, leídas de la cadena. Cada red tiene su propio ledger de NFT.',
     nft_wallet: 'Wallet', nft_red: 'Red', nft_recargar: 'Buscar mis piezas', nft_anadir: 'Añadir por identificador',
     nft_buscando: 'Preguntando a la cadena…', nft_sin_wallet: 'No tienes ninguna wallet de Kadena',
@@ -75,7 +75,7 @@ const LANG = {
     addr_confirm: 'He verificado que la dirección de destino es correcta',
     addrbook: 'Libreta de direcciones', add: 'Añadir',
     addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
-    ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (k:… o 0x…).', ab_pick: '📇 Libreta',
+    ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (cuenta de Kadena o 0x…).', ab_pick: '📇 Libreta',
     csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
     converter: '🧮 Conversor', recv_note_kda: 'Recibes en Kadena. Para Mercado/Puente los fondos deben ir a la chain 2.', recv_note_evm: 'Recibes en {net}. La misma dirección 0x vale en todas las redes EVM; asegúrate de que quien te envía usa la red correcta.', share: 'Compartir',
     backup_title: 'Copia de seguridad de la bóveda', backup_do: '⬇ Exportar copia cifrada', restore_do: '⬆ Restaurar copia…',
@@ -199,7 +199,7 @@ const LANG = {
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
-    nft_env_ok: '«{n}» sent',
+    nft_env_ok: '🎉 «{n}» is on its way to its new owner. Sent!',
     nft_sub: 'The pieces held by your wallet, read from the chain. Each network has its own NFT ledger.',
     nft_wallet: 'Wallet', nft_red: 'Network', nft_recargar: 'Find my pieces', nft_anadir: 'Add by identifier',
     nft_buscando: 'Asking the chain…', nft_sin_wallet: 'You have no Kadena wallet',
@@ -255,7 +255,7 @@ const LANG = {
     addr_confirm: 'I have verified the destination address is correct',
     addrbook: 'Address book', add: 'Add',
     addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
-    ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (k:… or 0x…).', ab_pick: '📇 Book',
+    ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (a Kadena account or 0x…).', ab_pick: '📇 Book',
     csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
     converter: '🧮 Converter', recv_note_kda: 'Receiving on Kadena. For Market/Bridge funds must be on chain 2.', recv_note_evm: 'Receiving on {net}. The same 0x address works on all EVM networks; make sure the sender uses the right network.', share: 'Share',
     backup_title: 'Vault backup', backup_do: '⬇ Export encrypted backup', restore_do: '⬆ Restore backup…',
@@ -1527,7 +1527,12 @@ function renderAddressBook() {
 }
 $('ab-save').onclick = async () => {
   const alias = $('ab-alias').value.trim(), addr = $('ab-addr').value.trim();
-  const okAddr = /^k:[0-9a-fA-F]{64}$/.test(addr) || /^0x[0-9a-fA-F]{40}$/.test(addr);
+  // KDA: se pregunta al proceso principal para usar el MISMO validador que el envio
+  // (lib/kda.js). Antes solo se admitian k:, asi que no se podia guardar en la agenda
+  // una gasolinera c:, un keyset r: ni una cuenta antigua con nombre.
+  const okAddr = /^0x[0-9a-fA-F]{40}$/.test(addr)
+    ? true
+    : await window.api.kdaValidar(addr);
   if (!alias || !okAddr) return msg($('ab-msg'), t('ab_bad'), 'err');
   CFG.addressBook = CFG.addressBook || [];
   CFG.addressBook.push({ alias, address: addr, kind: abKind(addr) });
@@ -1583,7 +1588,10 @@ boot();
         const aviso = zona.querySelector('.nft-env-msg');
         const walletId = $('nft-wallet').value, redKey = $('nft-red').value;
 
-        if (!/^k:[0-9a-f]{64}$/.test(destino)) { aviso.textContent = t('nft_env_malacuenta'); return; }
+        // Aqui SI tiene que ser k: y no es un capricho: el ledger usa transfer-create y
+        // monta el keyset del destino con su clave publica, que solo lleva dentro una k:.
+        // Una c:/r:/w: no tiene clave que meter ahi. El hex puede venir en mayusculas.
+        if (!/^k:[0-9a-fA-F]{64}$/.test(destino)) { aviso.textContent = t('nft_env_malacuenta'); return; }
         aviso.textContent = t('nft_env_comprobando');
 
         let veredicto;
@@ -1601,11 +1609,18 @@ boot();
         aviso.textContent = '';
         askSend(tr('nft_env_conf', { n: esc(p.nombre), to: esc(destino) }), async (pass) => {
             const r = await window.api.nftEnviar({ walletId, redKey, id: p.id, destino, passphrase: pass });
-            if (!r.resultado || r.resultado.status !== 'success') {
-                throw new Error(JSON.stringify((r.resultado || {}).error || {}).slice(0, 240));
+            // pollResult devuelve la entrada del /poll: { reqKey, result: { status, ... } }.
+            // OJO: el estado va DENTRO de .result, no en la raiz (ese era el fallo de antes,
+            // que serializaba un error vacio "{}" y daba por fallado cualquier envio bueno).
+            const rr = (r.resultado && r.resultado.result) || null;
+            // Si el poll aun no ve el bloque (rr null) la tx esta en vuelo, no fallada:
+            // minar tarda ~30 s. Solo cortamos cuando la cadena dice "failure" de verdad.
+            if (rr && rr.status === 'failure') {
+                const m = (rr.error && (rr.error.message || rr.error)) || 'la cadena rechazo el envio';
+                throw new Error(String(m).slice(0, 240));
             }
             zona.hidden = true;
-            setTimeout(nftCargar, 500);
-            return tr('nft_env_ok', { n: p.nombre });
+            setTimeout(nftCargar, 1500);
+            return tr('nft_env_ok', { n: p.nombre });   // «X» enviada
         }, destino, { ledger: false });
     };

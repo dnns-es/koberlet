@@ -939,6 +939,10 @@ ipcMain.handle('nft:enviar', async (_e, { walletId, redKey, id, destino, passphr
     return { ...r, resultado: res };
 });
 
+// Valida una cuenta Kadena con el MISMO criterio que usa el envio (lib/kda.js), para que
+// la agenda no rechace cuentas que la cadena si acepta (gasolineras c:, keysets r:, vanity...).
+ipcMain.handle('kda:validar', (_e, cuenta) => kda.validKdaAccount(String(cuenta || '')));
+
 ipcMain.handle('nft:remove', (_e, { walletId, redKey, id } = {}) => {
     const w = unlocked.data.wallets.find(x => x.id === walletId);
     if (!w) throw new Error('wallet no encontrada');
