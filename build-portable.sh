@@ -21,7 +21,15 @@ cp -r node_modules/electron/dist portable-build/MonederoDNNS
 cd portable-build/MonederoDNNS
 mv electron.exe MonederoDNNS.exe
 rm -f resources/default_app.asar
+# OJO: si resources/app YA existe, `cp -r ../app resources/app` copia DENTRO y deja
+# resources/app/app, con la app vieja arrancando por fuera. Paso el 26/08/2026: el dist
+# de electron en node_modules estaba contaminado con una copia de la 2.2.2 y cada
+# portable la arrastraba. Se borra antes de copiar, siempre.
+rm -rf resources/app
 cp -r ../app resources/app
+# Red de seguridad: si aun asi quedara anidado, parar en vez de publicar un portable roto.
+[ -e resources/app/app ] && { echo "ERROR: resources/app/app anidado, build abortado"; exit 1; }
+node -e "const v=require('./resources/app/package.json').version; const w=require('../../package.json').version; if(v!==w){console.error('ERROR: el portable lleva '+v+' y el proyecto va por '+w); process.exit(1)} console.log('portable con la version '+v)"
 : > portable.flag
 # Restaurar la bóveda preservada.
 if [ -n "$TMP_DATOS" ]; then cp -r "$TMP_DATOS/datos" MonederoDNNS-datos; rm -rf "$TMP_DATOS"; echo "Bóveda restaurada."; fi
