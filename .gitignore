@@ -29,3 +29,5 @@ _backups/
 
 _seed.txt
 diag-deriv.js
+.publicar-tmp/
+dist-installer/
