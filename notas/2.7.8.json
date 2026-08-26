@@ -1,0 +1,7 @@
+{
+  "notes": "Ya puedes enviar a cualquier cuenta de Kadena, no solo a las k:. / You can now send to any Kadena account, not just k: ones.",
+  "notes_i18n": {
+    "es": "Al enviar a una cuenta que no empieza por «k:» —una gasolinera «c:», un keyset con nombre «r:» o una cuenta antigua con nombre— el monedero la rechazaba diciendo que tenía caracteres no permitidos, y había que hacer el envío desde otra cartera.\nAhora se admiten los siete tipos de cuenta que reconoce la red, con la misma regla que usa la propia cadena. La agenda de direcciones también los acepta, así que ya puedes guardarlos con su nombre.\nAdemás, al enviar una pieza ya se distingue bien entre «se está confirmando» y «el contrato lo ha rechazado»: antes salía un aviso en rojo aunque el envío fuese correcto.",
+    "en": "When sending to an account that does not start with «k:» —a «c:» gas station, a named «r:» keyset, or an old named account— the wallet rejected it saying it had forbidden characters, so you had to send from another wallet.\nIt now accepts the seven account types the network recognises, using the same rule as the chain itself. The address book accepts them too, so you can save them by name.\nAlso, when sending a piece it now tells apart «still confirming» from «the contract rejected it»: before, a red warning appeared even when the send was fine."
+  }
+}

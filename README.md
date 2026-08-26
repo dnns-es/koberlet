@@ -32,7 +32,11 @@ lib/eth.js       saldos + envío EVM multi-red
 lib/swap.js      swap AMM kaddex (fork chain 2)
 lib/bridge.js    puente Kinesis (dry-run + envío real)
 renderer/        UI (HTML/CSS/JS plano, sin frameworks)
-build-portable.sh  ensambla el portable en portable-build/
+build-portable.sh    ensambla el portable en portable-build/
+build-instalador.sh  el zip grande que se pasa a otra persona
+build-app-zip.sh     el paquete de auto-update (solo el codigo)
+publicar.sh          publica una version entera y deja el enlace al dia
+notas/<version>.json novedades que ve el usuario al actualizar
 ```
 
 ## Desarrollo
@@ -40,8 +44,30 @@ build-portable.sh  ensambla el portable en portable-build/
 ```
 npm install
 npm start            # lanza la app con Electron
+npm test             # validador de cuentas Kadena (42 casos, sin red)
 bash build-portable.sh   # genera el portable (Windows)
 ```
+
+## Publicar una version
+
+```
+bash publicar.sh
+```
+
+Un solo comando. Sube la version en `package.json`, escribe `notas/<version>.json` con
+las novedades y lanza eso: construye el paquete de auto-update **y** el instalador
+completo, los firma, los sube y deja `latest.json` apuntando a los dos.
+
+Se niega a seguir si la version ya esta publicada, si faltan las notas de esa version o
+si alguna huella no cuadra en destino. Al terminar comprueba por HTTPS lo que ve la
+gente y escupe el enlace del instalador con su SHA-256, listo para repartir.
+
+**Los dos paquetes hay que publicarlos juntos**, y por eso son un solo comando: el
+paquete de auto-update actualiza a quien ya tiene la app, y el instalador completo es
+el enlace de «Pasar Koberlet a un companero». Hasta el 26/08/2026 el segundo se rehacia
+a mano, se olvidaba, y el enlace se quedo repartiendo la 2.7.4 mientras la app iba por
+la 2.7.7. `bash publicar.sh --solo-app` salta el instalador, pero entonces el enlace se
+queda en la version anterior a proposito y el script lo avisa.
 
 Node 20 / Electron. Sin backend propio: habla directo con los nodos Chainweb, RPCs EVM públicos, CoinGecko y el indexador.
 
