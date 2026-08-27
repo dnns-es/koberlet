@@ -1065,8 +1065,12 @@ function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
   if (bl.kind === 'kda') {
     const toks = bl.tokens || [];
-    // Enviables por transfer normal = tokens del catálogo (PCO…); los kb-* van por el puente, no aquí.
-    const sendable = toks.filter(x => !String(x.symbol).startsWith('kb-'));
+    // Enviable = todo lo que se ve en la tarjeta, kb-* incluidos. Antes se escondian los
+    // kb-* «porque van por el puente», pero eso confundia dos cosas: el puente hace falta para
+    // CRUZAR a EVM, no para mover el token entre dos cuentas de Kadena. Comprobado en cadena
+    // (26/08/2026) que kb-USDC/USDT/DAI/WBTC son fungible-v2 corrientes, asi que viajan con el
+    // mismo transfer que PCO. Antonio tenia 4 kb-USDC y la app no le dejaba enviarlos.
+    const sendable = toks;
     const kdaUsd = (bl.usd || 0) - toks.reduce((s, t) => s + t.usd, 0);
     rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
     const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : t('no_bal_yet');

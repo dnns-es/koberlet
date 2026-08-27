@@ -1,0 +1,7 @@
+{
+  "notes": "Ya puedes enviar tus kb-USDC, kb-USDT, kb-DAI y kb-WBTC a otra cuenta de Kadena. / You can now send your kb-USDC, kb-USDT, kb-DAI and kb-WBTC to another Kadena account.",
+  "notes_i18n": {
+    "es": "Los tokens del puente (kb-USDC, kb-USDT, kb-DAI, kb-WBTC) se veian en la tarjeta pero no aparecian en la lista de «Enviar»: solo dejaba elegir KDA y PCO.\nEra una limitacion nuestra, no de la red: esos tokens son contratos corrientes y se mueven entre cuentas de Kadena igual que cualquier otro. El puente solo hace falta para cruzarlos a Ethereum, no para pasarselos a un amigo.\nYa salen en la lista y se envian con normalidad, tambien a cuentas que no empiezan por «k:».",
+    "en": "The bridge tokens (kb-USDC, kb-USDT, kb-DAI, kb-WBTC) showed up on your card but were missing from the «Send» list: it only let you pick KDA and PCO.\nThat was our own limitation, not the network's: those tokens are ordinary contracts and move between Kadena accounts like any other. The bridge is only needed to cross them to Ethereum, not to pass them to a friend.\nThey now appear in the list and send normally, including to accounts that do not start with «k:»."
+  }
+}
