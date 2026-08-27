@@ -1,0 +1,7 @@
+{
+  "notes": "El puente ya funciona con USDT, DAI y WBTC, no solo con USDC. / The bridge now works with USDT, DAI and WBTC, not just USDC.",
+  "notes_i18n": {
+    "es": "El puente solo funcionaba de verdad con USDC. Al elegir USDT, DAI o WBTC fallaba nada mas empezar con un error tecnico de direccion, y no habia forma de cruzarlos.\nLa causa eran tres direcciones de contrato mal escritas por nuestra parte. En Ethereum las mayusculas de una direccion no son decoracion: son su cifra de control, y la libreria rechazaba la operacion antes de intentarla.\nCorregidas las tres. Las cuatro rutas del puente responden ya, y hemos anadido una comprobacion automatica para que no vuelva a colarse una direccion mal escrita.",
+    "en": "The bridge only really worked with USDC. Picking USDT, DAI or WBTC failed right at the start with a technical address error, and there was no way to bridge them.\nThe cause was three contract addresses mistyped on our side. In Ethereum the capitalisation of an address is not decoration: it is its check digit, and the library refused the operation before even trying.\nAll three are fixed. The four bridge routes now respond, and we added an automatic check so a mistyped address cannot slip through again."
+  }
+}

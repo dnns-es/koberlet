@@ -76,11 +76,15 @@ const DEFAULT_CONFIG = {
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
     evm: { rpc: 'https://ethereum-rpc.publicnode.com', name: 'Ethereum', domain: 1 },
+    // OJO con las mayusculas de estas direcciones: en Ethereum el patron de mayusculas ES la
+    // suma de verificacion (EIP-55) y ethers RECHAZA la direccion antes de llamar. Los routers
+    // de USDT, DAI y WBTC lo tenian mal y el puente fallaba con "bad address checksum" en la
+    // primera llamada: solo funcionaba USDC. Hay un test que lo comprueba (npm test).
     routes: [
       { symbol: 'USDC', cg: 'usd-coin', kadenaModule: 'kb-USDC', evmRouter: '0x81C2813aa88F66bca1e55838045Aaceb72FEbFc1', evmToken: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decimals: 6 },
-      { symbol: 'USDT', cg: 'tether', kadenaModule: 'kb-USDT', evmRouter: '0x9cFdB123ce10CFBe276393D4B666aEBBe766AD8F', evmToken: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
-      { symbol: 'DAI', cg: 'dai', kadenaModule: 'kb-DAI', evmRouter: '0x85cC60531119041b250003e25fE0c5920606C6db', evmToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
-      { symbol: 'WBTC', cg: 'wrapped-bitcoin', kadenaModule: 'kb-WBTC', evmRouter: '0xdFdB8f3DEB5458bfA25CC97dF41298a915a34bF3', evmToken: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 }
+      { symbol: 'USDT', cg: 'tether', kadenaModule: 'kb-USDT', evmRouter: '0x9CFDB123cE10CFBe276393D4B666AEBBE766ad8F', evmToken: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
+      { symbol: 'DAI', cg: 'dai', kadenaModule: 'kb-DAI', evmRouter: '0x85CC60531119041B250003E25fe0c5920606c6dB', evmToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
+      { symbol: 'WBTC', cg: 'wrapped-bitcoin', kadenaModule: 'kb-WBTC', evmRouter: '0xDFdB8F3dEb5458BFA25cc97df41298A915a34BF3', evmToken: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 }
     ]
   }
 };
