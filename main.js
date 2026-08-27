@@ -598,7 +598,17 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   let tok = null, net = null;
   for (const n of c.kda.networks) { const f = (n.tokens || []).find(t => t.symbol === symbol); if (f) { tok = f; net = n; break; } }
-  if (!tok) throw new Error('Token KDA no reconocido: ' + symbol);
+  // Los kb-* (kb-USDC, kb-USDT…) no están en el catálogo por red: sus datos viven en las rutas
+  // del puente, y por eso antes no se podían enviar. Son fungible-v2 corrientes (verificado en
+  // cadena el 26/08/2026, con la precisión del módulo igual a `decimals` de la ruta), así que se
+  // envían con el mismo transfer que PCO. El módulo sale de `c.bridge`, que loadConfig fuerza
+  // desde el DEFAULT del código: el renderer no puede colar un contrato de token hostil (Alex #4).
+  if (!tok && /^kb-/.test(String(symbol))) {
+    const rt = (c.bridge.routes || []).find(r => 'kb-' + r.symbol === symbol);
+    net = c.kda.networks.find(n => n.enabled && n.fork) || null;   // los kb-* solo viven en el fork
+    if (rt && net) tok = { symbol, module: bridge.NS + '.' + rt.kadenaModule, precision: rt.decimals, chain: c.bridge.kda.chain, cg: rt.cg };
+  }
+  if (!tok || !net) throw new Error('Token KDA no reconocido: ' + symbol);
   // El token puede vivir en cualquier chain: enviar desde la que tenga más saldo del remitente.
   const bal = await kda.getTokenBalances(w.kda.account, { node: net.node, networkId: net.networkId, tokens: [tok] });
   const pc = (bal[0] && bal[0].perChain) || {};
@@ -609,7 +619,7 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
     from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public, precision: tok.precision });
   const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: sendChain, requestKey: r.requestKey, tries: 20 });
   if (res && res.result && res.result.status === 'failure') throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
-  logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${tok.chain} · ${net.name}`, to, id: r.requestKey });
+  logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${sendChain} · ${net.name}`, to, id: r.requestKey });
   return { ...r, status: res ? 'success' : 'pending' };
 });
 
