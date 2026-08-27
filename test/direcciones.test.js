@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { ethers } = require('ethers');
 
-const FICHEROS = ['main.js', 'lib/bridge.js', 'lib/eth.js'];
+const FICHEROS = ['main.js', 'lib/bridge.js', 'lib/eth.js', 'lib/evmswap.js', 'lib/swap.js'];
 let revisadas = 0, fallos = 0;
 
 for (const rel of FICHEROS) {
