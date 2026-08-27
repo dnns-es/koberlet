@@ -16,6 +16,12 @@ const LANG = {
     nft_enviar: 'Enviar', nft_env_ir: 'Enviar', mk_disponible: 'Disponible:',
     nft_env_malacuenta: 'Eso no parece una cuenta k: (k: y 64 caracteres).',
     nft_env_comprobando: 'Comprobando si el contrato la deja mover…',
+    mkt_st_sub: 'USDT ⇄ USDC · Uniswap V3, antes de cruzar el puente',
+    st_porque: 'En Kadena el único con mercado es kb-USDC: un USDT cruzado tal cual no se puede cambiar a KDA. Cámbialo aquí antes de pasar el puente.',
+    st_quote: 'Recibirás aproximadamente {out} {sym} (pool del {fee}%).',
+    st_confirm: 'Vas a cambiar {a} {f} por unos {out} {t} en Uniswap. Si el precio se mueve mucho mientras tanto, la operación se cancela sola y no pierdes el dinero.',
+    st_ok: 'Cambiado. Has recibido unos {out} {sym}.',
+    st_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -196,6 +202,12 @@ const LANG = {
     nft_enviar: 'Send', nft_env_ir: 'Send', mk_disponible: 'Available:',
     nft_env_malacuenta: 'That does not look like a k: account (k: plus 64 characters).',
     nft_env_comprobando: 'Checking whether the contract allows moving it…',
+    mkt_st_sub: 'USDT ⇄ USDC · Uniswap V3, before crossing the bridge',
+    st_porque: 'On Kadena only kb-USDC has a market: a USDT bridged as-is cannot be swapped for KDA. Convert it here before crossing.',
+    st_quote: 'You will get roughly {out} {sym} ({fee}% pool).',
+    st_confirm: 'You are about to swap {a} {f} for about {out} {t} on Uniswap. If the price moves too much meanwhile, the operation cancels itself and you lose nothing.',
+    st_ok: 'Swapped. You received about {out} {sym}.',
+    st_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1032,11 +1044,57 @@ $('es-swap').onclick = () => {
     async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt, minOut); return (r.ok ? t('es_ok') : t('es_check')) + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
 };
 
+// SWAP DE ESTABLES (USDT <-> USDC en Uniswap V3, Ethereum). Existe por el puente: en
+// Kadena el unico token con mercado es kb-USDC, asi que un USDT cruzado tal cual se
+// queda sin poder cambiarse a KDA. Se cambia aqui ANTES de cruzar.
+let STDIR = { de: 'USDT', a: 'USDC' };
+function renderStableSwap() {
+  if (!$('st-wallet')) return;
+  const evmW = WALLETS.filter(w => w.ethAddress);
+  $('st-wallet').innerHTML = evmW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.ethAddress)}</option>`).join('') || `<option value="">${t('no_wallet_eth')}</option>`;
+  $('st-from').textContent = STDIR.de;
+  $('st-to').textContent = STDIR.a;
+  $('st-lbl-amt').textContent = t('mk_amount') + ' (' + STDIR.de + ')';
+  stQuote();
+}
+// Enganchados con guarda: si algun dia falta el elemento, un TypeError aqui arriba se
+// llevaria por delante TODO el script del renderer (la app entera se quedaria en blanco).
+if ($('st-invert')) $('st-invert').onclick = () => { STDIR = { de: STDIR.a, a: STDIR.de }; renderStableSwap(); };
+let _stT = null, _stQuote = null;
+if ($('st-amt')) $('st-amt').oninput = () => { clearTimeout(_stT); _stT = setTimeout(stQuote, 500); };
+async function stQuote() {
+  if (!$('st-amt')) return;
+  const amt = $('st-amt').value;
+  if (!amt || Number(amt) <= 0) { $('st-quote').textContent = ''; _stQuote = null; return; }
+  try {
+    msg($('st-quote'), t('es_quoting'));
+    const q = await window.api.evmSwapCotizar({ de: STDIR.de, a: STDIR.a, amount: amt });
+    _stQuote = { de: STDIR.de, a: STDIR.a, amt: String(amt), salida: q.salida };
+    $('st-quote').textContent = tr('st_quote', { out: q.salida.toFixed(6), sym: STDIR.a, fee: String(q.fee / 10000) });
+    $('st-quote').className = 'msg';
+  } catch (e) { _stQuote = null; msg($('st-quote'), cleanErr(e), 'err'); }
+}
+if ($('st-swap')) $('st-swap').onclick = () => {
+  const wid = $('st-wallet').value, amt = $('st-amt').value;
+  if (!wid) return msg($('st-msg'), t('err_no_eth_wallet'), 'err');
+  if (!amt || Number(amt) <= 0) return msg($('st-msg'), t('err_need_amt'), 'err');
+  // Se exige cotizacion fresca de ESTE importe y ESTA direccion, como en la otra tarjeta.
+  if (!_stQuote || _stQuote.de !== STDIR.de || _stQuote.amt !== String(amt)) return msg($('st-msg'), t('es_wait_quote'), 'err');
+  if (isLedgerW(wid)) return msg($('st-msg'), t('st_ledger'), 'err');
+  askSend(tr('st_confirm', { a: esc(amt), f: STDIR.de, t: STDIR.a, out: _stQuote.salida.toFixed(6) }),
+    async (pass) => {
+      const r = await window.api.evmSwapEnviar({ passphrase: pass, walletId: wid, de: STDIR.de, a: STDIR.a, amount: amt });
+      return tr('st_ok', { out: r.esperado.toFixed(6), sym: STDIR.a }) + ' tx: ' + String(r.hash || '').slice(0, 14) + '…';
+    });
+};
+try { window.api.onEvmSwapProgress && window.api.onEvmSwapProgress((m) => msg($('st-msg'), m)); } catch (_) {}
+
 async function applyView(v) {
   WALLETS = v.wallets; SHOWN = v.shown;
   renderBridge();
   renderMercado();
   renderEthSwap();
+  renderStableSwap();
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
