@@ -63,15 +63,27 @@ npm test --silent
 
 # --- 1. Construir ---
 echo "--- paquete de auto-update ---"
-bash build-app-zip.sh >/dev/null
+if [ -f "F:/koberlet-app-$VER.zip" ] && [ -f "F:/koberlet-app-$VER.meta.json" ]; then
+  echo "  ya estaba construido, se reutiliza"
+else
+  bash build-app-zip.sh >/dev/null
+fi
 APPZIP="F:/koberlet-app-$VER.zip"
-[ -f "$APPZIP" ] || { echo "ERROR: no se genero $APPZIP"; exit 1; }
+# OJO: build-app-zip.sh deja el meta como koberlet-app-<v>.meta.json (sin el .zip) y
+# firmar-zip.sh como <zip>.meta.json. Son convenciones distintas, cada una a su variable.
+APPMETA="F:/koberlet-app-$VER.meta.json"
+[ -f "$APPZIP" ] && [ -f "$APPMETA" ] || { echo "ERROR: no se genero $APPZIP + $APPMETA"; exit 1; }
 
 if [ "$SOLO_APP" = "0" ]; then
   echo "--- instalador completo (tarda unos minutos) ---"
-  bash build-instalador.sh >/dev/null
+  if [ -f "F:/koberlet_v$VER.zip" ] && [ -f "F:/koberlet_v$VER.zip.meta.json" ]; then
+    echo "  ya estaba construido, se reutiliza"
+  else
+    bash build-instalador.sh >/dev/null
+  fi
   FULLZIP="F:/koberlet_v$VER.zip"
-  [ -f "$FULLZIP" ] || { echo "ERROR: no se genero $FULLZIP"; exit 1; }
+  FULLMETA="F:/koberlet_v$VER.zip.meta.json"
+  [ -f "$FULLZIP" ] && [ -f "$FULLMETA" ] || { echo "ERROR: no se genero $FULLZIP + $FULLMETA"; exit 1; }
 fi
 
 # --- 2. Copia de seguridad del latest.json ANTES de tocar produccion ---
@@ -83,6 +95,9 @@ echo "backup en servidor: latest.json.bak-$TS"
 subir() {
   local zip="$1" esperado
   esperado=$(sha256sum "$zip" | cut -d' ' -f1)
+  local ya
+  ya=$(sh_remoto "sha256sum $DIR/$(basename "$zip") 2>/dev/null | cut -d' ' -f1" || true)
+  if [ "$ya" = "$esperado" ]; then echo "  $(basename "$zip") ya estaba subido y con la huella buena"; return; fi
   echo "subiendo $(basename "$zip") ..."
   scp -i "$LLAVE" -o ConnectTimeout=20 "$zip" "$SRV:$DIR/"
   local alla
@@ -99,12 +114,12 @@ node -e "
 const fs=require('fs');
 const j=JSON.parse(fs.readFileSync('.publicar-tmp/latest_actual.json','utf8'));
 const n=require('./$NOTAS');
-const app=JSON.parse(fs.readFileSync('$APPZIP.meta.json','utf8'));
+const app=JSON.parse(fs.readFileSync('$APPMETA','utf8'));
 j.version='$VER';
 j.appUrl='$BASE/koberlet-app-$VER.zip';
 j.sha256=app.sha256; j.sig=app.sig;
 if ('$SOLO_APP'==='0') {
-  const full=JSON.parse(fs.readFileSync('F:/koberlet_v$VER.zip.meta.json','utf8'));
+  const full=JSON.parse(fs.readFileSync('$FULLMETA','utf8'));
   j.url='$BASE/koberlet_v$VER.zip';
   j.urlSha256=full.sha256; j.urlSig=full.sig;
 }
@@ -133,7 +148,7 @@ if (mal) { console.error('HAY '+mal+' COMPROBACIONES MAL'); process.exit(1); }
 "
 echo "--- descarga real del paquete de auto-update ---"
 BAJADO=$(curl -s --max-time 300 "$BASE/koberlet-app-$VER.zip" | sha256sum | cut -d' ' -f1)
-ESPERADO=$(node -p "require('$APPZIP.meta.json').sha256")
+ESPERADO=$(node -p "require('$APPMETA').sha256")
 [ "$BAJADO" = "$ESPERADO" ] || { echo "ERROR: lo que sirve HTTPS no cuadra con lo firmado"; exit 1; }
 echo "  sha256 correcto"
 
@@ -143,7 +158,7 @@ if [ "$SOLO_APP" = "0" ]; then
   echo "Enlace para pasar a un companero:"
   echo "  $BASE/koberlet_v$VER.zip"
   echo "Huella (mandala en el MISMO mensaje):"
-  node -p "require('F:/koberlet_v$VER.zip.meta.json').sha256"
+  node -p "require('$FULLMETA').sha256"
 else
   echo "(--solo-app: el enlace del instalador sigue en la version anterior)"
 fi
