@@ -9,6 +9,7 @@ const kda = require('./lib/kda');
 const eth = require('./lib/eth');
 const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
+const evmswap = require('./lib/evmswap');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const ktime = require('./lib/kdatime');
@@ -72,6 +73,17 @@ const DEFAULT_CONFIG = {
     { key: 'pol', name: 'Polygon', enabled: false, rpc: 'https://polygon-bor-rpc.publicnode.com', symbol: 'POL', cg: 'polygon-ecosystem-token', color: '#8247e5',
       tokens: [{ symbol: 'USDC', address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', cg: 'tether' }] }
   ],
+  // Cambios permitidos en Ethereum (Uniswap V3). Sirve sobre todo para pasar USDT a USDC
+  // ANTES de cruzar el puente: en Kadena el unico token con mercado es kb-USDC, asi que un
+  // USDT que llegue como kb-USDT no se puede cambiar a KDA (no existe ese pool en kaddex).
+  // La lista es fija del codigo; el renderer solo elige par por simbolo, nunca da direcciones.
+  evmSwap: {
+    red: 'eth',
+    pares: [
+      { de: 'USDT', a: 'USDC', tokenDe: '0xdAC17F958D2ee523a2206206994597C13D831ec7', tokenA: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', decDe: 6, decA: 6 },
+      { de: 'USDC', a: 'USDT', tokenDe: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', tokenA: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decDe: 6, decA: 6 }
+    ]
+  },
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
@@ -135,6 +147,7 @@ const loadConfig = () => {
     c.kdaSimple = true;
     try { saveConfig(c); } catch (_) { /* si aún no se puede escribir, se persistirá al siguiente guardado */ }
   }
+  c.evmSwap = DEFAULT_CONFIG.evmSwap;   // el catalogo de cambios es fijo del codigo, como el puente
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
   // Auditoría Alex #4: las redes EVM se reconstruyen desde DEFAULT (routers, tokens, símbolos fijos del código);
   // del usuario solo se conserva `enabled` y un `rpc` que sea https válido. Así el renderer no puede repuntar
@@ -625,6 +638,35 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
   if (res && res.result && res.result.status === 'failure') throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
   logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${sendChain} · ${net.name}`, to, id: r.requestKey });
   return { ...r, status: res ? 'success' : 'pending' };
+});
+
+// ---- Cambio de token en Ethereum (Uniswap V3) ----
+// El par SIEMPRE sale del catálogo del código: el renderer manda un símbolo, no direcciones.
+function parEvmSwap(c, deSym, aSym) {
+  const p = (c.evmSwap.pares || []).find(x => x.de === deSym && x.a === aSym);
+  if (!p) throw new Error('Ese cambio no está soportado: ' + deSym + ' → ' + aSym);
+  const net = c.evm.find(n => n.key === c.evmSwap.red);
+  if (!net) throw new Error('La red del cambio no está configurada.');
+  return { p, net };
+}
+ipcMain.handle('evmswap:cotizar', async (_e, { de, a, amount } = {}) => {
+  const c = loadConfig(); const { p, net } = parEvmSwap(c, de, a);
+  return evmswap.cotizar({ rpc: net.rpc, tokenIn: p.tokenDe, tokenOut: p.tokenA, decIn: p.decDe, decOut: p.decA, amount });
+});
+ipcMain.handle('evmswap:enviar', async (_e, { passphrase, walletId, de, a, amount, slippage } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w.eth) throw new Error('Esta wallet no tiene cuenta de Ethereum.');
+  // Ledger fuera, igual que Mercado y Puente: el aparato no muestra código de contrato
+  // y firmar un swap a ciegas es justo lo que no debe hacer un monedero.
+  if (w.ledger) throw new Error('El cambio de tokens con Ledger no está disponible: el aparato no puede mostrar la llamada al contrato y seria firma ciega.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  const { p, net } = parEvmSwap(c, de, a);
+  const r = await evmswap.swap({ rpc: net.rpc, secretHex: w.eth.secret, tokenIn: p.tokenDe, tokenOut: p.tokenA,
+    decIn: p.decDe, decOut: p.decA, amount, slippage: Math.min(5, Math.max(0.05, Number(slippage) || 0.5)) },
+    (m) => { try { _e.sender.send('evmswap:progress', m); } catch (_) {} });
+  logHistory({ type: 'evm-swap', wallet: w.label, desc: `Cambio ${amount} ${de} → ${r.esperado.toFixed(4)} ${a} · Uniswap`, to: '', id: r.hash });
+  return r;
 });
 
 // Cuentas de desarrollo con claves PÚBLICAS (solo existen en la devnet): sirven de pagador de gas

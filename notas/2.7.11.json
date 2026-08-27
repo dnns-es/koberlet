@@ -1,0 +1,7 @@
+{
+  "notes": "Nueva tarjeta en Mercado para cambiar USDT por USDC en Ethereum antes de cruzar el puente. / New Market card to swap USDT for USDC on Ethereum before crossing the bridge.",
+  "notes_i18n": {
+    "es": "En Kadena el unico token con mercado es kb-USDC. Si cruzabas USDT por el puente te llegaba como kb-USDT y ahi se quedaba: no hay ningun pool donde cambiarlo por KDA.\nAhora el Mercado tiene una tarjeta nueva para pasar USDT a USDC dentro de Ethereum antes de cruzar. Usa Uniswap V3 y elige solo el pool que mejor precio da; para dos monedas estables la perdida es de milesimas.\nComo en el resto del monedero, firmas tu con tu contrasena, el precio se lee justo antes de firmar y se pone un limite: si el precio se mueve de mas mientras tanto, la operacion se cancela sola y no pierdes el dinero.",
+    "en": "On Kadena the only token with a market is kb-USDC. If you bridged USDT it arrived as kb-USDT and stayed there: there is no pool to swap it for KDA.\nThe Market now has a new card to turn USDT into USDC on Ethereum before crossing. It uses Uniswap V3 and picks whichever pool gives the best price; between two stablecoins the loss is a fraction of a percent.\nAs everywhere else in the wallet, you sign with your own password, the price is read right before signing, and a floor is set: if the price moves too much meanwhile, the operation cancels itself and you lose nothing."
+  }
+}
