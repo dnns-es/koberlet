@@ -17,6 +17,19 @@ mkdir -p portable-build/app
 cp main.js preload.js package.json portable-build/app/
 cp -r lib renderer portable-build/app/
 ( cd portable-build/app && npm install --omit=dev --no-audit --no-fund )
+# Fuera el codigo de PRUEBAS de las dependencias. Nada lo importa (comprobado), no se
+# ejecuta jamas y viaja en el instalador por inercia. Ademas, el 28/08/2026 Windows
+# Defender marco uno de ellos -@kadena/hd-wallet/.../kadenaEncryption.test.js- como
+# Trojan:Script/ObfusScript.A!ml, una deteccion heuristica (!ml) sobre vectores de test
+# que parecen cadenas ofuscadas. Lo ponia en cuarentena y reventaba el build. No se
+# toca el antivirus: simplemente no se empaqueta lo que no hace falta.
+# OJO: se borran SOLO los ficheros *.test.js/*.spec.js, NUNCA carpetas "tests" enteras.
+# El 28/08/2026 se probo a podar tambien las carpetas y se rompio la 2.7.17: resulta que
+# @kadena/cryptography-utils requiere lib/tests/mockdata/Pact EN TIEMPO DE EJECUCION, asi
+# que crear o importar una wallet por semilla dejaba de funcionar. Una carpeta llamada
+# "tests" no garantiza que sea codigo de pruebas.
+find portable-build/app/node_modules -type f \( -name "*.test.js" -o -name "*.spec.js" -o -name "*.test.mjs" \) -delete 2>/dev/null || true
+
 cp -r node_modules/electron/dist portable-build/MonederoDNNS
 cd portable-build/MonederoDNNS
 mv electron.exe MonederoDNNS.exe
