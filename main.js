@@ -80,6 +80,7 @@ const DEFAULT_CONFIG = {
   dca: {
     red: 'fork',
     modulo: 'free.ksw-dca2',
+    moduloOrdenes: 'free.ksw2',   // ordenes limite, para el resumen del Panel
     tokens: {
       KDA: { modulo: 'coin', precision: 12, minCuota: 100 },
       'kb-USDC': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-USDC', precision: 6, minCuota: 1 }
@@ -661,7 +662,7 @@ function cfgDca() {
   const c = loadConfig();
   const net = c.kda.networks.find(n => n.key === c.dca.red) || c.kda.networks.find(n => n.fork);
   if (!net) throw new Error('La red del DCA no esta configurada.');
-  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo }, c, net };
+  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes }, c, net };
 }
 // Precisiones por modulo, para el decimal canonico del topup.
 function precisionesDca(c) {
@@ -681,12 +682,42 @@ ipcMain.handle('dca:estado', async (_e, { walletId } = {}) => {
   const { cfg, c } = cfgDca();
   const w = (unlocked && (unlocked.data.wallets.find(x => x.id === walletId) || active())) || null;
   const cuenta = w && w.kda ? w.kda.account : null;
-  const [planes, pausado] = await Promise.all([
+  const [planes, ordenes, pausado] = await Promise.all([
     cuenta ? dca.planesDe(cfg, cuenta).catch(() => []) : Promise.resolve([]),
+    cuenta ? dca.ordenesDe(cfg, cuenta).catch(() => []) : Promise.resolve([]),
     dca.pausado(cfg).catch(() => null)
   ]);
-  return { cuenta, pausado, comision: c.dca.comision, web: c.dca.web, limites: dca.LIMITES,
+  return { cuenta, pausado, ordenes: ordenes || [], comision: c.dca.comision, web: c.dca.web, limites: dca.LIMITES,
            tokens: c.dca.tokens, planes: (planes || []).map(p => ({ ...p, tokenIn: dca.refMod(p['token-in']), tokenOut: dca.refMod(p['token-out']) })) };
+});
+// Resumen para el Panel: planes DCA y ordenes limite abiertas de las wallets visibles.
+// Una sola lectura de list-open para todas, que devuelve las de todo el mundo y se
+// reparte aqui: asi no se pregunta a la cadena una vez por wallet.
+ipcMain.handle('dca:panel', async () => {
+  if (!unlocked) return { filas: [] };
+  const { cfg } = cfgDca();
+  const vistas = unlocked.data.wallets.filter(w => w.kda && (unlocked.data.shown || []).includes(w.id));
+  const wallets = vistas.length ? vistas : unlocked.data.wallets.filter(w => w.kda);
+  if (!wallets.length) return { filas: [] };
+  // list-open devuelve las ordenes de TODO el mundo: se pide UNA vez y se reparte.
+  let abiertas = [];
+  try { abiertas = await dca.todasLasOrdenes(cfg); } catch (_) {}
+  const filas = [];
+  for (const w of wallets) {
+    let planes = [];
+    try { planes = await dca.planesDe(cfg, w.kda.account); } catch (_) {}
+    const ords = abiertas.filter(o => String(o.owner) === String(w.kda.account));
+    const vivos = (planes || []).filter(p => p.status !== 'closed');
+    if (!vivos.length && !ords.length) continue;
+    filas.push({
+      wallet: w.label, cuenta: w.kda.account,
+      planes: vivos.map(p => ({ id: p.id, estado: p.status, cuota: p.quota, periodo: p.period,
+        balance: p.balance, buys: p.buys, tokenIn: dca.refMod(p['token-in']), tokenOut: dca.refMod(p['token-out']) })),
+      ordenes: (ords || []).map(o => ({ id: o.id, entra: o['amount-in'], precio: o['trigger-price'],
+        estado: o.status, tokenIn: dca.refMod(o['token-in']), tokenOut: dca.refMod(o['token-out']) }))
+    });
+  }
+  return { filas };
 });
 ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, cuota, periodo, slippage } = {}) => {
   const w = walletDca(walletId);

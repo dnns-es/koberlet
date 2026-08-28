@@ -436,3 +436,12 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
    más pequeña, para que el fondo no se monte sobre sí mismo. */
 .nft-env-msg .warn { display:block; font-size:.7rem; padding:7px 9px; line-height:1.4; }
 
+
+/* Ordenes activas en el Panel */
+.oa-wallet { padding: 6px 0; border-top: 1px solid var(--bordesuave, #e8e8e8); }
+.oa-wallet:first-child { border-top: 0; }
+.oa-linea { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; padding: 3px 0; }
+.oa-tipo { font-size: 10px; font-weight: 700; letter-spacing: .5px; padding: 1px 6px;
+           border-radius: 999px; background: #63e0381f; color: #3d8f22; }
+.oa-tipo.oa-lim { background: #627eea1f; color: #4256b8; }
+.oa-cuerpo { padding-top: 4px; }

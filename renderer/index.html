@@ -113,6 +113,7 @@
           <div id="donut" class="donut"><div class="hole"></div></div>
         </div>
         <div id="gas-warn" class="gaswarn"></div>
+        <div id="ordenes-activas" hidden></div>
         <details id="conv" class="conv-card">
           <summary data-i18n="converter">🧮 Conversor</summary>
           <div class="convrow">
@@ -177,30 +178,40 @@
 
       <!-- MERCADO -->
       <section id="view-dca" class="view" hidden>
-        <h3 data-i18n="h_dca">DCA · compra periodica</h3>
-        <p class="muted xs" data-i18n="dca_sub">Dejas un bote en el contrato y el vigilante de KoberluSW compra una cuota cada cierto tiempo. Lo firmas tu; Koberlet no ejecuta las compras ni custodia nada.</p>
-        <div class="card">
-          <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="dca-wallet"></select>
-          <div id="dca-aviso" class="msg"></div>
-          <div id="dca-lista"></div>
-        </div>
+        <h3 data-i18n="h_dca">DCA · compra periódica</h3>
+        <p class="muted xs" data-i18n="dca_sub">Dejas un bote en el contrato y el vigilante de KoberluSW compra una cuota cada cierto tiempo. Lo firmas tú; Koberlet no ejecuta las compras ni custodia nada.</p>
         <div class="card">
           <div class="mkt-head"><span class="tdot" style="background:#63e038"></span><b data-i18n="dca_nuevo">Nuevo plan</b></div>
-          <div class="row2">
-            <div><label data-i18n="dca_entregas">Entregas</label><select id="dca-de"></select></div>
-            <div><label data-i18n="dca_compras">Compras</label><select id="dca-a"></select></div>
+          <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="dca-wallet"></select>
+          <div class="dir-row">
+            <div class="dir-col">
+              <div class="muted xs" data-i18n="dca_entregas">Entregas</div>
+              <div class="dir-chip" id="dca-de">kb-USDC</div>
+            </div>
+            <button id="dca-invert" class="invert" type="button" data-i18n-title="ttl_invert" title="Invertir">⇅</button>
+            <div class="dir-col">
+              <div class="muted xs" data-i18n="dca_compras">Compras</div>
+              <div class="dir-chip" id="dca-a">KDA</div>
+            </div>
           </div>
           <div class="row2">
-            <div><label id="dca-lbl-dep">Bote inicial</label><input id="dca-dep" type="number" step="0.000001" placeholder="0.0"/></div>
-            <div><label id="dca-lbl-cuota">Cuota por compra</label><input id="dca-cuota" type="number" step="0.000001" placeholder="0.0"/></div>
+            <div><label id="dca-lbl-dep" data-i18n="dca_bote">Bote inicial</label><input id="dca-dep" type="number" step="0.000001" placeholder="0.0"/></div>
+            <div><label id="dca-lbl-cuota" data-i18n="dca_cuota">Cuota por compra</label><input id="dca-cuota" type="number" step="0.000001" placeholder="0.0"/></div>
           </div>
           <div class="row2">
             <div><label data-i18n="dca_cada">Cada</label><select id="dca-periodo"></select></div>
-            <div><label data-i18n="dca_slip">Deslizamiento maximo</label><select id="dca-slip"></select></div>
+            <div><label data-i18n="dca_slip">Deslizamiento máximo</label><select id="dca-slip"></select></div>
           </div>
           <div id="dca-resumen" class="msg"></div>
           <button id="dca-crear" class="primary" data-i18n="dca_crear">Crear plan</button>
           <div id="dca-msg" class="msg"></div>
+          <div id="dca-aviso" class="msg"></div>
+        </div>
+        <div class="card">
+          <details id="dca-hist">
+            <summary><b data-i18n="dca_historial">Mis planes</b> <span class="muted xs" id="dca-cuenta-planes"></span></summary>
+            <div id="dca-lista"></div>
+          </details>
         </div>
       </section>
       <section id="view-mercado" class="view" hidden>
@@ -391,6 +402,14 @@
         <div class="lang-es">
           <div class="card">
             <details>
+              <summary><b>🔁 DCA</b> — compra periódica</summary>
+              <p>Un <b>DCA</b> (del inglés <i>dollar-cost averaging</i>) es comprar poco a poco en vez de todo de golpe: dejas un bote y el sistema compra una cuota cada cierto tiempo, así el precio que pagas es la media del periodo y no dependes de acertar el día.</p>
+              <p>El bote lo custodia el <b>contrato de KoberluSW</b> en la cadena, no Koberlet. Las compras las dispara un <b>vigilante</b> que paga su propio gas: tú no pagas gas por cada compra, solo por crear, recargar o cerrar el plan.</p>
+              <p><b>Coste:</b> el contrato se lleva un <b>0,5% por compra</b>, más el <b>0,3%</b> que cobra el pool del intercambio. <b>Mínimos:</b> 1 kb-USDC o 100 KDA por compra, y entre 5 minutos y un año de periodo. Puedes tener hasta 10 planes por cuenta.</p>
+              <p>Puedes <b>pausar</b> un plan (deja de comprar pero el bote sigue guardado) o <b>cerrarlo</b> (te devuelve lo que quede y ya no se puede reabrir). Los mismos planes se ven desde el móvil en <b>koberlusw.dnns.es</b>.</p>
+              <p class="muted xs">Ten en cuenta que los planes están en una cadena pública: cualquiera que sepa tu cuenta puede consultarlos. Nadie puede tocarlos sin tu clave, pero verlos sí.</p>
+            </details>
+            <details>
               <summary><b>📊 Dashboard</b> — qué estás viendo</summary>
               <p>Es el resumen de tu dinero. Arriba ves el <b>total en dólares</b> de todas las wallets marcadas como visibles, con un donut del reparto por red. Debajo, una <b>tarjeta por red</b> de cada wallet visible: saldo del token nativo (KDA, ETH…), tokens (USDC, USDT…) y su valor en dólares.</p>
               <p>En cada tarjeta: <b>📥 Recibir</b> muestra tu dirección y un QR para que te envíen fondos; <b>📤 Enviar</b> abre el formulario de envío (siempre te pedirá la contraseña antes de firmar). Los precios vienen de CoinGecko y se refrescan cada minuto; el botón <b>↻ Refrescar</b> fuerza una lectura nueva.</p>
@@ -449,6 +468,14 @@
 
         <div class="lang-en" hidden>
           <div class="card">
+            <details>
+              <summary><b>🔁 DCA</b> — recurring buys</summary>
+              <p><b>DCA</b> (dollar-cost averaging) means buying a bit at a time instead of all at once: you leave a pot and the system buys a slice every so often, so the price you pay is the average over the period and you do not have to pick the right day.</p>
+              <p>The pot is held by the <b>KoberluSW contract</b> on chain, not by Koberlet. Buys are triggered by a <b>watcher</b> that pays its own gas: you pay no gas per buy, only to create, top up or close the plan.</p>
+              <p><b>Cost:</b> the contract takes <b>0.5% per buy</b>, plus the <b>0.3%</b> charged by the exchange pool. <b>Minimums:</b> 1 kb-USDC or 100 KDA per buy, and a period between 5 minutes and one year. Up to 10 plans per account.</p>
+              <p>You can <b>pause</b> a plan (it stops buying but the pot stays) or <b>close</b> it (you get back whatever is left and it cannot be reopened). The same plans are visible from your phone at <b>koberlusw.dnns.es</b>.</p>
+              <p class="muted xs">Bear in mind these plans live on a public chain: anyone who knows your account can look them up. Nobody can touch them without your key, but they can see them.</p>
+            </details>
             <details>
               <summary><b>📊 Dashboard</b> — what you are seeing</summary>
               <p>Your money at a glance. At the top, the <b>total in dollars</b> across all wallets marked as visible, with a donut showing the split per network. Below, one <b>card per network</b> of each visible wallet: native token balance (KDA, ETH…), tokens (USDC, USDT…) and their dollar value.</p>

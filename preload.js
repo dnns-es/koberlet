@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   evmSwapEnviar: (a) => ipcRenderer.invoke('evmswap:enviar', a),
   onEvmSwapProgress: (cb) => ipcRenderer.on('evmswap:progress', (_e, m) => cb(m)),
   dcaEstado: (a) => ipcRenderer.invoke('dca:estado', a),
+  dcaPanel: () => ipcRenderer.invoke('dca:panel'),
   dcaCrear: (a) => ipcRenderer.invoke('dca:crear', a),
   dcaRecargar: (a) => ipcRenderer.invoke('dca:recargar', a),
   dcaAccion: (a) => ipcRenderer.invoke('dca:accion', a),
