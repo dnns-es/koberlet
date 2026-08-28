@@ -956,13 +956,33 @@ const STEP_SETS = {
   kda2evm: { dispatch: 'step_dispatch', kdaconfirm: 'step_kdaconfirm', evm: 'step_evm' }
 };
 const STEP_ICON = { pending: '⚪', run: '⏳', ok: '✅', skip: '⏭️', fail: '❌' };
-function initSteps(dir) { const L = STEP_SETS[dir] || STEP_SETS.evm2kda; $('send-steps').innerHTML = Object.keys(L).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${t(L[k])}</span> <span class="sd"></span></div>`).join(''); }
+function initSteps(dir) {
+  const L = STEP_SETS[dir] || STEP_SETS.evm2kda;
+  $('send-steps').innerHTML = Object.keys(L).map(k => `<div class="stp" data-step="${k}"><span class="si">⚪</span> <span class="sl">${t(L[k])}</span> <span class="sd"></span></div>`).join('')
+    + `<div id="send-nota" class="muted xs sendnota"></div>`;
+}
+// Recorta por los extremos SOLO lo que es una clave o una direccion (un churro sin
+// espacios, donde el principio y el final son lo que identifica). Una frase se recorta
+// por el final o no se entiende: "Esperando al relayer hacia Ethereum" se quedaba en
+// "Esperando …ereum…", que no dice nada y encima parece un error.
+function recortaDetalle(txt) {
+  const s = String(txt);
+  if (s.length <= 34) return s;
+  return /\s/.test(s) ? s.slice(0, 33) + '…' : s.slice(0, 10) + '…' + s.slice(-6);
+}
 function updateStep(d) {
   const row = $('send-steps').querySelector(`[data-step="${d.step}"]`); if (!row) return;
   row.querySelector('.si').textContent = STEP_ICON[d.status] || (d.status === 'pending' ? '🕒' : '⚪');
   if (d.status === 'pending') row.querySelector('.si').textContent = '🕒';
-  if (d.detail) row.querySelector('.sd').textContent = '· ' + (d.detail.length > 30 ? d.detail.slice(0, 10) + '…' + d.detail.slice(-6) : d.detail);
+  if (d.detail) row.querySelector('.sd').textContent = '· ' + recortaDetalle(d.detail);
   row.classList.toggle('done', d.status === 'ok');
+  // La nota va aparte y a lo ancho: es donde caben las frases que tranquilizan.
+  const nota = $('send-nota');
+  if (nota && d.nota !== undefined) {
+    const txt = (d.nota && typeof d.nota === 'object') ? (d.nota[LNG] || d.nota.es) : d.nota;
+    nota.textContent = txt || '';
+    nota.hidden = !txt;
+  }
 }
 $('btn-bridge-send').onclick = () => {
   const from = $('br-from').value, symbol = $('br-token').value, amt = $('br-amt').value;
