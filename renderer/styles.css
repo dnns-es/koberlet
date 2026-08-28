@@ -494,3 +494,21 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .sendnota{margin-top:10px;line-height:1.5;max-width:46ch}
 .sendnota[hidden]{display:none}
 .stp .sd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22ch;display:inline-block;vertical-align:bottom}
+
+/* ---- Modo visor: mirar cuentas sin abrir la boveda ---- */
+.visor-card{max-width:520px}
+.visor-alta{margin-top:6px}
+.fila-alta{display:flex;gap:8px}
+.fila-alta input{flex:1 1 auto;min-width:0}
+.fila-alta button{flex:0 0 auto}
+.visor-lista{display:flex;flex-direction:column;gap:10px;margin:14px 0 4px;max-height:46vh;overflow-y:auto}
+.visor-vacio{padding:14px 2px;line-height:1.5}
+.visor-item{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--card)}
+.visor-cab{display:flex;align-items:center;gap:9px}
+.visor-nom{font-weight:700;font-size:13.5px}
+.visor-dir{font-size:11px;opacity:.55}
+.visor-cuerpo{margin-top:8px}
+.visor-linea{display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:13px}
+.visor-linea .cifra{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+.visor-linea.sub{font-size:12px;opacity:.85;padding-left:10px}
+.visor-chains{padding:2px 0 4px 10px}

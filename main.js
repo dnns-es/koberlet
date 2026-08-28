@@ -11,6 +11,7 @@ const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
 const dca = require('./lib/dca');
+const observadas = require('./lib/observadas');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const ktime = require('./lib/kdatime');
@@ -326,6 +327,69 @@ function ensureDesktopShortcut() {
 }
 
 // ---- IPC ----
+// ---- MODO VISOR: mirar cuentas sin abrir la boveda -------------------------------
+// Son los UNICOS handlers que no exigen `unlocked`, y pueden permitirselo porque no
+// tocan la boveda, no reciben claves y no firman nada. Solo leen de la cadena
+// direcciones publicas, que cualquiera puede consultar con un nodo.
+//
+// Existe por lo que pidio Alex en el grupo de Pact: quien tiene el saldo en frio o en
+// un Ledger hoy tiene que enchufar el aparato solo para ver un numero. Eso es exponerlo
+// a cambio de nada.
+const DATOS = () => app.getPath('userData');
+
+function validarDireccion(red, d) {
+  if (red === 'kda') return kda.validKdaAccount(d);
+  try { require('ethers').getAddress(d); return true; } catch (_) { return false; }
+}
+
+ipcMain.handle('visor:lista', () => observadas.leer(DATOS()));
+ipcMain.handle('visor:anadir', (_e, { red, direccion, etiqueta } = {}) =>
+  observadas.anadir(DATOS(), { red, direccion, etiqueta }, validarDireccion));
+ipcMain.handle('visor:quitar', (_e, { id } = {}) => observadas.quitar(DATOS(), id));
+ipcMain.handle('visor:renombrar', (_e, { id, etiqueta } = {}) => observadas.renombrar(DATOS(), id, etiqueta));
+
+// Todo lo que se puede saber de una cuenta ajena leyendo la cadena. Cada trozo va con su
+// propio catch: que falle el DCA no debe dejarte sin ver el saldo.
+ipcMain.handle('visor:cuenta', async (_e, { red, direccion } = {}) => {
+  if (!validarDireccion(red, String(direccion || ''))) throw new Error('Dirección no válida.');
+  const c = loadConfig();
+  const precios = await getPrices();
+  const px = (id) => precios[id] || 0;
+
+  if (red === 'evm') {
+    const salidas = [];
+    for (const net of c.evm.filter((n) => n.enabled)) {
+      try {
+        const b = await eth.getBalances(direccion, { rpc: net.rpc, tokens: net.tokens });
+        salidas.push({ red: net.name, color: net.color, nativo: b.native, simbolo: net.symbol,
+                       usd: b.native * px(net.cg), tokens: (b.tokens || []).map((t) => ({ ...t, usd: t.amount * px(t.cg) })) });
+      } catch (_) { /* esa red no responde: se sigue con las demas */ }
+    }
+    return { red: 'evm', direccion, bloques: salidas };
+  }
+
+  const net = c.kda.networks.find((n) => n.enabled && n.fork) || c.kda.networks.find((n) => n.enabled);
+  if (!net) throw new Error('No hay ninguna red de Kadena activa.');
+  const cfgDcaVisor = { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain),
+                        modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes };
+  const [saldo, tokens, planes, ordenes] = await Promise.all([
+    kda.getBalance(direccion, { node: net.node, networkId: net.networkId, chains: c.kda.chains }).catch(() => ({ total: 0, perChain: {} })),
+    kda.getTokenBalances(direccion, { node: net.node, networkId: net.networkId, tokens: net.tokens }).catch(() => []),
+    dca.planesDe(cfgDcaVisor, direccion).catch(() => []),
+    dca.ordenesDe(cfgDcaVisor, direccion).catch(() => [])
+  ]);
+  return {
+    red: 'kda', direccion, redNombre: net.name,
+    nativo: saldo.total, porChain: saldo.perChain, usd: saldo.total * px('kadena'),
+    tokens: (tokens || []).map((t) => ({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 })),
+    planes: (planes || []).filter((x) => x.status !== 'closed').map((x) => ({
+      id: x.id, estado: x.status, cuota: x.quota, periodo: x.period, balance: x.balance,
+      buys: x.buys, tokenIn: dca.refMod(x['token-in']), tokenOut: dca.refMod(x['token-out']) })),
+    ordenes: (ordenes || []).map((o) => ({ id: o.id, entra: o['amount-in'], precio: o['trigger-price'],
+      tokenIn: dca.refMod(o['token-in']), tokenOut: dca.refMod(o['token-out']) }))
+  };
+});
+
 ipcMain.handle('vault:status', () => ({ exists: vault.existe(VAULT()), unlocked: !!unlocked, config: loadConfig() }));
 
 ipcMain.handle('vault:setup', async (_e, { passphrase, kind, net }) => {
