@@ -86,6 +86,16 @@ if [ "$SOLO_APP" = "0" ]; then
   [ -f "$FULLZIP" ] && [ -f "$FULLMETA" ] || { echo "ERROR: no se genero $FULLZIP + $FULLMETA"; exit 1; }
 fi
 
+# --- 1b. Comprobar que el paquete SIRVE, no solo que llego entero ---
+# El 28/08/2026 se publico la 2.7.17 rota: los sha256 cuadraban y las firmas validaban
+# perfectamente... de un paquete que no podia crear wallets. La huella dice que llego
+# entero lo que mandaste, no que lo que mandaste funcione. Esto lo descomprime y lo
+# arranca de verdad antes de subir un solo byte.
+echo "--- comprobando que el paquete funciona ---"
+rm -rf .publicar-tmp/humo && mkdir -p .publicar-tmp/humo
+( cd .publicar-tmp/humo && unzip -q "$APPZIP" )
+VER_ESPERADA="$VER" node comprobar-paquete.js .publicar-tmp/humo/app | sed "s/^/  /"
+
 # --- 2. Copia de seguridad del latest.json ANTES de tocar produccion ---
 TS=$(date -u +%Y%m%d-%H%M%S)
 sh_remoto "cp -a $DIR/latest.json $DIR/latest.json.bak-$TS"

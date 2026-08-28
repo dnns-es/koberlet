@@ -1,0 +1,7 @@
+{
+  "notes": "Arregla un fallo de la 2.7.18 anterior: crear o importar una wallet de Kadena por semilla. Actualiza cuanto antes. / Fixes a bug in the previous version: creating or importing a Kadena wallet from a seed phrase. Update as soon as you can.",
+  "notes_i18n": {
+    "es": "IMPORTANTE: en la version 2.7.17, crear o importar una wallet de Kadena a partir de una frase semilla fallaba. Fue culpa nuestra: al limpiar el instalador se borro por error un fichero que una libreria si necesitaba para funcionar.\nQueda arreglado. Nada mas se vio afectado: las wallets que ya tenias, los envios, el puente y el DCA funcionaban con normalidad, y en ningun momento hubo riesgo para tus fondos ni para tus claves.\nSi tienes la 2.7.17, actualiza antes de crear o importar ninguna wallet.",
+    "en": "IMPORTANT: in version 2.7.17, creating or importing a Kadena wallet from a seed phrase failed. That was our fault: while slimming down the installer we removed a file that one of the libraries actually needed at runtime.\nIt is fixed. Nothing else was affected: your existing wallets, sends, the bridge and DCA all worked normally, and at no point were your funds or your keys at risk.\nIf you are on 2.7.17, update before creating or importing any wallet."
+  }
+}
