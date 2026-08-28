@@ -1,0 +1,7 @@
+{
+  "notes": "Los numeros se escriben ya como toca en cada idioma: 1.787.754,0793 en espanol. / Numbers are now written properly for each language: 1,787,754.0793 in English.",
+  "notes_i18n": {
+    "es": "Los saldos se escribian en formato ingles aunque tuvieras la app en espanol: salia 1787754.0793 en vez de 1.787.754,0793, y sin separador de miles no hay quien lea una cifra larga de un vistazo.\nAhora todos los importes pasan por el mismo sitio y siguen el idioma que tengas puesto: en espanol, punto para los miles y coma para los decimales; en ingles, al reves. Afecta a los saldos, al total, al reparto por chain, a la leyenda del grafico y al conversor.",
+    "en": "Balances were written in English format even with the app set to Spanish: 1787754.0793 instead of 1.787.754,0793, and without a thousands separator a long figure is unreadable at a glance.\nEvery amount now goes through the same place and follows the language you have selected: dots for thousands and a comma for decimals in Spanish, the other way round in English. It affects balances, the total, the per-chain split, the chart legend and the converter."
+  }
+}

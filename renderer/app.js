@@ -599,6 +599,20 @@ const LANG = {
 };
 let LNG = localStorage.getItem('koberlet-lang'); if (LNG !== 'en' && LNG !== 'es') LNG = (navigator.language || 'es').slice(0, 2) === 'en' ? 'en' : 'es';
 function t(k) { return (LANG[LNG] && LANG[LNG][k]) || LANG.es[k] || k; }
+// Numeros SIEMPRE por aqui. Sigue el idioma elegido: en espanol 1.787.754,0793 y en
+// ingles 1,787,754.0793. Con `dec` fijo mantiene los ceros de la derecha, como toFixed.
+function fmt(n, dec) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  const d = dec == null ? 4 : dec;
+  return v.toLocaleString(LNG === 'en' ? 'en-US' : 'es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+// Para importes largos donde los decimales fijos molestan (saldos grandes).
+function fmtCorto(n, dec) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  return v.toLocaleString(LNG === 'en' ? 'en-US' : 'es-ES', { maximumFractionDigits: dec == null ? 4 : dec });
+}
 // t() con variables: tr('clave', {a: 5}) sustituye TODAS las apariciones de {a} (replace solo cambia la primera).
 function tr(k, vars) { let s = t(k); for (const x in (vars || {})) s = s.split('{' + x + '}').join(String(vars[x])); return s; }
 function applyLang() {
@@ -666,7 +680,7 @@ function initConverter() {
     if (!px) { $('conv-rate').textContent = '—'; return; }
     if (from === 'fiat') { const v = Number($('conv-fiat-amt').value || 0) / px; $('conv-amt').value = v ? v.toFixed(6) : ''; }
     else { const v = Number($('conv-amt').value || 0) * px; $('conv-fiat-amt').value = v ? v.toFixed(6) : ''; }
-    $('conv-rate').textContent = `1 ${$('conv-asset').value} = ${px.toFixed(4)} ${fiat.toUpperCase()}`;
+    $('conv-rate').textContent = `1 ${$('conv-asset').value} = ${fmt(px, 4)} ${fiat.toUpperCase()}`;
   };
   if (!_convInit) {
     $('conv-amt').oninput = () => recalc('crypto');
@@ -1192,7 +1206,7 @@ function pintarDisponible(idZona, walletId, simbolo) {
     const el = $(idZona);
     if (!el) return;
     const v = saldoDe(walletId, simbolo);
-    el.innerHTML = t('mk_disponible') + ' <b>' + (v === null ? '—' : v.toLocaleString('es-ES', { maximumFractionDigits: 6 })) + '</b>';
+    el.innerHTML = t('mk_disponible') + ' <b>' + (v === null ? '—' : fmtCorto(v, 6)) + '</b>';
 }
 
 function renderMercado() {
@@ -1560,7 +1574,7 @@ let VISOR_SEL = null;   // id de la cuenta que se esta viendo a la derecha
 
 function visorNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
 function visorCorta(d) { return d.length > 26 ? d.slice(0, 14) + '…' + d.slice(-6) : d; }
-function visorMiles(n, dec) { return Number(n).toLocaleString('es-ES', { maximumFractionDigits: dec == null ? 4 : dec }); }
+const visorMiles = (n, dec) => fmtCorto(n, dec);   // el visor usa el formateador comun
 
 // Fecha relativa: "hace 3 h" dice mas de un vistazo que un sello ISO.
 function visorHace(iso) {
@@ -1675,7 +1689,7 @@ function visorTarjeta(color, titulo, etiqueta, usd, filas, extra, direccion) {
   return `<div class="card netcard visor-tarj" style="border-top:3px solid ${color}">
     <div class="nc-head estatica"><span class="netdot" style="background:${color}"></span> ${esc(titulo)}
       <small class="muted">${esc(etiqueta || '')}</small>
-      <span class="nc-sub">$${(usd || 0).toFixed(2)}</span></div>
+      <span class="nc-sub">$${fmt(usd || 0, 2)}</span></div>
     <div class="nc-body">
       <div class="assets">${filas}</div>
       ${extra || ''}
@@ -1686,11 +1700,11 @@ function visorTarjeta(color, titulo, etiqueta, usd, filas, extra, direccion) {
 
 function visorFichaKda(o, r) {
   const toks = (r.tokens || []).filter(x => x.amount > 0);
-  const filas = assetRow('KDA', r.nativo.toFixed(4), r.usd)
-    + toks.map(x => assetRow(x.symbol, x.amount.toFixed(4), x.usd)).join('');
+  const filas = assetRow('KDA', r.nativo, r.usd)
+    + toks.map(x => assetRow(x.symbol, x.amount, x.usd)).join('');
   const chains = Object.entries(r.porChain || {}).sort((a, b) => a[0] - b[0]);
   const extra = chains.length
-    ? `<div class="muted xs perline">${t('spread')}${chains.map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ')}</div>`
+    ? `<div class="muted xs perline">${t('spread')}${chains.map(([c, x]) => `Chain ${c} → ${fmt(x, 4)}`).join('  ·  ')}</div>`
     : `<div class="muted xs perline">${t('no_bal_yet')}</div>`;
 
   const planes = r.planes || [], ords = r.ordenes || [], movs = r.movimientos || [];
@@ -1745,8 +1759,8 @@ function visorFichaEvm(o, r) {
   }
   return visorCabecera(o, total) + bloques.map(b => {
     const usdRed = b.usd + b.tokens.reduce((m, t2) => m + t2.usd, 0);
-    const filas = assetRow(b.simbolo, b.nativo.toFixed(6), b.usd)
-      + b.tokens.filter(t2 => t2.amount > 0).map(t2 => assetRow(t2.symbol, t2.amount.toFixed(4), t2.usd)).join('');
+    const filas = assetRow(b.simbolo, b.nativo, b.usd, 6)
+      + b.tokens.filter(t2 => t2.amount > 0).map(t2 => assetRow(t2.symbol, t2.amount, t2.usd)).join('');
     return visorTarjeta(b.color || '#627eea', b.red, o.etiqueta, usdRed, filas, '', o.direccion);
   }).join('');
 }
@@ -1812,7 +1826,7 @@ async function applyView(v) {
   loadBalances();
 }
 
-function assetRow(sym, amt, usd) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${amt}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">$${(usd || 0).toFixed(2)}</span></div>`; }
+function assetRow(sym, amt, usd, dec) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${fmt(amt, dec == null ? 4 : dec)}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">$${fmt(usd || 0, 2)}</span></div>`; }
 // Una tarjeta = una red de una wallet visible. Colapsada por defecto: solo red + total. Clic en el título despliega tokens/chains.
 function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
@@ -1825,8 +1839,8 @@ function cardBlock(bl, qr) {
     // mismo transfer que PCO. Antonio tenia 4 kb-USDC y la app no le dejaba enviarlos.
     const sendable = toks;
     const kdaUsd = (bl.usd || 0) - toks.reduce((s, t) => s + t.usd, 0);
-    rows = assetRow('KDA', bl.native.toFixed(4), kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
-    const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ') : t('no_bal_yet');
+    rows = assetRow('KDA', bl.native, kdaUsd) + toks.map(t => assetRow(t.symbol, t.amount, t.usd)).join('');
+    const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${fmt(x, 4)}`).join('  ·  ') : t('no_bal_yet');
     extra = `<div class="muted xs perline">${per}</div>`;
     const assetSel = sendable.length ? `<label>${t('lbl_asset')}</label><select class="k-asset"><option value="__kda__" data-native="1">KDA</option>${sendable.map(x => `<option value="${esc(x.symbol)}" data-bal="${x.amount}">${esc(x.symbol)}</option>`).join('')}</select>` : '';
     sendForm = `${assetSel}<div class="k-chainrow"><div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
@@ -1836,7 +1850,7 @@ function cardBlock(bl, qr) {
       <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
       <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>${t('send')}</button>`;
   } else {
-    rows = assetRow(bl.symbol, bl.native.toFixed(4), bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount.toFixed(4), t.usd)).join('');
+    rows = assetRow(bl.symbol, bl.native, bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount, t.usd)).join('');
     const opts = `<option value="${bl.symbol}" data-amt="${bl.native}" data-native="1">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}" data-amt="${t.amount}">${t.symbol}</option>`).join('');
     sendForm = `<label>${t('lbl_asset')}</label><select class="e-asset" data-sym="${bl.symbol}">${opts}</select>
       <label>${t('lbl_dest_0x')}</label><input class="e-to" list="dl-evm" placeholder="${t('ph_evm_dest')}"/>
@@ -1844,7 +1858,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err">${t('offline')}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? (bl.native || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' KDA' : '$' + (bl.usd || 0).toFixed(2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err">${t('offline')}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? fmtCorto(bl.native || 0, 2) + ' KDA' : '$' + fmt(bl.usd || 0, 2)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
@@ -1868,7 +1882,7 @@ function donut(segs, total) {
   if (!total) { el.style.background = '#e7eae6'; $('total-legend').innerHTML = ''; return; }
   let acc = 0; const parts = segs.filter(s => s.usd > 0).map(s => { const a = acc, b = acc + s.usd / total * 100; acc = b; return `${s.color} ${a}% ${b}%`; });
   el.style.background = `conic-gradient(${parts.join(',')})`;
-  $('total-legend').innerHTML = segs.filter(s => s.usd > 0).map(s => `<span class="lg"><i style="background:${s.color}"></i>${s.name} $${s.usd.toFixed(0)}</span>`).join('');
+  $('total-legend').innerHTML = segs.filter(s => s.usd > 0).map(s => `<span class="lg"><i style="background:${s.color}"></i>${s.name} $${fmtCorto(s.usd, 0)}</span>`).join('');
 }
 
 async function loadBalances() {
@@ -1883,7 +1897,7 @@ async function loadBalances() {
     for (const bl of blocks) { if (!(bl.address in qrs)) qrs[bl.address] = await window.api.qr(bl.address); }
     const aviso = b.modoPruebas ? '<p class="testmode">' + t('test_mode') + '</p>' : '';
     $('net-cards').innerHTML = aviso + (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || `<p class="muted">${t('no_wallets_visible')}</p>`);
-    $('total-usd').textContent = '$' + (b.total || 0).toFixed(2);
+    $('total-usd').textContent = '$' + fmt(b.total || 0, 2);
     const segMap = {};
     blocks.forEach(bl => { (segMap[bl.name] = segMap[bl.name] || { name: bl.name, color: bl.color, usd: 0 }).usd += bl.usd; });
     donut(Object.values(segMap), b.total || 0);
