@@ -65,6 +65,12 @@ const LANG = {
     oa_limite: 'LÍMITE',
     oa_bote: 'quedan {b} {s} · {c} compras hechas',
     oa_orden: '{a} {s} cuando el precio llegue a {p}',
+    mkt_t_kda: 'Cambiar kb-USDC ⇄ KDA',
+    mkt_t_st: 'Cambiar USDT ⇄ USDC',
+    mkt_t_eth: 'Cambiar USDC ⇄ ETH',
+    mkt_m_kda: 'Pool de kaddex · chain 2',
+    mkt_m_st: 'Uniswap V3 · para poder cruzar el puente',
+    mkt_m_eth: 'Uniswap V3 · para reponer gas',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -294,6 +300,12 @@ const LANG = {
     oa_limite: 'LIMIT',
     oa_bote: '{b} {s} left · {c} buys done',
     oa_orden: '{a} {s} when the price reaches {p}',
+    mkt_t_kda: 'Swap kb-USDC ⇄ KDA',
+    mkt_t_st: 'Swap USDT ⇄ USDC',
+    mkt_t_eth: 'Swap USDC ⇄ ETH',
+    mkt_m_kda: 'kaddex pool · chain 2',
+    mkt_m_st: 'Uniswap V3 · so you can cross the bridge',
+    mkt_m_eth: 'Uniswap V3 · to top up gas',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1354,6 +1366,29 @@ async function renderOrdenesActivas() {
     <div class="oa-cuerpo">${trozos}</div>
   </details>`;
 }
+
+// ===== Mercado: menu + modal =====
+// Los formularios son los MISMOS de antes (mk-*, st-*, es-*), solo que ahora viven en
+// paneles dentro de un modal grande. Se abre el que toque y se refrescan sus saldos.
+const MKT_PANELES = {
+  kda: { titulo: 'mkt_t_kda', render: () => renderMercado() },
+  st:  { titulo: 'mkt_t_st',  render: () => renderStableSwap() },
+  eth: { titulo: 'mkt_t_eth', render: () => renderEthSwap() }
+};
+function abrirMercado(cual) {
+  const cfgp = MKT_PANELES[cual];
+  if (!cfgp || !$('modal-mkt')) return;
+  for (const k of Object.keys(MKT_PANELES)) {
+    const el = $('mkt-p-' + k);
+    if (el) el.hidden = (k !== cual);
+  }
+  $('mkt-titulo').textContent = t(cfgp.titulo);
+  $('modal-mkt').hidden = false;
+  try { cfgp.render(); } catch (_) {}
+}
+document.querySelectorAll('.mkt-item').forEach(b => b.onclick = () => abrirMercado(b.dataset.mkt));
+// Cerrar tocando fuera de la tarjeta, como se espera de un modal.
+if ($('modal-mkt')) $('modal-mkt').onclick = (e) => { if (e.target.id === 'modal-mkt') $('modal-mkt').hidden = true; };
 
 async function applyView(v) {
   WALLETS = v.wallets; SHOWN = v.shown;
