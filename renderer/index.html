@@ -378,6 +378,16 @@
         <div class="lang-es">
           <div class="card">
             <details>
+              <summary><b>🛡️ Windows avisa o bloquea al abrir Koberlet</b></summary>
+              <p>Koberlet <b>no está firmado digitalmente</b>. Firmar un programa cuesta entre 120 € y 600 € al año, y de momento no compensa. Eso hace que Windows desconfíe: no porque haya encontrado nada malo, sino porque no sabe quién lo ha hecho.</p>
+              <p>Te puedes encontrar <b>dos avisos distintos</b>, y no son lo mismo:</p>
+              <p><b>1. «Windows protegió tu PC» (SmartScreen).</b> Es el habitual y se salta en dos clics: pulsa <b>Más información</b> y luego <b>Ejecutar de todas formas</b>. Solo sale las primeras veces.</p>
+              <p><b>2. «Smart App Control bloqueó un archivo».</b> Este es serio: es una función de Windows 11 que <b>solo permite programas firmados</b>, y no se puede saltar. Solo viene activada en equipos con Windows 11 <b>recién instalado</b>; quien actualizó desde Windows 10 no lo tiene.</p>
+              <p class="warn">Si te sale el segundo: <b>no desactives Smart App Control a la ligera</b>. Una vez apagado, Windows <b>no deja volver a encenderlo</b> sin reinstalar el sistema entero. Es una decisión permanente. Si no lo tienes claro, usa Koberlet en otro equipo.</p>
+              <p><b>Cómo comprobar que el archivo es el auténtico.</b> Mientras no haya firma, esta es tu garantía de verdad: quien te pasa el enlace te da también una huella SHA‑256. Abre PowerShell donde hayas descargado el zip y ejecuta <code>Get-FileHash koberlet_vX.Y.Z.zip</code>. Si el resultado coincide letra por letra con la huella que te dieron, el archivo es exactamente el que se publicó y nadie lo ha tocado por el camino. Si no coincide, <b>bórralo y no lo abras</b>.</p>
+              <p class="muted xs">Las actualizaciones que la propia app se descarga sí van firmadas y verificadas (Ed25519) antes de aplicarse. Lo que Windows no reconoce es la firma del instalador, que es otra cosa.</p>
+            </details>
+            <details>
               <summary><b>🔁 DCA</b> — compra periódica</summary>
               <p>Un <b>DCA</b> (del inglés <i>dollar-cost averaging</i>) es comprar poco a poco en vez de todo de golpe: dejas un bote y el sistema compra una cuota cada cierto tiempo, así el precio que pagas es la media del periodo y no dependes de acertar el día.</p>
               <p>El bote lo custodia el <b>contrato de KoberluSW</b> en la cadena, no Koberlet. Las compras las dispara un <b>vigilante</b> que paga su propio gas: tú no pagas gas por cada compra, solo por crear, recargar o cerrar el plan.</p>
@@ -444,6 +454,16 @@
 
         <div class="lang-en" hidden>
           <div class="card">
+            <details>
+              <summary><b>🛡️ Windows warns about or blocks Koberlet</b></summary>
+              <p>Koberlet is <b>not digitally signed</b>. Signing a program costs between £100 and £500 a year and is not worth it yet. That makes Windows suspicious: not because it found anything wrong, but because it does not know who made it.</p>
+              <p>You may run into <b>two different warnings</b>, and they are not the same:</p>
+              <p><b>1. «Windows protected your PC» (SmartScreen).</b> This is the common one and takes two clicks: press <b>More info</b> and then <b>Run anyway</b>. It only shows the first few times.</p>
+              <p><b>2. «Smart App Control blocked a file».</b> This one is serious: it is a Windows 11 feature that <b>only allows signed programs</b>, and it cannot be bypassed. It only comes switched on with a <b>freshly installed</b> Windows 11; anyone who upgraded from Windows 10 does not have it.</p>
+              <p class="warn">If you get the second one: <b>do not switch Smart App Control off lightly</b>. Once off, Windows <b>will not let you turn it back on</b> without reinstalling the whole system. It is a permanent decision. If in doubt, use Koberlet on another machine.</p>
+              <p><b>How to check the file is genuine.</b> Until there is a signature, this is your real guarantee: whoever sends you the link also gives you a SHA‑256 fingerprint. Open PowerShell where you downloaded the zip and run <code>Get-FileHash koberlet_vX.Y.Z.zip</code>. If the result matches the fingerprint letter for letter, the file is exactly the one that was published and nobody has touched it. If it does not match, <b>delete it and do not open it</b>.</p>
+              <p class="muted xs">Updates the app downloads by itself are signed and verified (Ed25519) before being applied. What Windows does not recognise is the installer signature, which is a different thing.</p>
+            </details>
             <details>
               <summary><b>🔁 DCA</b> — recurring buys</summary>
               <p><b>DCA</b> (dollar-cost averaging) means buying a bit at a time instead of all at once: you leave a pot and the system buys a slice every so often, so the price you pay is the average over the period and you do not have to pick the right day.</p>
