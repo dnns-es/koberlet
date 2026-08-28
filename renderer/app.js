@@ -1205,6 +1205,11 @@ function dcaPintarDireccion() {
   if (!$('dca-de')) return;
   $('dca-de').textContent = DCA_DIR.de;
   $('dca-a').textContent = DCA_DIR.a;
+  // Saldo de la wallet elegida, para no tener que ir al Panel a mirarlo. Sale de los
+  // saldos ya cacheados (window._bal), asi que no cuesta una lectura extra a la cadena.
+  const wid = $('dca-wallet') ? $('dca-wallet').value : '';
+  pintarDisponible('dca-bal-de', wid, DCA_DIR.de);
+  pintarDisponible('dca-bal-a', wid, DCA_DIR.a);
 }
 // Duracion legible: con periodos cortos, decir "0 dias" no informaba de nada.
 function dcaDuracion(seg) {
@@ -1290,7 +1295,7 @@ function dcaResumen() {
 }
 
 // Enganches con guarda: un TypeError aquí arriba dejaría toda la interfaz en blanco.
-if ($('dca-wallet')) $('dca-wallet').onchange = dcaCargar;
+if ($('dca-wallet')) $('dca-wallet').onchange = () => { dcaPintarDireccion(); dcaCargar(); };
 if ($('dca-invert')) $('dca-invert').onclick = () => { DCA_DIR = { de: DCA_DIR.a, a: DCA_DIR.de }; dcaPintarDireccion(); dcaResumen(); };
 for (const idc of ['dca-dep', 'dca-cuota', 'dca-periodo', 'dca-slip']) {
   if ($(idc)) { $(idc).oninput = dcaResumen; $(idc).onchange = dcaResumen; }
