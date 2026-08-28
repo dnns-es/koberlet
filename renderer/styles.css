@@ -489,3 +489,8 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 @media (max-width:820px){.kpis{grid-template-columns:1fr 1fr}}
 @media (prefers-reduced-motion:reduce){.kpi-ir{transition:none}}
 :root[data-theme="dark"] .kpi-n.verde{color:var(--kda)}
+
+/* La nota de la espera del puente: a lo ancho y con sitio, no recortada. */
+.sendnota{margin-top:10px;line-height:1.5;max-width:46ch}
+.sendnota[hidden]{display:none}
+.stp .sd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22ch;display:inline-block;vertical-align:bottom}
