@@ -71,6 +71,13 @@ const LANG = {
     mkt_m_kda: 'Pool de kaddex · chain 2',
     mkt_m_st: 'Uniswap V3 · para poder cruzar el puente',
     mkt_m_eth: 'Uniswap V3 · para reponer gas',
+    kpi_wallets: 'Wallets',
+    kpi_planes: 'Planes DCA',
+    kpi_ordenes: 'Órdenes límite',
+    kpi_wallets_pie: '{k} Kadena · {e} Ethereum',
+    kpi_planes_pie: 'en marcha',
+    kpi_planes_pausa: '{n} en pausa',
+    kpi_ordenes_pie: 'esperando precio',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -306,6 +313,13 @@ const LANG = {
     mkt_m_kda: 'kaddex pool · chain 2',
     mkt_m_st: 'Uniswap V3 · so you can cross the bridge',
     mkt_m_eth: 'Uniswap V3 · to top up gas',
+    kpi_wallets: 'Wallets',
+    kpi_planes: 'DCA plans',
+    kpi_ordenes: 'Limit orders',
+    kpi_wallets_pie: '{k} Kadena · {e} Ethereum',
+    kpi_planes_pie: 'running',
+    kpi_planes_pausa: '{n} paused',
+    kpi_ordenes_pie: 'waiting for price',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1348,7 +1362,8 @@ async function renderOrdenesActivas() {
   const zona = $('ordenes-activas');
   if (!zona) return;
   let r = null;
-  try { r = await window.api.dcaPanel(); } catch (_) { zona.hidden = true; return; }
+  try { r = await window.api.dcaPanel(); } catch (_) { zona.hidden = true; pintarKpis(null); return; }
+  pintarKpis(r);   // misma lectura, dos usos: las cifras de arriba y el bloque de abajo
   const filas = (r && r.filas) || [];
   if (!filas.length) { zona.hidden = true; zona.innerHTML = ''; return; }
   const nPlanes = filas.reduce((n, f) => n + f.planes.length, 0);
@@ -1395,6 +1410,25 @@ document.querySelectorAll('.mkt-item').forEach(b => b.onclick = () => abrirMerca
 // Cerrar tocando fuera de la tarjeta, como se espera de un modal.
 if ($('modal-mkt')) $('modal-mkt').onclick = (e) => { if (e.target.id === 'modal-mkt') $('modal-mkt').hidden = true; };
 
+// ===== Cifras de cabecera del Panel (propuesta 06-D) =====
+// Tres de las cuatro llevan a su seccion: el Panel deja de ser un cartel y pasa a ser
+// tambien un indice. "Total" no lleva a ningun sitio y por eso no se pinta como boton.
+function pintarKpis(datos) {
+  const kdaW = WALLETS.filter(w => w.kdaAccount).length;
+  const evmW = WALLETS.filter(w => w.ethAddress).length;
+  if ($('kpi-wallets')) $('kpi-wallets').textContent = String(WALLETS.length);
+  if ($('kpi-wallets-pie')) $('kpi-wallets-pie').textContent = tr('kpi_wallets_pie', { k: kdaW, e: evmW });
+  const filas = (datos && datos.filas) || [];
+  const planes = filas.reduce((n, f) => n + f.planes.length, 0);
+  const pausados = filas.reduce((n, f) => n + f.planes.filter(p => p.estado === 'paused').length, 0);
+  const ordenes = filas.reduce((n, f) => n + f.ordenes.length, 0);
+  if ($('kpi-planes')) $('kpi-planes').textContent = String(planes);
+  if ($('kpi-planes-pie')) $('kpi-planes-pie').textContent = pausados ? tr('kpi_planes_pausa', { n: pausados }) : t('kpi_planes_pie');
+  if ($('kpi-ordenes')) $('kpi-ordenes').textContent = String(ordenes);
+  if ($('kpi-ordenes-pie')) $('kpi-ordenes-pie').textContent = t('kpi_ordenes_pie');
+}
+document.querySelectorAll('.kpi-ir').forEach(b => b.onclick = () => nav(b.dataset.va));
+
 async function applyView(v) {
   WALLETS = v.wallets; SHOWN = v.shown;
   renderBridge();
@@ -1402,6 +1436,7 @@ async function applyView(v) {
   renderEthSwap();
   renderStableSwap();
   renderDca();
+  pintarKpis(null);
   renderOrdenesActivas();
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');

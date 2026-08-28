@@ -461,3 +461,31 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .mkt-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
 .mkt-cab h2 { margin: 0; font-size: 18px; }
 .mkt-panel[hidden] { display: none; }
+
+/* ---- Panel 06-D: tira de cifras que llevan a su seccion ---- */
+/* Usa las variables de la propia hoja (--card, --line, --kda, --carbon) para que el
+   tema oscuro funcione solo y la tira no se salga de la paleta de la app. */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;
+     padding:14px 16px;text-align:left;font:inherit;color:inherit}
+.kpi-et{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;opacity:.55}
+.kpi-n{font-size:22px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.kpi-n.verde{color:var(--kda-d)}
+.kpi-pie{font-size:11px;opacity:.5;margin-top:2px;min-height:15px}
+/* El total mantiene el mismo degradado que tenia la cabecera: es la cara del Panel. */
+.kpi-total{background:linear-gradient(135deg,var(--carbon),#20361c);border-color:transparent;color:#fff}
+.kpi-total .kpi-et{color:#9fd68c;opacity:1}
+.kpi-total .kpi-n{font-size:25px}
+/* Solo las tres que navegan se pintan como pulsables. */
+.kpi-ir{cursor:pointer;position:relative;transition:border-color .15s,transform .05s}
+.kpi-ir::after{content:"a";position:absolute;right:13px;top:11px;font-size:17px;opacity:.3}
+.kpi-ir:hover{border-color:var(--kda)}
+.kpi-ir:active{transform:scale(.995)}
+.kpi-ir:focus-visible{outline:2px solid var(--kda);outline-offset:2px}
+/* El reparto pasa a su propia tarjeta al quedarse sin la cabecera grande. */
+.repartocard{display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:var(--card);
+             border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+.repartocard .legend{margin:0}
+@media (max-width:820px){.kpis{grid-template-columns:1fr 1fr}}
+@media (prefers-reduced-motion:reduce){.kpi-ir{transition:none}}
+:root[data-theme="dark"] .kpi-n.verde{color:var(--kda)}
