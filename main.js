@@ -10,6 +10,7 @@ const eth = require('./lib/eth');
 const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
+const dca = require('./lib/dca');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const ktime = require('./lib/kdatime');
@@ -73,6 +74,19 @@ const DEFAULT_CONFIG = {
     { key: 'pol', name: 'Polygon', enabled: false, rpc: 'https://polygon-bor-rpc.publicnode.com', symbol: 'POL', cg: 'polygon-ecosystem-token', color: '#8247e5',
       tokens: [{ symbol: 'USDC', address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', cg: 'tether' }] }
   ],
+  // DCA de KoberluSW: contrato en el fork que custodia el bote y compra periodicamente.
+  // Koberlet solo crea, recarga, pausa y cierra planes: las compras las dispara el
+  // vigilante de KoberluSW, que paga su propio gas. Modulo y tokens fijos del codigo.
+  dca: {
+    red: 'fork',
+    modulo: 'free.ksw-dca2',
+    tokens: {
+      KDA: { modulo: 'coin', precision: 12, minCuota: 100 },
+      'kb-USDC': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-USDC', precision: 6, minCuota: 1 }
+    },
+    comision: 0.005,        // 0,5% del contrato por compra, ademas del 0,3% del pool
+    web: 'https://koberlusw.dnns.es'   // para consultarlo desde el movil
+  },
   // Cambios permitidos en Ethereum (Uniswap V3). Sirve sobre todo para pasar USDT a USDC
   // ANTES de cruzar el puente: en Kadena el unico token con mercado es kb-USDC, asi que un
   // USDT que llegue como kb-USDT no se puede cambiar a KDA (no existe ese pool en kaddex).
@@ -147,6 +161,7 @@ const loadConfig = () => {
     c.kdaSimple = true;
     try { saveConfig(c); } catch (_) { /* si aún no se puede escribir, se persistirá al siguiente guardado */ }
   }
+  c.dca = DEFAULT_CONFIG.dca;           // modulo y tokens del DCA: fijos del codigo
   c.evmSwap = DEFAULT_CONFIG.evmSwap;   // el catalogo de cambios es fijo del codigo, como el puente
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
   // Auditoría Alex #4: las redes EVM se reconstruyen desde DEFAULT (routers, tokens, símbolos fijos del código);
@@ -638,6 +653,63 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
   if (res && res.result && res.result.status === 'failure') throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
   logHistory({ type: 'send-kdatoken', wallet: w.label, desc: `Envío ${amount} ${symbol} · chain ${sendChain} · ${net.name}`, to, id: r.requestKey });
   return { ...r, status: res ? 'success' : 'pending' };
+});
+
+// ---- DCA de KoberluSW ----
+// La red y el modulo salen del DEFAULT; el renderer solo elige wallet e importes.
+function cfgDca() {
+  const c = loadConfig();
+  const net = c.kda.networks.find(n => n.key === c.dca.red) || c.kda.networks.find(n => n.fork);
+  if (!net) throw new Error('La red del DCA no esta configurada.');
+  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo }, c, net };
+}
+// Precisiones por modulo, para el decimal canonico del topup.
+function precisionesDca(c) {
+  const m = {};
+  for (const t of Object.values(c.dca.tokens)) m[t.modulo] = t.precision;
+  return m;
+}
+function walletDca(walletId) {
+  if (!unlocked) throw new Error('bloqueado');
+  const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w || !w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  // Ledger fuera, como Mercado y Puente: el aparato no muestra codigo de contrato.
+  if (w.ledger) throw new Error('El DCA con Ledger no esta disponible: el aparato no puede mostrar la llamada al contrato y seria firma ciega.');
+  return w;
+}
+ipcMain.handle('dca:estado', async (_e, { walletId } = {}) => {
+  const { cfg, c } = cfgDca();
+  const w = (unlocked && (unlocked.data.wallets.find(x => x.id === walletId) || active())) || null;
+  const cuenta = w && w.kda ? w.kda.account : null;
+  const [planes, pausado] = await Promise.all([
+    cuenta ? dca.planesDe(cfg, cuenta).catch(() => []) : Promise.resolve([]),
+    dca.pausado(cfg).catch(() => null)
+  ]);
+  return { cuenta, pausado, comision: c.dca.comision, web: c.dca.web, limites: dca.LIMITES,
+           tokens: c.dca.tokens, planes: (planes || []).map(p => ({ ...p, tokenIn: dca.refMod(p['token-in']), tokenOut: dca.refMod(p['token-out']) })) };
+});
+ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, cuota, periodo, slippage } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg, c } = cfgDca();
+  const tIn = c.dca.tokens[de], tOut = c.dca.tokens[a];
+  if (!tIn || !tOut) throw new Error('Ese par no esta soportado por el DCA.');
+  return dca.crearPlan(cfg, { owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret,
+    tokenIn: tIn.modulo, tokenOut: tOut.modulo, precIn: tIn.precision,
+    deposito, cuota, periodo, slippage });
+});
+ipcMain.handle('dca:recargar', async (_e, { passphrase, walletId, id, cantidad } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg, c } = cfgDca();
+  return dca.recargar(cfg, { id, cantidad, owner: w.kda.account, publicHex: w.kda.public,
+    secretHex: w.kda.secret, precisiones: precisionesDca(c) });
+});
+ipcMain.handle('dca:accion', async (_e, { passphrase, walletId, id, que } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg } = cfgDca();
+  return dca.accion(cfg, { id, que, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
 });
 
 // ---- Cambio de token en Ethereum (Uniswap V3) ----
