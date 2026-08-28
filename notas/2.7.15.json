@@ -1,0 +1,7 @@
+{
+  "notes": "En DCA ya se ve el saldo que tienes de cada token antes de montar el plan. / The DCA section now shows how much of each token you hold before setting up a plan.",
+  "notes_i18n": {
+    "es": "Al montar un plan de DCA no se veia cuanto tenias, y habia que ir al Panel a mirarlo y volver.\nAhora, bajo cada token aparece el saldo disponible de la wallet elegida, y cambia solo al invertir la direccion o al elegir otra wallet.",
+    "en": "When setting up a DCA plan there was no way to see how much you had, so you had to go to the Panel and come back.\nNow the available balance of the selected wallet appears under each token, and it updates by itself when you flip the direction or pick another wallet."
+  }
+}
