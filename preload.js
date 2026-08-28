@@ -3,6 +3,12 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   status: () => ipcRenderer.invoke('vault:status'),
+  // Modo visor: solo lectura, no exige boveda abierta y no puede firmar.
+  visorLista: () => ipcRenderer.invoke('visor:lista'),
+  visorAnadir: (a) => ipcRenderer.invoke('visor:anadir', a),
+  visorQuitar: (a) => ipcRenderer.invoke('visor:quitar', a),
+  visorRenombrar: (a) => ipcRenderer.invoke('visor:renombrar', a),
+  visorCuenta: (a) => ipcRenderer.invoke('visor:cuenta', a),
   setup: (passphrase, kind, net) => ipcRenderer.invoke('vault:setup', { passphrase, kind, net }),
   unlock: (passphrase) => ipcRenderer.invoke('vault:unlock', { passphrase }),
   lock: () => ipcRenderer.invoke('vault:lock'),
