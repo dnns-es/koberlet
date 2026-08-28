@@ -22,6 +22,41 @@ const LANG = {
     st_confirm: 'Vas a cambiar {a} {f} por unos {out} {t} en Uniswap. Si el precio se mueve mucho mientras tanto, la operación se cancela sola y no pierdes el dinero.',
     st_ok: 'Cambiado. Has recibido unos {out} {sym}.',
     st_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
+    nav_dca: 'DCA',
+    h_dca: 'DCA · compra periódica',
+    dca_sub: 'Dejas un bote en el contrato y el vigilante de KoberluSW compra una cuota cada cierto tiempo. Lo firmas tú; Koberlet no ejecuta las compras ni custodia nada.',
+    dca_leyendo: 'Leyendo tus planes de la cadena…',
+    dca_info: 'Comisión del contrato: {c}% por compra, además del 0,3% del pool. Puedes seguirlo desde el móvil en {w}.',
+    dca_pausado_global: 'El contrato DCA está pausado ahora mismo. No se pueden crear ni ejecutar planes.',
+    dca_sin_planes: 'No tienes ningún plan todavía.',
+    dca_nuevo: 'Nuevo plan',
+    dca_entregas: 'Entregas',
+    dca_compras: 'Compras',
+    dca_bote: 'Bote inicial',
+    dca_cuota: 'Cuota por compra',
+    dca_cada: 'Cada',
+    dca_slip: 'Deslizamiento máximo',
+    dca_crear: 'Crear plan',
+    dca_recargar: 'Recargar',
+    dca_pausar: 'Pausar',
+    dca_reanudar: 'Reanudar',
+    dca_cerrar: 'Cerrar y recuperar',
+    dca_mismo_token: 'El token que entregas y el que compras tienen que ser distintos.',
+    dca_cuota_mayor: 'La cuota no puede ser mayor que el bote.',
+    dca_min: 'La cuota mínima por compra es {m} {s}.',
+    dca_resumen: 'Salen {n} compras de {q} {s}, una cada {p}: unos {d} días. La comisión del contrato se llevará ~{c} en total.',
+    dca_plan_linea: '{q} {s} cada {p}',
+    dca_plan_estado: '{e} · quedan {b} {s} (~{n} compras) · {c} hechas · {r} {o} comprados',
+    dca_conf: 'Vas a dejar {d} {s} en el contrato DCA y comprar {q} {s} de {o} cada {p}. Puedes pausarlo o cerrarlo cuando quieras y recuperar lo que quede.',
+    dca_creado: 'Plan creado: {id}',
+    dca_cuanto: '¿Cuánto quieres añadir al bote, en {s}?',
+    dca_conf_top: 'Vas a añadir {a} {s} al bote del plan {id}.',
+    dca_conf_pausar: 'Vas a pausar el plan {id}. Deja de comprar, pero el bote sigue guardado.',
+    dca_conf_reanudar: 'Vas a reanudar el plan {id}. Volverá a comprar en cuanto toque.',
+    dca_conf_cerrar: 'Vas a cerrar el plan {id}. El contrato te devuelve los {b} {s} que quedan y el plan no se puede reabrir.',
+    dca_recargado: 'Bote recargado.',
+    dca_hecho: 'Hecho.',
+    dca_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -208,6 +243,41 @@ const LANG = {
     st_confirm: 'You are about to swap {a} {f} for about {out} {t} on Uniswap. If the price moves too much meanwhile, the operation cancels itself and you lose nothing.',
     st_ok: 'Swapped. You received about {out} {sym}.',
     st_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
+    nav_dca: 'DCA',
+    h_dca: 'DCA · recurring buys',
+    dca_sub: 'You leave a pot in the contract and the KoberluSW watcher buys a slice every so often. You sign it; Koberlet neither executes the buys nor holds anything.',
+    dca_leyendo: 'Reading your plans from the chain…',
+    dca_info: 'Contract fee: {c}% per buy, on top of the pool\'s 0.3%. You can follow it from your phone at {w}.',
+    dca_pausado_global: 'The DCA contract is paused right now. Plans cannot be created or executed.',
+    dca_sin_planes: 'You have no plans yet.',
+    dca_nuevo: 'New plan',
+    dca_entregas: 'You give',
+    dca_compras: 'You buy',
+    dca_bote: 'Initial pot',
+    dca_cuota: 'Amount per buy',
+    dca_cada: 'Every',
+    dca_slip: 'Max slippage',
+    dca_crear: 'Create plan',
+    dca_recargar: 'Top up',
+    dca_pausar: 'Pause',
+    dca_reanudar: 'Resume',
+    dca_cerrar: 'Close and refund',
+    dca_mismo_token: 'The token you give and the one you buy must be different.',
+    dca_cuota_mayor: 'The amount per buy cannot exceed the pot.',
+    dca_min: 'The minimum per buy is {m} {s}.',
+    dca_resumen: 'That is {n} buys of {q} {s}, one every {p}: about {d} days. The contract fee will take ~{c} in total.',
+    dca_plan_linea: '{q} {s} every {p}',
+    dca_plan_estado: '{e} · {b} {s} left (~{n} buys) · {c} done · {r} {o} bought',
+    dca_conf: 'You are about to leave {d} {s} in the DCA contract and buy {q} {s} worth of {o} every {p}. You can pause or close it whenever you like and get back whatever is left.',
+    dca_creado: 'Plan created: {id}',
+    dca_cuanto: 'How much do you want to add to the pot, in {s}?',
+    dca_conf_top: 'You are about to add {a} {s} to the pot of plan {id}.',
+    dca_conf_pausar: 'You are about to pause plan {id}. It stops buying, but the pot stays put.',
+    dca_conf_reanudar: 'You are about to resume plan {id}. It will buy again when due.',
+    dca_conf_cerrar: 'You are about to close plan {id}. The contract returns the {b} {s} left and the plan cannot be reopened.',
+    dca_recargado: 'Pot topped up.',
+    dca_hecho: 'Done.',
+    dca_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -466,7 +536,7 @@ function initConverter() {
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
 
 function screen(name) { ['scr-setup', 'scr-unlock'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
-function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
+function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'dca', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
 
 // Opciones de red para crear/importar: KDA + cada red EVM. value = 'kda' o 'evm:<key>'.
 function netOptions() { return '<option value="kda">Kadena (KDA)</option>' + CFG.evm.map(n => `<option value="evm:${n.key}">${n.name}</option>`).join(''); }
@@ -1089,12 +1159,146 @@ if ($('st-swap')) $('st-swap').onclick = () => {
 };
 try { window.api.onEvmSwapProgress && window.api.onEvmSwapProgress((m) => msg($('st-msg'), m)); } catch (_) {}
 
+// ===== DCA (contrato free.ksw-dca2 en el fork) =====
+// Koberlet crea, recarga, pausa y cierra planes. Las compras las dispara el vigilante
+// de KoberluSW pagando su propio gas: aqui no se ejecuta ninguna compra.
+let DCA = null;
+const DCA_PERIODOS = [[300, '5 min'], [900, '15 min'], [3600, '1 h'], [21600, '6 h'], [43200, '12 h'], [86400, '1 día'], [604800, '1 semana'], [2592000, '30 días']];
+const DCA_SLIPS = [[0.005, '0,5%'], [0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0.1, '10%']];
+
+// Pact devuelve los decimales como {decimal:"1.0"} y los enteros como {int:3}.
+function dcaNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
+function dcaPeriodoTxt(seg) { const f = DCA_PERIODOS.find(x => x[0] === Number(seg)); return f ? f[1] : Math.round(Number(seg) / 60) + ' min'; }
+function dcaSimbolo(mod) { return mod === 'coin' ? 'KDA' : 'kb-USDC'; }
+
+async function renderDca() {
+  if (!$('dca-wallet')) return;
+  const kdaW = WALLETS.filter(w => w.kdaAccount);
+  const prev = $('dca-wallet').value;
+  $('dca-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('nft_sin_wallet')}</option>`;
+  if (prev) $('dca-wallet').value = prev;
+  if (!$('dca-periodo').options.length) {
+    $('dca-periodo').innerHTML = DCA_PERIODOS.map(([v, n]) => `<option value="${v}"${v === 86400 ? ' selected' : ''}>${n}</option>`).join('');
+    $('dca-slip').innerHTML = DCA_SLIPS.map(([v, n]) => `<option value="${v}"${v === 0.02 ? ' selected' : ''}>${n}</option>`).join('');
+  }
+  await dcaCargar();
+}
+
+async function dcaCargar() {
+  if (!$('dca-wallet')) return;
+  const wid = $('dca-wallet').value;
+  msg($('dca-aviso'), t('dca_leyendo'));
+  try {
+    DCA = await window.api.dcaEstado({ walletId: wid });
+  } catch (e) { DCA = null; return msg($('dca-aviso'), cleanErr(e), 'err'); }
+  const simbolos = Object.keys(DCA.tokens || {});
+  if (!$('dca-de').options.length) {
+    $('dca-de').innerHTML = simbolos.map(x => `<option${x === 'kb-USDC' ? ' selected' : ''}>${esc(x)}</option>`).join('');
+    $('dca-a').innerHTML = simbolos.map(x => `<option${x === 'KDA' ? ' selected' : ''}>${esc(x)}</option>`).join('');
+  }
+  $('dca-aviso').className = 'msg';
+  $('dca-aviso').innerHTML = DCA.pausado
+    ? `<span class="warn">${t('dca_pausado_global')}</span>`
+    : tr('dca_info', { c: String((DCA.comision || 0) * 100).replace('.', ','), w: esc(DCA.web || '') });
+  dcaPintarPlanes();
+  dcaResumen();
+}
+
+function dcaPintarPlanes() {
+  const zona = $('dca-lista');
+  const planes = (DCA && DCA.planes) || [];
+  if (!planes.length) { zona.innerHTML = `<div class="muted xs">${t('dca_sin_planes')}</div>`; return; }
+  zona.innerHTML = planes.map((p, i) => {
+    const abierto = p.status !== 'closed';
+    const bote = dcaNum(p.balance), cuota = dcaNum(p.quota);
+    const quedan = cuota > 0 ? Math.floor(bote / cuota) : 0;
+    const simIn = dcaSimbolo(p.tokenIn), simOut = dcaSimbolo(p.tokenOut);
+    return `<div class="asset dcaplan">
+      <div><b>${esc(simIn)} → ${esc(simOut)}</b> <span class="muted xs">${esc(p.id)}</span></div>
+      <div class="muted xs">${tr('dca_plan_linea', { q: cuota, s: esc(simIn), p: dcaPeriodoTxt(dcaNum(p.period)) })}</div>
+      <div class="muted xs">${tr('dca_plan_estado', { e: esc(p.status), b: bote, s: esc(simIn), n: quedan, c: dcaNum(p.buys), r: dcaNum(p.received), o: esc(simOut) })}</div>
+      ${abierto ? `<div class="dcabtns">
+        <button class="tiny ghost dca-top" data-i="${i}">${t('dca_recargar')}</button>
+        <button class="tiny ghost dca-pr" data-i="${i}">${p.status === 'paused' ? t('dca_reanudar') : t('dca_pausar')}</button>
+        <button class="tiny ghost dca-cerrar" data-i="${i}">${t('dca_cerrar')}</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+  zona.querySelectorAll('.dca-top').forEach(b => b.onclick = () => dcaRecargar(Number(b.dataset.i)));
+  zona.querySelectorAll('.dca-pr').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), DCA.planes[Number(b.dataset.i)].status === 'paused' ? 'reanudar' : 'pausar'));
+  zona.querySelectorAll('.dca-cerrar').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), 'cerrar'));
+}
+
+// Resumen antes de firmar: cuántas compras salen, cuánto dura y qué se lleva la comisión.
+function dcaResumen() {
+  if (!DCA || !$('dca-de')) return;
+  const de = $('dca-de').value, a = $('dca-a').value;
+  const dep = Number($('dca-dep').value), cuota = Number($('dca-cuota').value);
+  const tk = (DCA.tokens || {})[de] || {};
+  $('dca-lbl-dep').textContent = t('dca_bote') + ' (' + de + ')';
+  $('dca-lbl-cuota').textContent = t('dca_cuota') + ' (' + de + ')';
+  if (de === a) return msg($('dca-resumen'), t('dca_mismo_token'), 'err');
+  if (!dep || !cuota) { $('dca-resumen').textContent = ''; return; }
+  if (cuota < (tk.minCuota || 0)) return msg($('dca-resumen'), tr('dca_min', { m: tk.minCuota, s: de }), 'err');
+  if (cuota > dep) return msg($('dca-resumen'), t('dca_cuota_mayor'), 'err');
+  const n = Math.floor(dep / cuota);
+  const seg = Number($('dca-periodo').value);
+  msg($('dca-resumen'), tr('dca_resumen', { n: n, q: cuota, s: de, p: dcaPeriodoTxt(seg), d: Math.round(n * seg / 86400), c: (dep * (DCA.comision || 0)).toFixed(4) }));
+}
+
+// Enganches con guarda: un TypeError aquí arriba dejaría toda la interfaz en blanco.
+if ($('dca-wallet')) $('dca-wallet').onchange = dcaCargar;
+for (const idc of ['dca-de', 'dca-a', 'dca-dep', 'dca-cuota', 'dca-periodo']) {
+  if ($(idc)) { $(idc).oninput = dcaResumen; $(idc).onchange = dcaResumen; }
+}
+
+if ($('dca-crear')) $('dca-crear').onclick = () => {
+  const wid = $('dca-wallet').value;
+  const de = $('dca-de').value, a = $('dca-a').value;
+  const dep = $('dca-dep').value, cuota = $('dca-cuota').value;
+  const periodo = Number($('dca-periodo').value), slippage = Number($('dca-slip').value);
+  if (!wid) return msg($('dca-msg'), t('nft_sin_wallet'), 'err');
+  if (de === a) return msg($('dca-msg'), t('dca_mismo_token'), 'err');
+  if (!dep || !cuota) return msg($('dca-msg'), t('err_fill_dest_amt'), 'err');
+  if (isLedgerW(wid)) return msg($('dca-msg'), t('dca_ledger'), 'err');
+  askSend(tr('dca_conf', { d: esc(dep), s: esc(de), q: esc(cuota), p: dcaPeriodoTxt(periodo), o: esc(a) }),
+    async (pass) => {
+      const r = await window.api.dcaCrear({ passphrase: pass, walletId: wid, de: de, a: a, deposito: dep, cuota: cuota, periodo: periodo, slippage: slippage });
+      setTimeout(dcaCargar, 4000);
+      return tr('dca_creado', { id: r.id });
+    });
+};
+
+function dcaRecargar(i) {
+  const p = DCA && DCA.planes[i]; if (!p) return;
+  const sim = dcaSimbolo(p.tokenIn);
+  const cant = prompt(tr('dca_cuanto', { s: sim }));
+  if (!cant || !(Number(cant) > 0)) return;
+  askSend(tr('dca_conf_top', { a: esc(cant), s: esc(sim), id: esc(p.id) }),
+    async (pass) => {
+      await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant });
+      setTimeout(dcaCargar, 4000);
+      return t('dca_recargado');
+    });
+}
+
+function dcaAccion(i, que) {
+  const p = DCA && DCA.planes[i]; if (!p) return;
+  askSend(tr('dca_conf_' + que, { id: esc(p.id), b: dcaNum(p.balance), s: dcaSimbolo(p.tokenIn) }),
+    async (pass) => {
+      await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
+      setTimeout(dcaCargar, 4000);
+      return t('dca_hecho');
+    });
+}
+
 async function applyView(v) {
   WALLETS = v.wallets; SHOWN = v.shown;
   renderBridge();
   renderMercado();
   renderEthSwap();
   renderStableSwap();
+  renderDca();
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
