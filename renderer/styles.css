@@ -445,3 +445,19 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
            border-radius: 999px; background: #63e0381f; color: #3d8f22; }
 .oa-tipo.oa-lim { background: #627eea1f; color: #4256b8; }
 .oa-cuerpo { padding-top: 4px; }
+
+/* Mercado: menu tipo lista + modal grande */
+.mkt-menu { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+.mkt-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+            padding: 14px 16px; border: 1px solid var(--bordesuave, #e6e6e6); border-radius: 12px;
+            background: var(--tarjeta, #fff); cursor: pointer; transition: border-color .15s, transform .05s; }
+.mkt-item:hover { border-color: #63e038; }
+.mkt-item:active { transform: scale(.995); }
+.mkt-punto { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.mkt-txt { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.mkt-txt b { font-size: 15px; }
+.mkt-ir { font-size: 20px; opacity: .35; flex: 0 0 auto; }
+.modal .card.ancha { max-width: 620px; width: 94%; max-height: 88vh; overflow-y: auto; }
+.mkt-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.mkt-cab h2 { margin: 0; font-size: 18px; }
+.mkt-panel[hidden] { display: none; }

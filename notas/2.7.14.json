@@ -1,0 +1,7 @@
+{
+  "notes": "Mercado rehecho: una lista de opciones y cada cambio se abre en una ventana grande. / Market redone: a list of options, and each swap opens in a large window.",
+  "notes_i18n": {
+    "es": "El Mercado tenia los tres cambios apretados en tarjetas una al lado de otra, y se trabajaba incomodo.\nAhora es una lista limpia: eliges el cambio que quieres —kb-USDC a KDA, USDT a USDC, o USDC a ETH— y se abre una ventana grande con sitio de sobra para el formulario. Se cierra con la equis o tocando fuera.\nLos formularios son exactamente los mismos de antes, con las mismas comprobaciones y el mismo limite de deslizamiento: solo ha cambiado donde se ven.",
+    "en": "The Market squeezed all three swaps into cards side by side, which made them awkward to use.\nIt is now a clean list: you pick the swap you want —kb-USDC to KDA, USDT to USDC, or USDC to ETH— and a large window opens with plenty of room for the form. Close it with the cross or by clicking outside.\nThe forms are exactly the same as before, with the same checks and the same slippage floor: only where they live has changed."
+  }
+}
