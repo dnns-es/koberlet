@@ -107,12 +107,35 @@
 
       <!-- DASHBOARD -->
       <section id="view-dashboard" class="view">
-        <div class="total-card">
-          <div><div class="mutedw" data-i18n="total">Total</div><div class="total" id="total-usd">$—</div>
-            <div id="total-legend" class="legend"></div></div>
-          <div id="donut" class="donut"><div class="hole"></div></div>
+        <div class="kpis">
+          <div class="kpi kpi-total">
+            <div class="kpi-et" data-i18n="total">Total</div>
+            <div class="kpi-n" id="total-usd">$—</div>
+          </div>
+          <button type="button" class="kpi kpi-ir" data-va="wallets">
+            <div class="kpi-et" data-i18n="kpi_wallets">Wallets</div>
+            <div class="kpi-n" id="kpi-wallets">—</div>
+            <div class="kpi-pie" id="kpi-wallets-pie"></div>
+          </button>
+          <button type="button" class="kpi kpi-ir" data-va="dca">
+            <div class="kpi-et" data-i18n="kpi_planes">Planes DCA</div>
+            <div class="kpi-n verde" id="kpi-planes">—</div>
+            <div class="kpi-pie" id="kpi-planes-pie"></div>
+          </button>
+          <button type="button" class="kpi kpi-ir" data-va="dca">
+            <div class="kpi-et" data-i18n="kpi_ordenes">Órdenes límite</div>
+            <div class="kpi-n" id="kpi-ordenes">—</div>
+            <div class="kpi-pie" id="kpi-ordenes-pie"></div>
+          </button>
         </div>
         <div id="gas-warn" class="gaswarn"></div>
+        <div class="repartocard">
+          <div id="donut" class="donut"><div class="hole"></div></div>
+          <div id="total-legend" class="legend"></div>
+        </div>
+        <h3 data-i18n="bal_by_net">Saldos por red</h3>
+        <button id="focus-back" class="ghost" data-i18n="btn_back">← Volver al panel</button>
+        <div id="net-cards" class="grid"></div>
         <div id="ordenes-activas" hidden></div>
         <details id="conv" class="conv-card">
           <summary data-i18n="converter">🧮 Conversor</summary>
@@ -125,9 +148,6 @@
           </div>
           <div id="conv-rate" class="muted xs"></div>
         </details>
-        <h3 data-i18n="bal_by_net">Saldos por red</h3>
-        <button id="focus-back" class="ghost" data-i18n="btn_back">← Volver al panel</button>
-        <div id="net-cards" class="grid"></div>
       </section>
 
       <!-- WALLETS -->

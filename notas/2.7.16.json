@@ -1,0 +1,7 @@
+{
+  "notes": "Panel rediseñado: cuatro cifras arriba que llevan a su seccion, y el conversor y los planes al final. / Panel redesigned: four figures up top that take you to their section, with the converter and plans at the end.",
+  "notes_i18n": {
+    "es": "El Panel se abre ahora con cuatro cifras: total, wallets, planes DCA y ordenes limite. Tres de ellas se pueden pulsar y te llevan directas a su seccion, asi que el Panel deja de ser solo un cartel y sirve tambien de indice.\nDebajo van el reparto por red y tus wallets, que es lo que se mira a diario. El conversor y el bloque de lo que tienes en marcha bajan al final, plegados, para que no se coman la primera pantalla.\nLas cifras dicen algo mas que un numero: cuantas wallets tienes en cada red, cuantos planes estan en pausa y cuantas ordenes esperan precio.",
+    "en": "The Panel now opens with four figures: total, wallets, DCA plans and limit orders. Three of them are clickable and take you straight to their section, so the Panel is no longer just a display — it doubles as an index.\nBelow come the split by network and your wallets, which is what you actually look at day to day. The converter and the block of what you have running move to the end, collapsed, so they no longer eat the first screen.\nThe figures say a little more than a number: how many wallets you hold on each network, how many plans are paused and how many orders are waiting for a price."
+  }
+}
