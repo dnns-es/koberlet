@@ -1,0 +1,7 @@
+{
+  "notes": "El Panel ensena lo que tienes en marcha, y la seccion DCA queda mas comoda. / The Panel shows what you have running, and the DCA section is easier to use.",
+  "notes_i18n": {
+    "es": "El Panel tiene un bloque nuevo, «En marcha ahora mismo», con tus planes DCA y tus ordenes limite abiertas de un vistazo: cuanto queda en cada bote, cuantas compras van hechas y a que precio esperan las ordenes.\nEn la seccion DCA, la configuracion del plan pasa arriba y tus planes bajan a un desplegable que arranca plegado, para no tener que bajar cada vez. Hay un boton para invertir la direccion entre KDA y kb-USDC, el deslizamiento viene al 5% por defecto, y el resumen ya dice la duracion en horas o dias segun toque en vez de redondear a cero.\nLa explicacion de comisiones y minimos se ha movido a Info, que es donde se lee una vez y no estorba cada dia.",
+    "en": "The Panel has a new block, «Running right now», with your DCA plans and open limit orders at a glance: how much is left in each pot, how many buys are done and what price the orders are waiting for.\nIn the DCA section, the plan settings move to the top and your plans drop into a collapsed panel, so you no longer scroll past them every time. There is a button to flip the direction between KDA and kb-USDC, slippage now defaults to 5%, and the summary states the duration in hours or days instead of rounding down to zero.\nThe explanation of fees and minimums moved to Info, where you read it once and it stays out of the way."
+  }
+}
