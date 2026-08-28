@@ -128,6 +128,13 @@ fs.writeFileSync('.publicar-tmp/latest_nuevo.json', JSON.stringify(j,null,2)+'\n
 "
 scp -i "$LLAVE" -q .publicar-tmp/latest_nuevo.json "$SRV:$DIR/latest.json"
 
+# --- 4b. Indice del historico ---
+# latest.json solo dice cual es la ultima, y el auto-update NO va hacia atras. Este
+# indice deja por escrito que versiones existen y con que huella, para poder volver a
+# una anterior a mano el dia que haga falta. No se borra ningun zip: se guardan todos.
+scp -i "$LLAVE" -q servidor/generar-versiones.py "$SRV:/tmp/generar-versiones.py"
+sh_remoto "python3 /tmp/generar-versiones.py $DIR $BASE"
+
 # --- 5. Verificar DESDE FUERA, que es lo que ve la gente ---
 echo "--- verificacion final por HTTPS ---"
 curl -s --max-time 20 "$BASE/latest.json" > .publicar-tmp/latest_servido.json
