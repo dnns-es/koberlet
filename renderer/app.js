@@ -44,7 +44,7 @@ const LANG = {
     dca_mismo_token: 'El token que entregas y el que compras tienen que ser distintos.',
     dca_cuota_mayor: 'La cuota no puede ser mayor que el bote.',
     dca_min: 'La cuota mínima por compra es {m} {s}.',
-    dca_resumen: 'Salen {n} compras de {q} {s}, una cada {p}: unos {d} días. La comisión del contrato se llevará ~{c} en total.',
+    dca_resumen: 'Salen {n} compras de {q} {s}, una cada {p}: {d} en total. La comisión del contrato se llevará ~{c} en total.',
     dca_plan_linea: '{q} {s} cada {p}',
     dca_plan_estado: '{e} · quedan {b} {s} (~{n} compras) · {c} hechas · {r} {o} comprados',
     dca_conf: 'Vas a dejar {d} {s} en el contrato DCA y comprar {q} {s} de {o} cada {p}. Puedes pausarlo o cerrarlo cuando quieras y recuperar lo que quede.',
@@ -57,6 +57,14 @@ const LANG = {
     dca_recargado: 'Bote recargado.',
     dca_hecho: 'Hecho.',
     dca_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
+    dca_historial: 'Mis planes',
+    dca_cuenta: '({n} en total, {a} abiertos)',
+    dca_dias: 'días',
+    dca_meses: 'meses',
+    oa_titulo: '🔁 En marcha ahora mismo — {p} planes DCA y {o} órdenes límite',
+    oa_limite: 'LÍMITE',
+    oa_bote: 'quedan {b} {s} · {c} compras hechas',
+    oa_orden: '{a} {s} cuando el precio llegue a {p}',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -265,7 +273,7 @@ const LANG = {
     dca_mismo_token: 'The token you give and the one you buy must be different.',
     dca_cuota_mayor: 'The amount per buy cannot exceed the pot.',
     dca_min: 'The minimum per buy is {m} {s}.',
-    dca_resumen: 'That is {n} buys of {q} {s}, one every {p}: about {d} days. The contract fee will take ~{c} in total.',
+    dca_resumen: 'That is {n} buys of {q} {s}, one every {p}: {d} in total. The contract fee will take ~{c} in total.',
     dca_plan_linea: '{q} {s} every {p}',
     dca_plan_estado: '{e} · {b} {s} left (~{n} buys) · {c} done · {r} {o} bought',
     dca_conf: 'You are about to leave {d} {s} in the DCA contract and buy {q} {s} worth of {o} every {p}. You can pause or close it whenever you like and get back whatever is left.',
@@ -278,6 +286,14 @@ const LANG = {
     dca_recargado: 'Pot topped up.',
     dca_hecho: 'Done.',
     dca_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
+    dca_historial: 'My plans',
+    dca_cuenta: '({n} total, {a} open)',
+    dca_dias: 'days',
+    dca_meses: 'months',
+    oa_titulo: '🔁 Running right now — {p} DCA plans and {o} limit orders',
+    oa_limite: 'LIMIT',
+    oa_bote: '{b} {s} left · {c} buys done',
+    oa_orden: '{a} {s} when the price reaches {p}',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1163,6 +1179,7 @@ try { window.api.onEvmSwapProgress && window.api.onEvmSwapProgress((m) => msg($(
 // Koberlet crea, recarga, pausa y cierra planes. Las compras las dispara el vigilante
 // de KoberluSW pagando su propio gas: aqui no se ejecuta ninguna compra.
 let DCA = null;
+let DCA_DIR = { de: 'kb-USDC', a: 'KDA' };   // direccion del plan nuevo
 const DCA_PERIODOS = [[300, '5 min'], [900, '15 min'], [3600, '1 h'], [21600, '6 h'], [43200, '12 h'], [86400, '1 día'], [604800, '1 semana'], [2592000, '30 días']];
 const DCA_SLIPS = [[0.005, '0,5%'], [0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0.1, '10%']];
 
@@ -1170,6 +1187,21 @@ const DCA_SLIPS = [[0.005, '0,5%'], [0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0
 function dcaNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
 function dcaPeriodoTxt(seg) { const f = DCA_PERIODOS.find(x => x[0] === Number(seg)); return f ? f[1] : Math.round(Number(seg) / 60) + ' min'; }
 function dcaSimbolo(mod) { return mod === 'coin' ? 'KDA' : 'kb-USDC'; }
+
+
+function dcaPintarDireccion() {
+  if (!$('dca-de')) return;
+  $('dca-de').textContent = DCA_DIR.de;
+  $('dca-a').textContent = DCA_DIR.a;
+}
+// Duracion legible: con periodos cortos, decir "0 dias" no informaba de nada.
+function dcaDuracion(seg) {
+  const s = Math.max(0, Math.round(seg));
+  if (s < 3600) return Math.round(s / 60) + ' min';
+  if (s < 172800) return Math.round(s / 3600) + ' h';
+  if (s < 5184000) return Math.round(s / 86400) + ' ' + t('dca_dias');
+  return Math.round(s / 2592000) + ' ' + t('dca_meses');
+}
 
 async function renderDca() {
   if (!$('dca-wallet')) return;
@@ -1179,7 +1211,7 @@ async function renderDca() {
   if (prev) $('dca-wallet').value = prev;
   if (!$('dca-periodo').options.length) {
     $('dca-periodo').innerHTML = DCA_PERIODOS.map(([v, n]) => `<option value="${v}"${v === 86400 ? ' selected' : ''}>${n}</option>`).join('');
-    $('dca-slip').innerHTML = DCA_SLIPS.map(([v, n]) => `<option value="${v}"${v === 0.02 ? ' selected' : ''}>${n}</option>`).join('');
+    $('dca-slip').innerHTML = DCA_SLIPS.map(([v, n]) => `<option value="${v}"${v === 0.05 ? ' selected' : ''}>${n}</option>`).join('');
   }
   await dcaCargar();
 }
@@ -1191,15 +1223,11 @@ async function dcaCargar() {
   try {
     DCA = await window.api.dcaEstado({ walletId: wid });
   } catch (e) { DCA = null; return msg($('dca-aviso'), cleanErr(e), 'err'); }
-  const simbolos = Object.keys(DCA.tokens || {});
-  if (!$('dca-de').options.length) {
-    $('dca-de').innerHTML = simbolos.map(x => `<option${x === 'kb-USDC' ? ' selected' : ''}>${esc(x)}</option>`).join('');
-    $('dca-a').innerHTML = simbolos.map(x => `<option${x === 'KDA' ? ' selected' : ''}>${esc(x)}</option>`).join('');
-  }
-  $('dca-aviso').className = 'msg';
-  $('dca-aviso').innerHTML = DCA.pausado
-    ? `<span class="warn">${t('dca_pausado_global')}</span>`
-    : tr('dca_info', { c: String((DCA.comision || 0) * 100).replace('.', ','), w: esc(DCA.web || '') });
+  // El aviso solo aparece cuando hay algo que decir: las comisiones y el como funciona
+  // viven en Info, que es donde se leen una vez y no estorban cada dia.
+  if (DCA.pausado) { $('dca-aviso').innerHTML = `<span class="warn">${t('dca_pausado_global')}</span>`; }
+  else { $('dca-aviso').textContent = ''; $('dca-aviso').className = 'msg'; }
+  dcaPintarDireccion();
   dcaPintarPlanes();
   dcaResumen();
 }
@@ -1207,6 +1235,9 @@ async function dcaCargar() {
 function dcaPintarPlanes() {
   const zona = $('dca-lista');
   const planes = (DCA && DCA.planes) || [];
+  const cont = $('dca-cuenta-planes');
+  const abiertos = planes.filter(p => p.status !== 'closed').length;
+  if (cont) cont.textContent = planes.length ? tr('dca_cuenta', { n: planes.length, a: abiertos }) : '';
   if (!planes.length) { zona.innerHTML = `<div class="muted xs">${t('dca_sin_planes')}</div>`; return; }
   zona.innerHTML = planes.map((p, i) => {
     const abierto = p.status !== 'closed';
@@ -1232,7 +1263,7 @@ function dcaPintarPlanes() {
 // Resumen antes de firmar: cuántas compras salen, cuánto dura y qué se lleva la comisión.
 function dcaResumen() {
   if (!DCA || !$('dca-de')) return;
-  const de = $('dca-de').value, a = $('dca-a').value;
+  const de = DCA_DIR.de, a = DCA_DIR.a;
   const dep = Number($('dca-dep').value), cuota = Number($('dca-cuota').value);
   const tk = (DCA.tokens || {})[de] || {};
   $('dca-lbl-dep').textContent = t('dca_bote') + ' (' + de + ')';
@@ -1243,18 +1274,19 @@ function dcaResumen() {
   if (cuota > dep) return msg($('dca-resumen'), t('dca_cuota_mayor'), 'err');
   const n = Math.floor(dep / cuota);
   const seg = Number($('dca-periodo').value);
-  msg($('dca-resumen'), tr('dca_resumen', { n: n, q: cuota, s: de, p: dcaPeriodoTxt(seg), d: Math.round(n * seg / 86400), c: (dep * (DCA.comision || 0)).toFixed(4) }));
+  msg($('dca-resumen'), tr('dca_resumen', { n: n, q: cuota, s: de, p: dcaPeriodoTxt(seg), d: dcaDuracion(n * seg), c: (dep * (DCA.comision || 0)).toFixed(4) + ' ' + de }));
 }
 
 // Enganches con guarda: un TypeError aquí arriba dejaría toda la interfaz en blanco.
 if ($('dca-wallet')) $('dca-wallet').onchange = dcaCargar;
-for (const idc of ['dca-de', 'dca-a', 'dca-dep', 'dca-cuota', 'dca-periodo']) {
+if ($('dca-invert')) $('dca-invert').onclick = () => { DCA_DIR = { de: DCA_DIR.a, a: DCA_DIR.de }; dcaPintarDireccion(); dcaResumen(); };
+for (const idc of ['dca-dep', 'dca-cuota', 'dca-periodo', 'dca-slip']) {
   if ($(idc)) { $(idc).oninput = dcaResumen; $(idc).onchange = dcaResumen; }
 }
 
 if ($('dca-crear')) $('dca-crear').onclick = () => {
   const wid = $('dca-wallet').value;
-  const de = $('dca-de').value, a = $('dca-a').value;
+  const de = DCA_DIR.de, a = DCA_DIR.a;
   const dep = $('dca-dep').value, cuota = $('dca-cuota').value;
   const periodo = Number($('dca-periodo').value), slippage = Number($('dca-slip').value);
   if (!wid) return msg($('dca-msg'), t('nft_sin_wallet'), 'err');
@@ -1264,7 +1296,7 @@ if ($('dca-crear')) $('dca-crear').onclick = () => {
   askSend(tr('dca_conf', { d: esc(dep), s: esc(de), q: esc(cuota), p: dcaPeriodoTxt(periodo), o: esc(a) }),
     async (pass) => {
       const r = await window.api.dcaCrear({ passphrase: pass, walletId: wid, de: de, a: a, deposito: dep, cuota: cuota, periodo: periodo, slippage: slippage });
-      setTimeout(dcaCargar, 4000);
+      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
       return tr('dca_creado', { id: r.id });
     });
 };
@@ -1277,7 +1309,7 @@ function dcaRecargar(i) {
   askSend(tr('dca_conf_top', { a: esc(cant), s: esc(sim), id: esc(p.id) }),
     async (pass) => {
       await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant });
-      setTimeout(dcaCargar, 4000);
+      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
       return t('dca_recargado');
     });
 }
@@ -1287,9 +1319,40 @@ function dcaAccion(i, que) {
   askSend(tr('dca_conf_' + que, { id: esc(p.id), b: dcaNum(p.balance), s: dcaSimbolo(p.tokenIn) }),
     async (pass) => {
       await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
-      setTimeout(dcaCargar, 4000);
+      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
       return t('dca_hecho');
     });
+}
+
+// ===== Ordenes activas en el Panel =====
+// Un vistazo a lo que esta corriendo solo: planes DCA y ordenes limite abiertas de las
+// wallets visibles. Se lee de la cadena; si falla, el bloque simplemente no aparece.
+async function renderOrdenesActivas() {
+  const zona = $('ordenes-activas');
+  if (!zona) return;
+  let r = null;
+  try { r = await window.api.dcaPanel(); } catch (_) { zona.hidden = true; return; }
+  const filas = (r && r.filas) || [];
+  if (!filas.length) { zona.hidden = true; zona.innerHTML = ''; return; }
+  const nPlanes = filas.reduce((n, f) => n + f.planes.length, 0);
+  const nOrd = filas.reduce((n, f) => n + f.ordenes.length, 0);
+  const trozos = filas.map(f => {
+    const planes = f.planes.map(p => {
+      const pausa = p.estado === 'paused' ? ` <span class="warn">${t('dca_pausar')}</span>` : '';
+      return `<div class="oa-linea"><span class="oa-tipo">DCA</span> <b>${esc(dcaSimbolo(p.tokenIn))} \u2192 ${esc(dcaSimbolo(p.tokenOut))}</b>
+        <span class="muted xs">${tr('dca_plan_linea', { q: dcaNum(p.cuota), s: esc(dcaSimbolo(p.tokenIn)), p: dcaPeriodoTxt(dcaNum(p.periodo)) })}</span>
+        <span class="muted xs">\u00b7 ${tr('oa_bote', { b: dcaNum(p.balance), s: esc(dcaSimbolo(p.tokenIn)), c: dcaNum(p.buys) })}</span>${pausa}</div>`;
+    }).join('');
+    const ordenes = f.ordenes.map(o => `<div class="oa-linea"><span class="oa-tipo oa-lim">${t('oa_limite')}</span>
+      <b>${esc(dcaSimbolo(o.tokenIn))} \u2192 ${esc(dcaSimbolo(o.tokenOut))}</b>
+      <span class="muted xs">${tr('oa_orden', { a: dcaNum(o.entra), s: esc(dcaSimbolo(o.tokenIn)), p: dcaNum(o.precio) })}</span></div>`).join('');
+    return `<div class="oa-wallet"><div class="muted xs">${esc(f.wallet)} \u00b7 ${shortAddr(f.cuenta)}</div>${planes}${ordenes}</div>`;
+  }).join('');
+  zona.hidden = false;
+  zona.innerHTML = `<details class="conv-card" id="oa-det" open>
+    <summary>${tr('oa_titulo', { p: nPlanes, o: nOrd })}</summary>
+    <div class="oa-cuerpo">${trozos}</div>
+  </details>`;
 }
 
 async function applyView(v) {
@@ -1299,6 +1362,7 @@ async function applyView(v) {
   renderEthSwap();
   renderStableSwap();
   renderDca();
+  renderOrdenesActivas();
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
