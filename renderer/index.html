@@ -64,6 +64,7 @@
         <a class="nav" data-nav="nft"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 15l4.2-4.2 3.3 3.3 3-3 6.5 6.4"/><circle cx="9" cy="9" r="1.4"/></svg></span> <span data-i18n="nav_nft">NFT</span></a>
         <a class="nav" data-nav="red"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="18.5" r="2.2"/><circle cx="19" cy="18.5" r="2.2"/><path d="M12 7.2 6 16.6M12 7.2l6 9.4M7 18.5h10"/></svg></span> <span data-i18n="nav_red">Red</span></a>
         <a class="nav" data-nav="mercado"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 9h13"/><path d="M14 6l3 3-3 3"/><path d="M20 15H7"/><path d="M10 12l-3 3 3 3"/></svg></span> <span data-i18n="nav_mercado">Mercado</span></a>
+        <a class="nav" data-nav="dca"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7h6a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7"/></svg></span> <span data-i18n="nav_dca">DCA</span></a>
         <a class="nav" data-nav="puente"><span class="ic"><svg viewBox="0 0 24 24"><path d="M2.5 11.5a9.5 9.5 0 0 1 19 0"/><path d="M4 11.5V18M20 11.5V18M4 18h16M9 13.5V18M15 13.5V18"/></svg></span> <span data-i18n="nav_puente">Puente</span></a>
         <a class="nav" data-nav="seguridad"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3 19 6v5.5c0 4.3-2.9 7.4-7 8.8-4.1-1.4-7-4.5-7-8.8V6z"/><circle cx="12" cy="10.5" r="1.6"/><path d="M12 12v2.5"/></svg></span> <span data-i18n="nav_seguridad">Seguridad</span></a>
         <a class="nav" data-nav="ajustes"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/></svg></span> <span data-i18n="nav_ajustes">Ajustes</span></a>
@@ -175,6 +176,33 @@
       </section>
 
       <!-- MERCADO -->
+      <section id="view-dca" class="view" hidden>
+        <h3 data-i18n="h_dca">DCA · compra periodica</h3>
+        <p class="muted xs" data-i18n="dca_sub">Dejas un bote en el contrato y el vigilante de KoberluSW compra una cuota cada cierto tiempo. Lo firmas tu; Koberlet no ejecuta las compras ni custodia nada.</p>
+        <div class="card">
+          <label data-i18n="mk_wallet">Wallet (Kadena)</label><select id="dca-wallet"></select>
+          <div id="dca-aviso" class="msg"></div>
+          <div id="dca-lista"></div>
+        </div>
+        <div class="card">
+          <div class="mkt-head"><span class="tdot" style="background:#63e038"></span><b data-i18n="dca_nuevo">Nuevo plan</b></div>
+          <div class="row2">
+            <div><label data-i18n="dca_entregas">Entregas</label><select id="dca-de"></select></div>
+            <div><label data-i18n="dca_compras">Compras</label><select id="dca-a"></select></div>
+          </div>
+          <div class="row2">
+            <div><label id="dca-lbl-dep">Bote inicial</label><input id="dca-dep" type="number" step="0.000001" placeholder="0.0"/></div>
+            <div><label id="dca-lbl-cuota">Cuota por compra</label><input id="dca-cuota" type="number" step="0.000001" placeholder="0.0"/></div>
+          </div>
+          <div class="row2">
+            <div><label data-i18n="dca_cada">Cada</label><select id="dca-periodo"></select></div>
+            <div><label data-i18n="dca_slip">Deslizamiento maximo</label><select id="dca-slip"></select></div>
+          </div>
+          <div id="dca-resumen" class="msg"></div>
+          <button id="dca-crear" class="primary" data-i18n="dca_crear">Crear plan</button>
+          <div id="dca-msg" class="msg"></div>
+        </div>
+      </section>
       <section id="view-mercado" class="view" hidden>
         <h3 data-i18n="h_mercado">Mercado</h3>
         <p class="muted xs" data-i18n="mercado_sub">Cambios no custodial: firmas tú con tu contraseña y el precio se lee fresco del pool justo antes de firmar.</p>
