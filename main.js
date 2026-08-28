@@ -772,6 +772,14 @@ ipcMain.handle('evmswap:enviar', async (_e, { passphrase, walletId, de, a, amoun
   return r;
 });
 
+// Textos de la espera del puente. Viajan en los dos idiomas y el renderer elige el
+// suyo: el proceso principal no tiene por que saber en que idioma esta la ventana.
+const NOTA_RELAY = { es: 'Kadena ya lo ha enviado y está confirmado. Ahora depende del relé del puente, que suele tardar entre 2 y 5 minutos. Puedes cerrar esta ventana: el envío sigue su curso y no hay que repetir nada.',
+                     en: 'Kadena has already sent it and it is confirmed. It now depends on the bridge relayer, which usually takes between 2 and 5 minutes. You can close this window: the transfer is on its way and nothing needs repeating.' };
+const NOTA_TARDA = { es: 'Está tardando más de lo normal. Tus fondos NO se han perdido: salieron de Kadena y el relé los entregará. Compruébalo dentro de un rato mirando tu saldo en Ethereum.',
+                     en: 'This is taking longer than usual. Your funds are NOT lost: they left Kadena and the relayer will deliver them. Check your Ethereum balance again in a while.' };
+const NOTA_OK = { es: 'Recibido en Ethereum. Puente completado.', en: 'Received on Ethereum. Bridge complete.' };
+
 // Cuentas de desarrollo con claves PÚBLICAS (solo existen en la devnet): sirven de pagador de gas
 const DEV_SENDERS = {
   sender00: { account: 'sender00', publicHex: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca', secretHex: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898' }
@@ -886,10 +894,24 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
   let arrived = false;
   if (res.minedOk) {
-    onStep({ step: 'evm', status: 'run', detail: 'Esperando al relayer hacia Ethereum…' });
+    // La entrega en Ethereum no la hace Koberlet: la hace el relé del puente. Aquí solo
+    // se vigila el saldo del destinatario. Lo importante durante esta espera no es el
+    // reloj, es que el usuario sepa que puede cerrar sin miedo: si duda, reenvía.
+    const reloj = (seg) => Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
+    onStep({ step: 'evm', status: 'run', detail: 'esperando al relé · 0:00', nota: NOTA_RELAY });
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    for (let i = 0; i < 24 && !arrived; i++) { await sleep(15000); const now = await evmBal(); if (now > before + 1e-9) { onStep({ step: 'evm', status: 'ok', detail: 'recibido · saldo ' + now }); arrived = true; } }
-    if (!arrived) onStep({ step: 'evm', status: 'pending', detail: 'aún no entregado; el relayer puede tardar (fondos no perdidos)' });
+    const t0 = Date.now();
+    for (let i = 0; i < 24 && !arrived; i++) {
+      await sleep(15000);
+      const now = await evmBal();
+      if (now > before + 1e-9) {
+        onStep({ step: 'evm', status: 'ok', detail: 'recibido · saldo ' + now, nota: NOTA_OK });
+        arrived = true;
+      } else {
+        onStep({ step: 'evm', status: 'run', detail: 'esperando al relé · ' + reloj(Math.round((Date.now() - t0) / 1000)) });
+      }
+    }
+    if (!arrived) onStep({ step: 'evm', status: 'pending', detail: 'aún no entregado', nota: NOTA_TARDA });
   }
   logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Kadena → Ethereum${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.requestKey });
   return { ...res, txHash: res.requestKey, arrived };
