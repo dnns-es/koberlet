@@ -79,23 +79,56 @@ const LANG = {
     kpi_planes_pausa: '{n} en pausa',
     kpi_ordenes_pie: 'esperando precio',
     lnk_visor: '👁️ Ver una cuenta sin entrar',
+    visor_titulo: 'Solo mirar',
     visor_tag: 'Consulta cualquier cuenta sin entrar. No se firma nada.',
     visor_red: 'Red',
     visor_dir: 'Dirección',
-    visor_etiqueta: 'Nombre (opcional)',
+    visor_etiqueta: 'Nombre',
     visor_ph_dir: 'k:… o 0x…',
     visor_ph_etiqueta: 'Mi cuenta fría',
-    visor_add: 'Ver',
+    visor_add: 'Ver cuenta',
     visor_actualizar: 'Actualizar',
     visor_quitar: 'Quitar de la lista',
-    visor_entrar: '🔐 Entrar con mi contraseña para operar',
+    visor_copiar: 'Copiar',
+    visor_copiada: 'Dirección copiada.',
+    visor_entrar: 'Entrar para operar',
     visor_foot: 'Solo lectura · sin bóveda · no puede firmar',
-    visor_vacio: 'Pega una dirección arriba y la verás aquí. Se guarda en este equipo para la próxima vez.',
+    visor_vacio: 'Pega una dirección a la izquierda y la verás aquí. Se guarda en este equipo para la próxima vez.',
     visor_leyendo: 'Preguntando a la cadena…',
     visor_sin_saldo: 'Sin saldo en esta red.',
+    visor_sin_nombre: 'Sin nombre',
     visor_falta_dir: 'Pega una dirección primero.',
     visor_conf_quitar: '¿Quitar «{d}» de la lista? Solo deja de mostrarse aquí; la cuenta no se toca.',
-    visor_plan: 'quedan {b} {s} · {c} compras',
+    visor_valor: 'Valor',
+    visor_saldos: 'Saldos',
+    visor_planes: 'Planes DCA ({n})',
+    visor_plan_det: 'quedan {b} {s} · {c} compras hechas · {r} {o} comprados',
+    visor_proxima: 'Próxima compra: {t}',
+    visor_ordenes: 'Órdenes límite ({n})',
+    visor_comprometido: '{a} {s} comprometidos, esperando precio',
+    visor_movs: 'Últimos movimientos',
+    visor_de: 'de',
+    visor_a: 'a',
+    visor_hace_seg: 'hace {n} s',
+    visor_hace_min: 'hace {n} min',
+    visor_hace_hor: 'hace {n} h',
+    visor_hace_dia: 'hace {n} días',
+    visor_ya_toca: 'ya toca',
+    visor_en_min: 'en {n} min',
+    visor_en_hor: 'en {n} h',
+    visor_en_dia: 'en {n} días',
+    visor_descubiertos: '{n} token(s) encontrados por su historial, además del catálogo.',
+    visor_ficha: 'La cuenta',
+    visor_ctl: 'La controla',
+    visor_ctl_claves: '{n} clave(s) · {p}',
+    visor_ctl_ok: 'El nombre de la cuenta corresponde a su clave: nadie la ha rotado.',
+    visor_ctl_rotado: '⚠ El guard NO corresponde al nombre de la cuenta: la controla una clave distinta de la que dice su nombre.',
+    visor_ctl_cap: 'La guarda una capability de un contrato, no una clave. Nadie puede firmar por ella a mano.',
+    visor_ctl_ref: 'La guarda un keyset con nombre: quien mande ahí, manda en la cuenta.',
+    visor_act_mov: 'Movimientos indexados',
+    visor_act_ent: '{n} entradas',
+    visor_act_sal: '{n} salidas',
+    visor_act_ultimo: 'Último movimiento {t}.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -339,23 +372,56 @@ const LANG = {
     kpi_planes_pausa: '{n} paused',
     kpi_ordenes_pie: 'waiting for price',
     lnk_visor: '👁️ View an account without signing in',
+    visor_titulo: 'Just looking',
     visor_tag: 'Look up any account without signing in. Nothing gets signed.',
     visor_red: 'Network',
     visor_dir: 'Address',
-    visor_etiqueta: 'Name (optional)',
+    visor_etiqueta: 'Name',
     visor_ph_dir: 'k:… or 0x…',
     visor_ph_etiqueta: 'My cold account',
-    visor_add: 'View',
+    visor_add: 'View account',
     visor_actualizar: 'Refresh',
     visor_quitar: 'Remove from the list',
-    visor_entrar: '🔐 Sign in with my password to operate',
+    visor_copiar: 'Copy',
+    visor_copiada: 'Address copied.',
+    visor_entrar: 'Sign in to operate',
     visor_foot: 'Read-only · no vault · cannot sign',
-    visor_vacio: 'Paste an address above and you will see it here. It is kept on this machine for next time.',
+    visor_vacio: 'Paste an address on the left and you will see it here. It is kept on this machine for next time.',
     visor_leyendo: 'Asking the chain…',
     visor_sin_saldo: 'No balance on this network.',
+    visor_sin_nombre: 'Unnamed',
     visor_falta_dir: 'Paste an address first.',
     visor_conf_quitar: 'Remove «{d}» from the list? It only stops showing here; the account itself is untouched.',
-    visor_plan: '{b} {s} left · {c} buys',
+    visor_valor: 'Value',
+    visor_saldos: 'Balances',
+    visor_planes: 'DCA plans ({n})',
+    visor_plan_det: '{b} {s} left · {c} buys done · {r} {o} bought',
+    visor_proxima: 'Next buy: {t}',
+    visor_ordenes: 'Limit orders ({n})',
+    visor_comprometido: '{a} {s} committed, waiting for a price',
+    visor_movs: 'Recent activity',
+    visor_de: 'from',
+    visor_a: 'to',
+    visor_hace_seg: '{n}s ago',
+    visor_hace_min: '{n} min ago',
+    visor_hace_hor: '{n} h ago',
+    visor_hace_dia: '{n} days ago',
+    visor_ya_toca: 'due now',
+    visor_en_min: 'in {n} min',
+    visor_en_hor: 'in {n} h',
+    visor_en_dia: 'in {n} days',
+    visor_descubiertos: '{n} token(s) found from its history, on top of the catalogue.',
+    visor_ficha: 'The account',
+    visor_ctl: 'Controlled by',
+    visor_ctl_claves: '{n} key(s) · {p}',
+    visor_ctl_ok: 'The account name matches its key: nobody has rotated it.',
+    visor_ctl_rotado: '⚠ The guard does NOT match the account name: it is controlled by a key other than the one its name states.',
+    visor_ctl_cap: 'Guarded by a contract capability, not a key. Nobody can sign for it by hand.',
+    visor_ctl_ref: 'Guarded by a named keyset: whoever rules there rules the account.',
+    visor_act_mov: 'Indexed movements',
+    visor_act_ent: '{n} in',
+    visor_act_sal: '{n} out',
+    visor_act_ultimo: 'Last movement {t}.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1490,80 +1556,210 @@ document.querySelectorAll('.kpi-ir').forEach(b => b.onclick = () => nav(b.datase
 // tiene que enchufar el aparato solo para ver un numero. Aqui pega la direccion y mira.
 // Esta pantalla NO abre la boveda, no recibe ninguna clave y no puede firmar nada.
 let VISOR = [];
+let VISOR_SEL = null;   // id de la cuenta que se esta viendo a la derecha
 
 function visorNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
-function visorCorta(d) { return d.length > 24 ? d.slice(0, 12) + '…' + d.slice(-6) : d; }
+function visorCorta(d) { return d.length > 26 ? d.slice(0, 14) + '…' + d.slice(-6) : d; }
+function visorMiles(n, dec) { return Number(n).toLocaleString('es-ES', { maximumFractionDigits: dec == null ? 4 : dec }); }
+
+// Fecha relativa: "hace 3 h" dice mas de un vistazo que un sello ISO.
+function visorHace(iso) {
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return '';
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 90) return t_rel('seg', s);
+  if (s < 5400) return t_rel('min', Math.round(s / 60));
+  if (s < 172800) return t_rel('hor', Math.round(s / 3600));
+  return t_rel('dia', Math.round(s / 86400));
+}
+function t_rel(u, n) { return tr('visor_hace_' + u, { n: n }); }
+// Cuanto falta: para la proxima compra de un plan.
+function visorFalta(iso) {
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return '';
+  const s = Math.round((t - Date.now()) / 1000);
+  if (s <= 0) return t('visor_ya_toca');
+  if (s < 5400) return tr('visor_en_min', { n: Math.round(s / 60) });
+  if (s < 172800) return tr('visor_en_hor', { n: Math.round(s / 3600) });
+  return tr('visor_en_dia', { n: Math.round(s / 86400) });
+}
 
 async function visorCargar() {
   if (!$('visor-lista')) return;
   try { VISOR = await window.api.visorLista(); } catch (_) { VISOR = []; }
-  visorPintar();
+  visorPintarLista();
+  if (VISOR.length) visorAbrir(VISOR_SEL && VISOR.some(x => x.id === VISOR_SEL) ? VISOR_SEL : VISOR[0].id);
+  else $('visor-detalle').innerHTML = `<div class="visor-vacio">${t('visor_vacio')}</div>`;
 }
 
-function visorPintar() {
+function visorPintarLista() {
   const z = $('visor-lista');
-  if (!VISOR.length) { z.innerHTML = `<div class="muted xs visor-vacio">${t('visor_vacio')}</div>`; return; }
-  z.innerHTML = VISOR.map((o, i) => `
-    <div class="visor-item" data-i="${i}">
-      <div class="visor-cab">
-        <span class="punto ${o.red === 'kda' ? 'pk' : 'pe'}"></span>
-        <div class="crece">
-          <div class="visor-nom">${esc(o.etiqueta || visorCorta(o.direccion))}</div>
-          <div class="visor-dir mono">${esc(visorCorta(o.direccion))}</div>
-        </div>
-        <button class="tiny ghost visor-ver" data-i="${i}">${t('visor_actualizar')}</button>
-        <button class="tiny ghost visor-del" data-i="${i}" title="${t('visor_quitar')}">🗑</button>
-      </div>
-      <div class="visor-cuerpo" id="visor-c-${i}"></div>
-    </div>`).join('');
-  z.querySelectorAll('.visor-ver').forEach(b => b.onclick = () => visorConsultar(Number(b.dataset.i)));
-  z.querySelectorAll('.visor-del').forEach(b => b.onclick = () => visorQuitar(Number(b.dataset.i)));
-  // Se consultan solas al entrar: para eso esta la pantalla.
-  VISOR.forEach((_, i) => visorConsultar(i));
+  z.innerHTML = VISOR.map(o => `
+    <button type="button" class="visor-item${o.id === VISOR_SEL ? ' on' : ''}" data-id="${o.id}">
+      <span class="punto ${o.red === 'kda' ? 'pk' : 'pe'}"></span>
+      <span class="crece">
+        <span class="visor-nom">${esc(o.etiqueta || visorCorta(o.direccion))}</span>
+        <span class="visor-dir mono">${esc(visorCorta(o.direccion))}</span>
+      </span>
+    </button>`).join('');
+  z.querySelectorAll('.visor-item').forEach(b => b.onclick = () => visorAbrir(b.dataset.id));
 }
 
-async function visorConsultar(i) {
-  const o = VISOR[i]; if (!o) return;
-  const c = $('visor-c-' + i); if (!c) return;
-  c.innerHTML = `<div class="muted xs">${t('visor_leyendo')}</div>`;
-  let d;
-  try { d = await window.api.visorCuenta({ red: o.red, direccion: o.direccion }); }
-  catch (e) { c.innerHTML = `<div class="msg err">${esc(cleanErr(e))}</div>`; return; }
+async function visorAbrir(id) {
+  const o = VISOR.find(x => x.id === id); if (!o) return;
+  VISOR_SEL = id;
+  visorPintarLista();
+  const d = $('visor-detalle');
+  d.innerHTML = `<div class="visor-cargando">${t('visor_leyendo')}</div>`;
+  let r;
+  try { r = await window.api.visorCuenta({ red: o.red, direccion: o.direccion }); }
+  catch (e) { d.innerHTML = `<div class="msg err">${esc(cleanErr(e))}</div>`; return; }
+  d.innerHTML = o.red === 'evm' ? visorFichaEvm(o, r) : visorFichaKda(o, r);
+  const del = $('visor-del');
+  if (del) del.onclick = () => visorQuitar(o);
+  const cop = $('visor-copiar');
+  if (cop) cop.onclick = () => { navigator.clipboard.writeText(o.direccion); msg($('visor-msg'), t('visor_copiada'), 'ok'); };
+  const act = $('visor-refrescar');
+  if (act) act.onclick = () => visorAbrir(o.id);
+}
 
-  if (d.red === 'evm') {
-    if (!d.bloques.length) { c.innerHTML = `<div class="muted xs">${t('visor_sin_saldo')}</div>`; return; }
-    c.innerHTML = d.bloques.map(b => `
-      <div class="visor-linea"><b>${esc(b.red)}</b>
-        <span class="cifra">${b.nativo.toFixed(6)} ${esc(b.simbolo)}</span>
-        <span class="muted xs">$${b.usd.toFixed(2)}</span></div>
-      ${b.tokens.filter(t2 => t2.amount > 0).map(t2 => `<div class="visor-linea sub">${esc(t2.symbol)}
-        <span class="cifra">${t2.amount.toFixed(4)}</span><span class="muted xs">$${t2.usd.toFixed(2)}</span></div>`).join('')}`).join('');
-    return;
+function visorCabecera(o, usd) {
+  return `<div class="vf-cab">
+    <div class="crece">
+      <div class="vf-nom">${esc(o.etiqueta || t('visor_sin_nombre'))}</div>
+      <div class="vf-dir mono">${esc(o.direccion)}</div>
+    </div>
+    <div class="vf-total">
+      <div class="etiq">${t('visor_valor')}</div>
+      <div class="vf-usd">$${visorMiles(usd || 0, 2)}</div>
+    </div>
+    <div class="vf-btns">
+      <button id="visor-copiar" class="tiny ghost">${t('visor_copiar')}</button>
+      <button id="visor-refrescar" class="tiny ghost">${t('visor_actualizar')}</button>
+      <button id="visor-del" class="tiny ghost" title="${t('visor_quitar')}">🗑</button>
+    </div>
+  </div>`;
+}
+
+// Quien controla la cuenta y como se ha movido. Es la informacion que un monedero
+// normal no ensena y que, mirando una cuenta ajena o propia en frio, es la que importa.
+function visorControl(r) {
+  const c = r.control, a = r.actividad;
+  if (!c && !a) return '';
+  let ctl = '';
+  if (c) {
+    if (c.tipo === 'capability') ctl = `<div class="vf-linea"><b>${t('visor_ctl')}</b><span class="crece muted xs mono">${esc(c.detalle)}</span></div>
+      <div class="muted xs">${t('visor_ctl_cap')}</div>`;
+    else if (c.tipo === 'keyset') ctl = `<div class="vf-linea"><b>${t('visor_ctl')}</b><span class="crece muted xs mono">${esc(c.detalle)}</span></div>
+      <div class="muted xs">${t('visor_ctl_ref')}</div>`;
+    else if (c.tipo === 'claves') {
+      const firmas = tr('visor_ctl_claves', { n: c.firmas, p: esc(String(c.pred || '')) });
+      const aviso = c.cuadra === false
+        ? `<div class="warn xs vf-rotado">${t('visor_ctl_rotado')}</div>`
+        : (c.cuadra === true ? `<div class="muted xs">${t('visor_ctl_ok')}</div>` : '');
+      ctl = `<div class="vf-linea"><b>${t('visor_ctl')}</b><span class="crece muted xs">${firmas}</span></div>${aviso}`;
+    }
   }
-
-  const chains = Object.keys(d.porChain || {}).sort((a, b) => a - b);
-  const toks = (d.tokens || []).filter(x => x.amount > 0);
-  c.innerHTML = `
-    <div class="visor-linea"><b>KDA</b>
-      <span class="cifra">${d.nativo.toLocaleString('es-ES', { maximumFractionDigits: 4 })}</span>
-      <span class="muted xs">$${d.usd.toFixed(2)}</span></div>
-    ${chains.length ? `<div class="muted xs visor-chains">${chains.map(ch => 'chain ' + ch + ': ' + Number(d.porChain[ch]).toLocaleString('es-ES', { maximumFractionDigits: 4 })).join(' · ')}</div>` : ''}
-    ${toks.map(x => `<div class="visor-linea sub">${esc(x.symbol)}
-      <span class="cifra">${x.amount.toFixed(4)}</span><span class="muted xs">$${x.usd.toFixed(2)}</span></div>`).join('')}
-    ${(d.planes || []).map(p => `<div class="visor-linea sub"><span class="oa-tipo">DCA</span>
-      <span class="crece">${esc(dcaSimbolo(p.tokenIn))} → ${esc(dcaSimbolo(p.tokenOut))}</span>
-      <span class="muted xs">${tr('visor_plan', { b: visorNum(p.balance), s: esc(dcaSimbolo(p.tokenIn)), c: visorNum(p.buys) })}</span></div>`).join('')}
-    ${(d.ordenes || []).map(o2 => `<div class="visor-linea sub"><span class="oa-tipo oa-lim">${t('oa_limite')}</span>
-      <span class="crece">${esc(dcaSimbolo(o2.tokenIn))} → ${esc(dcaSimbolo(o2.tokenOut))}</span>
-      <span class="muted xs">${tr('oa_orden', { a: visorNum(o2.entra), s: esc(dcaSimbolo(o2.tokenIn)), p: visorNum(o2.precio) })}</span></div>`).join('')}
-    ${!toks.length && !d.nativo && !(d.planes || []).length ? `<div class="muted xs">${t('visor_sin_saldo')}</div>` : ''}`;
+  const act = a ? `
+    <div class="vf-linea"><b>${t('visor_act_mov')}</b><span class="cifra">${a.total}</span></div>
+    <div class="vf-linea peq"><span class="vf-flecha entra">↓</span><span class="crece muted xs">${tr('visor_act_ent', { n: a.entradas })}</span><span class="cifra">${visorMiles(a.entrado)}</span></div>
+    <div class="vf-linea peq"><span class="vf-flecha sale">↑</span><span class="crece muted xs">${tr('visor_act_sal', { n: a.salidas })}</span><span class="cifra">${visorMiles(a.salido)}</span></div>
+    ${a.ultimo ? `<div class="muted xs">${tr('visor_act_ultimo', { t: visorHace(a.ultimo) })}</div>` : ''}` : '';
+  return `<section class="vf-caja"><h4>${t('visor_ficha')}</h4>${ctl}${act}</section>`;
 }
 
-async function visorQuitar(i) {
-  const o = VISOR[i]; if (!o) return;
+// La ficha del visor usa LA MISMA tarjeta del Panel (assetRow, .netcard, la linea de
+// reparto) para que no haya dos maneras de ensenar un saldo en la misma app. Lo unico
+// que se quita son los botones de operar y los formularios: aqui no se opera.
+function visorTarjeta(color, titulo, etiqueta, usd, filas, extra, direccion) {
+  return `<div class="card netcard visor-tarj" style="border-top:3px solid ${color}">
+    <div class="nc-head estatica"><span class="netdot" style="background:${color}"></span> ${esc(titulo)}
+      <small class="muted">${esc(etiqueta || '')}</small>
+      <span class="nc-sub">$${(usd || 0).toFixed(2)}</span></div>
+    <div class="nc-body">
+      <div class="assets">${filas}</div>
+      ${extra || ''}
+      ${direccion ? `<div class="addr"><span class="mono">${esc(direccion)}</span><button class="copy" data-ct="${esc(direccion)}">${t('copy')}</button></div>` : ''}
+    </div>
+  </div>`;
+}
+
+function visorFichaKda(o, r) {
+  const toks = (r.tokens || []).filter(x => x.amount > 0);
+  const filas = assetRow('KDA', r.nativo.toFixed(4), r.usd)
+    + toks.map(x => assetRow(x.symbol, x.amount.toFixed(4), x.usd)).join('');
+  const chains = Object.entries(r.porChain || {}).sort((a, b) => a[0] - b[0]);
+  const extra = chains.length
+    ? `<div class="muted xs perline">${t('spread')}${chains.map(([c, x]) => `Chain ${c} → ${Number(x).toFixed(4)}`).join('  ·  ')}</div>`
+    : `<div class="muted xs perline">${t('no_bal_yet')}</div>`;
+
+  const planes = r.planes || [], ords = r.ordenes || [], movs = r.movimientos || [];
+  const comprometido = ords.reduce((n, x) => n + visorNum(x.entra), 0);
+  const descubiertos = toks.filter(x => x.descubierto).length;
+
+  return visorCabecera(o, r.usdTotal != null ? r.usdTotal : r.usd)
+    + visorTarjeta('#63e038', r.redNombre || 'Kadena', o.etiqueta, r.usdTotal != null ? r.usdTotal : r.usd, filas, extra, o.direccion)
+    + (descubiertos ? `<div class="muted xs visor-nota">${tr('visor_descubiertos', { n: descubiertos })}</div>` : '')
+    + `<div class="vf-rejilla">
+    ${visorControl(r)}
+    ${planes.length ? `<section class="vf-caja">
+      <h4>${tr('visor_planes', { n: planes.length })}</h4>
+      ${planes.map(p => `<div class="vf-plan">
+        <div class="vf-linea"><b>${esc(dcaSimbolo(p.tokenIn))} → ${esc(dcaSimbolo(p.tokenOut))}</b>
+          <span class="muted xs">${visorMiles(visorNum(p.cuota))} ${esc(dcaSimbolo(p.tokenIn))} / ${dcaPeriodoTxt(visorNum(p.periodo))}</span></div>
+        <div class="muted xs">${tr('visor_plan_det', {
+          b: visorMiles(visorNum(p.balance)), s: esc(dcaSimbolo(p.tokenIn)),
+          c: visorNum(p.buys), r: visorMiles(visorNum(p.recibido)), o: esc(dcaSimbolo(p.tokenOut)) })}</div>
+        ${p.proxima ? `<div class="muted xs vf-prox">${tr('visor_proxima', { t: visorFalta(p.proxima.time || p.proxima) })}</div>` : ''}
+      </div>`).join('')}
+    </section>` : ''}
+
+    ${ords.length ? `<section class="vf-caja">
+      <h4>${tr('visor_ordenes', { n: ords.length })}</h4>
+      <div class="muted xs vf-resumen">${tr('visor_comprometido', { a: visorMiles(comprometido), s: esc(dcaSimbolo(ords[0].tokenIn)) })}</div>
+      <div class="vf-ords">${ords.map(x => `<div class="vf-linea peq">
+        <span class="crece">${esc(dcaSimbolo(x.tokenIn))} → ${esc(dcaSimbolo(x.tokenOut))}</span>
+        <span class="cifra">${visorMiles(visorNum(x.entra))}</span>
+        <span class="muted xs">@ ${visorNum(x.precio)}</span></div>`).join('')}</div>
+    </section>` : ''}
+
+    ${movs.length ? `<section class="vf-caja ancha">
+      <h4>${t('visor_movs')}</h4>
+      ${movs.map(m => `<div class="vf-mov">
+        <span class="vf-flecha ${m.entra ? 'entra' : 'sale'}">${m.entra ? '↓' : '↑'}</span>
+        <span class="cifra">${visorMiles(m.importe)}</span>
+        <span class="muted xs">${esc(m.token === 'coin' ? 'KDA' : String(m.token).split('.').pop())}</span>
+        <span class="crece muted xs mono">${m.entra ? t('visor_de') : t('visor_a')} ${esc(visorCorta(String(m.otra || '')))}</span>
+        <span class="muted xs">chain ${m.chain}</span>
+        <span class="muted xs">${visorHace(m.cuando)}</span>
+      </div>`).join('')}
+    </section>` : ''}
+  </div>`;
+}
+
+function visorFichaEvm(o, r) {
+  const bloques = r.bloques || [];
+  const total = bloques.reduce((n, b) => n + b.usd + b.tokens.reduce((m, t2) => m + t2.usd, 0), 0);
+  if (!bloques.length) {
+    return visorCabecera(o, 0) + `<div class="vf-caja"><div class="muted xs">${t('visor_sin_saldo')}</div></div>`;
+  }
+  return visorCabecera(o, total) + bloques.map(b => {
+    const usdRed = b.usd + b.tokens.reduce((m, t2) => m + t2.usd, 0);
+    const filas = assetRow(b.simbolo, b.nativo.toFixed(6), b.usd)
+      + b.tokens.filter(t2 => t2.amount > 0).map(t2 => assetRow(t2.symbol, t2.amount.toFixed(4), t2.usd)).join('');
+    return visorTarjeta(b.color || '#627eea', b.red, o.etiqueta, usdRed, filas, '', o.direccion);
+  }).join('');
+}
+
+async function visorQuitar(o) {
   if (!confirm(tr('visor_conf_quitar', { d: o.etiqueta || visorCorta(o.direccion) }))) return;
-  try { VISOR = await window.api.visorQuitar({ id: o.id }); visorPintar(); }
-  catch (e) { msg($('visor-msg'), cleanErr(e), 'err'); }
+  try {
+    VISOR = await window.api.visorQuitar({ id: o.id });
+    if (VISOR_SEL === o.id) VISOR_SEL = null;
+    visorPintarLista();
+    if (VISOR.length) visorAbrir(VISOR[0].id);
+    else $('visor-detalle').innerHTML = `<div class="visor-vacio">${t('visor_vacio')}</div>`;
+  } catch (e) { msg($('visor-msg'), cleanErr(e), 'err'); }
 }
 
 if ($('visor-add')) $('visor-add').onclick = async () => {
@@ -1575,7 +1771,9 @@ if ($('visor-add')) $('visor-add').onclick = async () => {
     VISOR = await window.api.visorAnadir({ red, direccion, etiqueta });
     $('visor-dir').value = ''; $('visor-etiqueta').value = '';
     msg($('visor-msg'), '');
-    visorPintar();
+    const nueva = VISOR[VISOR.length - 1];
+    visorPintarLista();
+    visorAbrir(nueva.id);
   } catch (e) { msg($('visor-msg'), cleanErr(e), 'err'); }
 };
 if ($('visor-dir')) $('visor-dir').onkeydown = (e) => { if (e.key === 'Enter') $('visor-add').click(); };

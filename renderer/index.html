@@ -56,35 +56,39 @@
   </section>
 
   <!-- VISOR: mirar cuentas sin abrir la boveda -->
-  <section id="scr-visor" class="auth" hidden>
-    <div class="auth-card visor-card">
-      <button class="langbtn auth-lang" title="Idioma / Language">EN</button>
-      <div class="auth-brand">
-        <div class="auth-mark"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9.2v13.6L16 29 5 22.8V9.2z" fill="none" stroke="#63e038" stroke-width="2.2" stroke-linejoin="round"/><path d="M2 16s5-7 14-7 14 7 14 7-5 7-14 7S2 16 2 16z" fill="none" stroke="#63e038" stroke-width="0"/></svg></div>
-        <div class="auth-name"><b>Solo</b><span class="grn"> mirar</span></div>
-        <div class="auth-tag" data-i18n="visor_tag">Consulta cualquier cuenta sin entrar. No se firma nada.</div>
+  <section id="scr-visor" class="visor" hidden>
+    <header class="visor-top">
+      <div class="visor-marca">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9.2v13.6L16 29 5 22.8V9.2z" fill="none" stroke="#63e038" stroke-width="2.2" stroke-linejoin="round"/><path d="M13 10.5v11M13 16l5-5.5M13 16l5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><b data-i18n="visor_titulo">Solo mirar</b><span class="muted xs" data-i18n="visor_tag">Consulta cualquier cuenta sin entrar. No se firma nada.</span></div>
       </div>
-
-      <div class="visor-alta">
-        <div class="row2">
-          <div><label data-i18n="visor_red">Red</label>
-            <select id="visor-red"><option value="kda">Kadena</option><option value="evm">Ethereum</option></select></div>
-          <div><label data-i18n="visor_etiqueta">Nombre (opcional)</label>
-            <input id="visor-etiqueta" type="text" maxlength="40" data-i18n-ph="visor_ph_etiqueta" placeholder="Mi cuenta fría" /></div>
-        </div>
-        <label data-i18n="visor_dir">Dirección</label>
-        <div class="fila-alta">
-          <input id="visor-dir" type="text" spellcheck="false" data-i18n-ph="visor_ph_dir" placeholder="k:… o 0x…" />
-          <button id="visor-add" class="primary" data-i18n="visor_add">Ver</button>
-        </div>
-        <div id="visor-msg" class="msg"></div>
+      <div class="visor-acc">
+        <button class="langbtn" title="Idioma / Language">EN</button>
+        <button id="visor-entrar" class="primary" data-i18n="visor_entrar">Entrar para operar</button>
       </div>
+    </header>
 
-      <div id="visor-lista" class="visor-lista"></div>
+    <div class="visor-cols">
+      <aside class="visor-lat">
+        <div class="visor-alta">
+          <label data-i18n="visor_dir">Direccion</label>
+          <input id="visor-dir" type="text" spellcheck="false" data-i18n-ph="visor_ph_dir" placeholder="k:... o 0x..." />
+          <div class="row2">
+            <div><label data-i18n="visor_red">Red</label>
+              <select id="visor-red"><option value="kda">Kadena</option><option value="evm">Ethereum</option></select></div>
+            <div><label data-i18n="visor_etiqueta">Nombre</label>
+              <input id="visor-etiqueta" type="text" maxlength="40" data-i18n-ph="visor_ph_etiqueta" placeholder="Mi cuenta fria" /></div>
+          </div>
+          <button id="visor-add" class="primary ancho" data-i18n="visor_add">Ver cuenta</button>
+          <div id="visor-msg" class="msg"></div>
+        </div>
+        <div id="visor-lista" class="visor-lista"></div>
+      </aside>
 
-      <a href="#" id="visor-entrar" class="authlink grn" data-i18n="visor_entrar">🔐 Entrar con mi contraseña para operar</a>
-      <div class="auth-foot"><span data-i18n="visor_foot">Solo lectura · sin bóveda · no puede firmar</span></div>
+      <main id="visor-detalle" class="visor-detalle"></main>
     </div>
+
+    <footer class="visor-pie" data-i18n="visor_foot">Solo lectura &middot; sin boveda &middot; no puede firmar</footer>
   </section>
 
   <!-- APP -->
