@@ -495,20 +495,68 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .sendnota[hidden]{display:none}
 .stp .sd{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:22ch;display:inline-block;vertical-align:bottom}
 
-/* ---- Modo visor: mirar cuentas sin abrir la boveda ---- */
-.visor-card{max-width:520px}
-.visor-alta{margin-top:6px}
-.fila-alta{display:flex;gap:8px}
-.fila-alta input{flex:1 1 auto;min-width:0}
-.fila-alta button{flex:0 0 auto}
-.visor-lista{display:flex;flex-direction:column;gap:10px;margin:14px 0 4px;max-height:46vh;overflow-y:auto}
-.visor-vacio{padding:14px 2px;line-height:1.5}
-.visor-item{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:var(--card)}
-.visor-cab{display:flex;align-items:center;gap:9px}
-.visor-nom{font-weight:700;font-size:13.5px}
-.visor-dir{font-size:11px;opacity:.55}
-.visor-cuerpo{margin-top:8px}
-.visor-linea{display:flex;align-items:baseline;gap:8px;padding:3px 0;font-size:13px}
-.visor-linea .cifra{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
-.visor-linea.sub{font-size:12px;opacity:.85;padding-left:10px}
-.visor-chains{padding:2px 0 4px 10px}
+/* ---- Modo visor: pantalla completa, lista a la izquierda y ficha a la derecha ---- */
+.visor{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);overflow:hidden}
+.visor[hidden]{display:none}
+.visor-top{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--card)}
+.visor-marca{display:flex;align-items:center;gap:11px;flex:1 1 auto;min-width:0}
+.visor-marca svg{width:30px;height:30px;flex:0 0 auto}
+.visor-marca b{display:block;font-size:16px;letter-spacing:-.01em}
+.visor-marca .muted{display:block;line-height:1.3}
+.visor-acc{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.visor-cols{display:grid;grid-template-columns:310px 1fr;gap:0;flex:1 1 auto;min-height:0}
+.visor-lat{border-right:1px solid var(--line);padding:16px;overflow-y:auto;background:var(--card)}
+.visor-alta label{margin-top:8px}
+.visor-alta .ancho{width:100%;margin-top:10px}
+.visor-lista{display:flex;flex-direction:column;gap:6px;margin-top:16px}
+.visor-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 11px;
+            border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;font:inherit;color:inherit}
+.visor-item:hover{background:var(--bg)}
+.visor-item.on{border-color:var(--kda);background:var(--bg)}
+.visor-item .crece{display:flex;flex-direction:column;min-width:0}
+.visor-nom{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.visor-dir{font-size:10.5px;opacity:.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.visor-detalle{padding:20px 24px;overflow-y:auto}
+.visor-vacio,.visor-cargando{opacity:.6;font-size:14px;padding:40px 0;text-align:center;line-height:1.6}
+.visor-pie{padding:9px 22px;border-top:1px solid var(--line);font-size:11px;opacity:.5;text-align:center;background:var(--card)}
+
+.vf-cab{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.vf-nom{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.vf-dir{font-size:11.5px;opacity:.5;word-break:break-all;margin-top:2px}
+.vf-total{text-align:right;flex:0 0 auto}
+.vf-usd{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.vf-btns{display:flex;gap:6px;flex:0 0 auto;align-self:center}
+.vf-rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px;align-items:start}
+.vf-caja{border:1px solid var(--line);border-radius:14px;padding:15px 17px;background:var(--card)}
+.vf-caja.ancha{grid-column:1/-1}
+.vf-caja h4{margin:0 0 11px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.55;font-weight:700}
+.vf-linea{display:flex;align-items:baseline;gap:9px;padding:4px 0;font-size:13.5px}
+.vf-linea.grande{font-size:15px}
+.vf-linea.peq{font-size:12.5px;padding:2px 0}
+.vf-linea .cifra{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:700}
+.vf-chains{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 4px}
+.vf-chip{font-size:11px;padding:3px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--line)}
+.vf-chip b{margin-left:5px;font-variant-numeric:tabular-nums}
+.vf-plan{padding:8px 0;border-top:1px solid var(--line)}
+.vf-plan:first-of-type{border-top:0;padding-top:0}
+.vf-prox{margin-top:3px;color:var(--kda-d)}
+:root[data-theme="dark"] .vf-prox{color:var(--kda)}
+.vf-resumen{margin-bottom:8px}
+.vf-ords{max-height:230px;overflow-y:auto}
+.vf-mov{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:12.5px;border-top:1px solid var(--line)}
+.vf-mov:first-of-type{border-top:0}
+.vf-mov .cifra{font-variant-numeric:tabular-nums;font-weight:700}
+.vf-flecha{font-weight:800;flex:0 0 auto}
+.vf-flecha.entra{color:var(--ok)}
+.vf-flecha.sale{color:var(--err)}
+@media (max-width:900px){
+  .visor-cols{grid-template-columns:1fr;overflow-y:auto}
+  .visor-lat{border-right:0;border-bottom:1px solid var(--line)}
+}
+
+/* La tarjeta del visor es la del Panel, pero sin botones y con el cuerpo abierto. */
+.visor-tarj{margin-bottom:14px}
+.visor-tarj .nc-head.estatica{cursor:default}
+.visor-tarj .nc-head .chev{display:none}
+.visor-nota{margin:-6px 0 12px 2px}
+.vf-rotado{margin-top:4px;line-height:1.4}

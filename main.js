@@ -378,12 +378,95 @@ ipcMain.handle('visor:cuenta', async (_e, { red, direccion } = {}) => {
     dca.planesDe(cfgDcaVisor, direccion).catch(() => []),
     dca.ordenesDe(cfgDcaVisor, direccion).catch(() => [])
   ]);
+  // Ultimos movimientos del indexador propio. Va aparte y con su catch: si kdaindex
+  // esta caido o va detras del bloque, el resto de la ficha se ensena igual.
+  let movs = [], crudos = [];
+  try {
+    const r = await fetch('https://kdaindex.dnns.es/txs/account/' + encodeURIComponent(direccion) + '?limit=300',
+      { signal: AbortSignal.timeout(10000) });
+    if (r.ok) {
+      const j = await r.json();
+      crudos = Array.isArray(j) ? j : [];
+      movs = crudos.slice(0, 12).map((m) => ({
+        cuando: m.blockTime, chain: m.chain, token: m.token,
+        importe: Number(m.amount) || 0,
+        entra: String(m.toAccount) === String(direccion),
+        otra: String(m.toAccount) === String(direccion) ? m.fromAccount : m.toAccount,
+        rk: m.requestKey
+      }));
+    }
+  } catch (_) { /* sin movimientos: no es motivo para no ensenar el saldo */ }
+
+  // Tokens que la cuenta ha MOVIDO, sacados del historial: cada transferencia dice su
+  // modulo y su chain, asi que se consulta el saldo exacto en vez de barrer 20 chains.
+  const vistos = new Map();
+  for (const m of crudos) {
+    const mod = String(m.token || '');
+    if (!mod || mod === 'coin') continue;
+    if (!/^[A-Za-z0-9_][A-Za-z0-9_.-]{1,120}$/.test(mod)) continue;   // no interpolar basura en Pact
+    vistos.set(mod + '|' + m.chain, { modulo: mod, chain: String(m.chain) });
+  }
+  const yaEstan = new Set((tokens || []).map((t) => t.module));
+  const extra = [];
+  await Promise.all([...vistos.values()].filter((v) => !yaEstan.has(v.modulo)).map(async (v) => {
+    try {
+      const rr = await kda.local(net.node, net.networkId, v.chain, '(' + v.modulo + '.get-balance "' + direccion + '")');
+      if (rr && rr.status === 'success') {
+        const val = typeof rr.data === 'object' ? Number(rr.data.decimal != null ? rr.data.decimal : rr.data) : Number(rr.data);
+        if (isFinite(val) && val > 0) {
+          extra.push({ symbol: v.modulo.split('.').pop(), module: v.modulo, amount: val, chain: v.chain, cg: null, descubierto: true });
+        }
+      }
+    } catch (_) { /* la cuenta ya no tiene fila en ese token */ }
+  }));
+
+  // QUIEN CONTROLA LA CUENTA. Una cuenta k: se llama asi por su clave, pero el guard se
+  // puede rotar: entonces el nombre ya no dice quien manda. Para vigilar una cuenta ajena
+  // o propia en frio, eso es justo lo que interesa saber, y no lo ensena ningun monedero.
+  let control = null;
+  try {
+    const chConGasto = Object.keys(saldo.perChain || {})[0] || String(c.bridge.kda.chain);
+    const rg = await kda.local(net.node, net.networkId, chConGasto, '(at "guard" (coin.details "' + direccion + '"))');
+    if (rg && rg.status === 'success') {
+      const g = rg.data || {};
+      const claves = g.keys || (g.keyset && g.keyset.keys) || null;
+      const pred = g.pred || (g.keyset && g.keyset.pred) || null;
+      if (g.cgName) control = { tipo: 'capability', detalle: g.cgName };
+      else if (g.keysetref) control = { tipo: 'keyset', detalle: g.keysetref.name || String(g.keysetref) };
+      else if (Array.isArray(claves)) {
+        const propia = direccion.startsWith('k:') && claves.length === 1
+          && String(claves[0]).toLowerCase() === direccion.slice(2).toLowerCase() && pred === 'keys-all';
+        control = { tipo: 'claves', firmas: claves.length, pred, cuadra: direccion.startsWith('k:') ? propia : null };
+      }
+    }
+  } catch (_) { /* la cuenta puede no existir en esa chain */ }
+
+  // Resumen de actividad, sacado del mismo historial que ya se pidio.
+  let actividad = null;
+  if (crudos.length) {
+    const kdaSolo = crudos.filter((m) => m.token === 'coin');
+    const dentro = kdaSolo.filter((m) => String(m.toAccount) === String(direccion));
+    const fuera = kdaSolo.filter((m) => String(m.fromAccount) === String(direccion));
+    actividad = {
+      total: crudos.length,
+      entradas: dentro.length, salidas: fuera.length,
+      entrado: dentro.reduce((n, m) => n + (Number(m.amount) || 0), 0),
+      salido: fuera.reduce((n, m) => n + (Number(m.amount) || 0), 0),
+      ultimo: crudos[0] && crudos[0].blockTime,
+      primero: crudos[crudos.length - 1] && crudos[crudos.length - 1].blockTime
+    };
+  }
+
+  const tokensUsd = (tokens || []).reduce((n, t) => n + (t.cg ? t.amount * px(t.cg) : 0), 0);
   return {
-    red: 'kda', direccion, redNombre: net.name,
+    red: 'kda', direccion, redNombre: net.name, movimientos: movs, control, actividad,
     nativo: saldo.total, porChain: saldo.perChain, usd: saldo.total * px('kadena'),
-    tokens: (tokens || []).map((t) => ({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 })),
+    usdTotal: saldo.total * px('kadena') + tokensUsd,
+    tokens: (tokens || []).map((t) => ({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0, descubierto: false }))
+      .concat(extra.map((t) => ({ symbol: t.symbol, amount: t.amount, usd: 0, chain: t.chain, descubierto: true }))),
     planes: (planes || []).filter((x) => x.status !== 'closed').map((x) => ({
       id: x.id, estado: x.status, cuota: x.quota, periodo: x.period, balance: x.balance,
+      proxima: x['next-buy'], gastado: x.spent, recibido: x.received,
       buys: x.buys, tokenIn: dca.refMod(x['token-in']), tokenOut: dca.refMod(x['token-out']) })),
     ordenes: (ordenes || []).map((o) => ({ id: o.id, entra: o['amount-in'], precio: o['trigger-price'],
       tokenIn: dca.refMod(o['token-in']), tokenOut: dca.refMod(o['token-out']) }))
