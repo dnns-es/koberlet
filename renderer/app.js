@@ -129,6 +129,10 @@ const LANG = {
     visor_act_ent: '{n} entradas',
     visor_act_sal: '{n} salidas',
     visor_act_ultimo: 'Último movimiento {t}.',
+    dca_confirmando: 'Enviado. Esperando a que la cadena lo confirme… (suele tardar entre 30 y 90 segundos)',
+    dca_confirmado: 'Confirmado en la cadena.',
+    dca_reverso: 'La cadena rechazó la operación. Mira el identificador en el historial para ver el motivo.',
+    dca_tarda: 'Sigue sin confirmarse, pero la operación va en camino: no la repitas. Refresca dentro de un rato.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -427,6 +431,10 @@ const LANG = {
     visor_act_ent: '{n} in',
     visor_act_sal: '{n} out',
     visor_act_ultimo: 'Last movement {t}.',
+    dca_confirmando: 'Sent. Waiting for the chain to confirm… (usually 30 to 90 seconds)',
+    dca_confirmado: 'Confirmed on chain.',
+    dca_reverso: 'The chain rejected the operation. Check the ID in the history to see why.',
+    dca_tarda: 'Still unconfirmed, but the operation is on its way: do not repeat it. Refresh in a while.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -1380,6 +1388,33 @@ function dcaDuracion(seg) {
   return Math.round(s / 2592000) + ' ' + t('dca_meses');
 }
 
+// Espera a que la cadena confirme y RECARGA ENTONCES, no a los 4 segundos.
+// Minar tarda entre 30 y 90 s: recargar antes ensena el estado viejo y hace creer que
+// la operacion no ha ido. Le paso a un usuario que cerro dos veces un plan con 63.000
+// KDA porque las dos veces vio el plan igual que estaba — y las dos veces habia
+// funcionado. Se sondea el requestKey con tx:info hasta que el nodo lo tiene.
+async function dcaConfirmar(r, elMsg) {
+  const rk = r && r.requestKey;
+  const chain = r && r.chain;
+  if (!rk || chain === undefined) { setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000); return; }
+  const aviso = (txt) => { if (elMsg) msg(elMsg, txt); };
+  aviso(t('dca_confirmando'));
+  // 20 intentos de 6 s = 2 minutos. Pasado eso, la tx sigue su curso: no es un fallo.
+  for (let i = 0; i < 20; i++) {
+    await new Promise((res) => setTimeout(res, 6000));
+    let d = null;
+    try { d = await window.api.txInfo(rk, chain); } catch (_) { continue; }
+    if (d && d.encontrada) {
+      const res = (d.datos && d.datos.result) || {};
+      dcaCargar(); renderOrdenesActivas();
+      aviso(res.status === 'success' ? t('dca_confirmado') : t('dca_reverso'));
+      return;
+    }
+  }
+  dcaCargar(); renderOrdenesActivas();
+  aviso(t('dca_tarda'));
+}
+
 async function renderDca() {
   if (!$('dca-wallet')) return;
   const kdaW = WALLETS.filter(w => w.kdaAccount);
@@ -1473,7 +1508,7 @@ if ($('dca-crear')) $('dca-crear').onclick = () => {
   askSend(tr('dca_conf', { d: esc(dep), s: esc(de), q: esc(cuota), p: dcaPeriodoTxt(periodo), o: esc(a) }),
     async (pass) => {
       const r = await window.api.dcaCrear({ passphrase: pass, walletId: wid, de: de, a: a, deposito: dep, cuota: cuota, periodo: periodo, slippage: slippage });
-      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
+      dcaConfirmar(r, $('dca-msg'));
       return tr('dca_creado', { id: r.id });
     });
 };
@@ -1485,8 +1520,8 @@ function dcaRecargar(i) {
   if (!cant || !(Number(cant) > 0)) return;
   askSend(tr('dca_conf_top', { a: esc(cant), s: esc(sim), id: esc(p.id) }),
     async (pass) => {
-      await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant });
-      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
+      const r = await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant });
+      dcaConfirmar(r, $('dca-msg'));
       return t('dca_recargado');
     });
 }
@@ -1495,8 +1530,8 @@ function dcaAccion(i, que) {
   const p = DCA && DCA.planes[i]; if (!p) return;
   askSend(tr('dca_conf_' + que, { id: esc(p.id), b: dcaNum(p.balance), s: dcaSimbolo(p.tokenIn) }),
     async (pass) => {
-      await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
-      setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000);
+      const r = await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
+      dcaConfirmar(r, $('dca-msg'));
       return t('dca_hecho');
     });
 }
@@ -1527,7 +1562,7 @@ async function renderOrdenesActivas() {
     return `<div class="oa-wallet"><div class="muted xs">${esc(f.wallet)} \u00b7 ${shortAddr(f.cuenta)}</div>${planes}${ordenes}</div>`;
   }).join('');
   zona.hidden = false;
-  zona.innerHTML = `<details class="conv-card" id="oa-det" open>
+  zona.innerHTML = `<details class="conv-card" id="oa-det">
     <summary>${tr('oa_titulo', { p: nPlanes, o: nOrd })}</summary>
     <div class="oa-cuerpo">${trozos}</div>
   </details>`;
