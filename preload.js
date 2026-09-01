@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('api', {
   ethswapQuote: (dir, amount) => ipcRenderer.invoke('ethswap:quote', { dir, amount }),
   ethswapExec: (passphrase, walletId, dir, amount, minOut) => ipcRenderer.invoke('ethswap:exec', { passphrase, walletId, dir, amount, minOut }),
   history: (walletId) => ipcRenderer.invoke('history:list', { walletId }),
+  txInfo: (requestKey, chain, redKey) => ipcRenderer.invoke('tx:info', { requestKey, chain, redKey }),
   qr: (text) => ipcRenderer.invoke('qr', text),
   exportHistory: (rows, filename) => ipcRenderer.invoke('history:export', { rows, filename }),
   prices: () => ipcRenderer.invoke('prices'),

@@ -1,0 +1,7 @@
+{
+  "notes": "Ya se ve y se envia SPT, el ojito oculta tambien el total, y el identificador del historial se puede pinchar. / SPT is now visible and sendable, the eye also hides the total, and history IDs are clickable.",
+  "notes_i18n": {
+    "es": "Tres cosas.\n· SPT, el token de Smart Pacts, ya aparece en tu tarjeta de Kadena y se puede enviar como cualquier otro. Sale sin valor en dolares porque no cotiza en ningun sitio de donde sacar el precio.\n· El boton del ojito dejaba a la vista el TOTAL aunque ocultara el resto de saldos. Ya se oculta tambien, y con el el aviso de gas, que llevaba una cifra dentro del texto.\n· En el historial, el identificador de cada transaccion se puede pinchar: abre una ficha con lo que quedo escrito en la cadena — si se ejecuto o se revirtio, el motivo si fallo, el gas gastado y los eventos. Se busca en todas las redes configuradas, asi que da igual si la hiciste en una u otra.",
+    "en": "Three things.\n· SPT, the Smart Pacts token, now shows on your Kadena card and can be sent like any other. It shows no dollar value because there is nowhere to take a price from.\n· The eye button left the TOTAL on display even while hiding every other balance. It is now hidden too, along with the gas warning, which carried a figure inside its text.\n· In the history, each transaction ID is now clickable: it opens a report of what was written on chain — whether it executed or reverted, the reason if it failed, the gas spent and the events. It looks across every configured network, so it does not matter which one you used."
+  }
+}

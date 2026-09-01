@@ -350,12 +350,17 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 .amtrow .tiny{flex:none;padding:8px 10px}
 
 /* ===== Modo privacidad (👁): saldos tapados con ••••• ===== */
-body.hidebal .total,body.hidebal .nc-sub,body.hidebal .a-amt,body.hidebal .a-usd{font-size:0 !important}
+/* `.total` es del panel viejo; el total de ahora vive en la tarjeta KPI #total-usd.
+   Si se olvida, el saldo general se queda a la vista con el ojito activado. */
+body.hidebal .total,body.hidebal #total-usd,body.hidebal .nc-sub,body.hidebal .a-amt,body.hidebal .a-usd{font-size:0 !important}
 body.hidebal .total::after{content:'•••••';font-size:38px;font-weight:800}
+body.hidebal #total-usd::after{content:'•••••';font-size:25px;font-weight:800}
 body.hidebal .nc-sub::after{content:'•••••';font-size:15px;font-weight:800}
 body.hidebal .a-amt::after{content:'•••••';font-size:13px}
 body.hidebal .a-usd::after{content:'••••';font-size:13px}
 body.hidebal .a-chg,body.hidebal .legend,body.hidebal .perline,body.hidebal #br-tokhint{display:none !important}
+/* El aviso de gas lleva el saldo dentro del texto ("... para gas (0.00)"), así que también se oculta. */
+body.hidebal #gas-warn{display:none !important}
 body.hidebal .sr-bal{visibility:hidden}
 
 /* Vista ampliada: una wallet ocupa todo el dashboard para trabajar con ella */
@@ -560,3 +565,8 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .visor-tarj .nc-head .chev{display:none}
 .visor-nota{margin:-6px 0 12px 2px}
 .vf-rotado{margin-top:4px;line-height:1.4}
+
+/* requestKey del historial: se puede pinchar para ver la tx en la cadena */
+.rklink{background:none;border:none;padding:0;font:inherit;color:var(--kda-d);
+        cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+.rklink:hover{text-decoration:underline solid}
