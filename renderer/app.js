@@ -185,6 +185,11 @@ const LANG = {
     upd_new: 'Nueva versión <b>v{v}</b> disponible.', upd_now: 'Actualizar ahora',
     upd_latest: 'Estás en la última versión (v{v}).', upd_nocheck: 'No pude comprobar (¿sin conexión o servidor?).',
     hist_title: 'Historial de operaciones', close: 'cerrar', export_csv: '⬇ CSV',
+    tx_ver: 'Ver lo que quedó escrito en la cadena', tx_title: 'Transacción en la cadena',
+    tx_loading: 'Consultando el nodo…', tx_nohay: 'El nodo no tiene esta transacción. Puede que aún no se haya minado, que sea de otra red, o que el nodo ya no la conserve.',
+    tx_estado: 'Estado', tx_ok: '✅ Ejecutada', tx_ko: '❌ Revertida', tx_result: 'Resultado',
+    tx_error: 'Motivo del fallo', tx_gas: 'Gas gastado', tx_eventos: 'Eventos',
+    tx_chain: 'Chain', tx_nodo: 'Consultado a', tx_buscada: 'Buscada en:',
     addr_confirm: 'He verificado que la dirección de destino es correcta',
     addrbook: 'Libreta de direcciones', add: 'Añadir',
     addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
@@ -478,6 +483,11 @@ const LANG = {
     upd_new: 'New version <b>v{v}</b> available.', upd_now: 'Update now',
     upd_latest: 'You are on the latest version (v{v}).', upd_nocheck: 'Could not check (offline or server down?).',
     hist_title: 'Operation history', close: 'close', export_csv: '⬇ CSV',
+    tx_ver: 'See what was written on chain', tx_title: 'Transaction on chain',
+    tx_loading: 'Querying the node…', tx_nohay: 'The node does not have this transaction. It may not be mined yet, it may be from another network, or the node no longer keeps it.',
+    tx_estado: 'Status', tx_ok: '✅ Executed', tx_ko: '❌ Reverted', tx_result: 'Result',
+    tx_error: 'Failure reason', tx_gas: 'Gas spent', tx_eventos: 'Events',
+    tx_chain: 'Chain', tx_nodo: 'Queried at', tx_buscada: 'Searched in:',
     addr_confirm: 'I have verified the destination address is correct',
     addrbook: 'Address book', add: 'Add',
     addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
@@ -2079,8 +2089,62 @@ async function refreshHistory() {
     // on-chain: campos estructurados (amt/chain se fuerzan a número); locales EVM/puente usan title/sub
     const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${esc(Number(h.amt))} ${esc(h.tok)}` : esc(h.title);
     const sub = h.dir ? `${esc(h.wlabel)} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${esc(h.other)} · chain ${esc(Number(h.chain))}` : esc(h.sub);
-    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${esc(fecha)}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + idShort : ''}</div></div>${h.id ? `<button class="copy" data-ct="${esc(h.id)}" title="${t('ttl_copy_id')}">⧉</button>` : ''}</div>`;
+    // solo las de Kadena se pueden consultar en el nodo: las locales (EVM y
+    // puente) llevan un id que no es un requestKey de Chainweb
+    const verable = !!(h.dir && h.id && h.chain !== undefined && h.chain !== null);
+    return `<div class="hrow"><div class="hi">${HIST_ICON[h.kind] || '•'}</div><div class="hmeta"><div class="hd">${title}</div><div class="hx muted">${esc(fecha)}${sub ? ' · ' + sub : ''}${idShort ? ' · ' + (verable ? `<button class="rklink" data-rk="${esc(h.id)}" data-ch="${esc(Number(h.chain))}" title="${t('tx_ver')}">${idShort}</button>` : idShort) : ''}</div></div>${h.id ? `<button class="copy" data-ct="${esc(h.id)}" title="${t('ttl_copy_id')}">⧉</button>` : ''}</div>`;
   }).join('') : `<div class="muted xs" style="padding:10px 2px">${t('hist_empty')}</div>`;
+  $('hist-list').querySelectorAll('.rklink').forEach(b => {
+    b.onclick = () => verTx(b.dataset.rk, b.dataset.ch);
+  });
+}
+
+// Ficha de una transaccion, leida del nodo en el momento. Nada se guarda: es lo
+// que la cadena dice AHORA, que es la unica version que cuenta.
+async function verTx(rk, chain) {
+  const ov = document.createElement('div');
+  ov.className = 'modal'; ov.id = 'modal-tx';
+  ov.innerHTML = `<div class="card ancha"><h2>${t('tx_title')}</h2>
+    <div id="tx-body" class="muted xs">${t('tx_loading')}</div>
+    <div class="row" style="margin-top:12px"><button class="ghost" id="tx-close">${t('close')}</button></div></div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target === ov) ov.remove(); };
+  $('tx-close').onclick = () => ov.remove();
+  let d = null;
+  try { d = await window.api.txInfo(rk, chain); }
+  catch (e) { $('tx-body').innerHTML = `<div class="msg err">${esc(cleanErr(e))}</div>`; return; }
+  const cuerpo = $('tx-body'); if (!cuerpo) return;
+  if (!d.encontrada) {
+    cuerpo.innerHTML = `<div class="msg warn">${t('tx_nohay')}</div>` + txPie(d);
+    return;
+  }
+  const r = d.datos || {};
+  const res = r.result || {};
+  const ok = res.status === 'success';
+  const err = res.error || {};
+  const evs = Array.isArray(r.events) ? r.events : [];
+  const fila = (k, v) => `<div class="hrow"><div class="hmeta"><div class="hx muted">${esc(k)}</div>
+      <div class="hd" style="word-break:break-all;font-size:13px">${v}</div></div></div>`;
+  cuerpo.innerHTML =
+    fila(t('tx_estado'), `<b style="color:${ok ? 'var(--ok,#16a34a)' : 'var(--err,#dc2626)'}">${ok ? t('tx_ok') : t('tx_ko')}</b>`) +
+    (ok ? fila(t('tx_result'), `<code>${esc(JSON.stringify(res.data))}</code>`)
+        : fila(t('tx_error'), `<code>${esc(String(err.message || JSON.stringify(err)))}</code>`)) +
+    fila(t('tx_gas'), esc(String(r.gas))) +
+    (r.txId !== undefined && r.txId !== null ? fila('txId', esc(String(r.txId))) : '') +
+    (evs.length ? fila(t('tx_eventos'), evs.map(ev =>
+        `<div style="margin-bottom:4px"><b>${esc(ev.module ? (ev.module.namespace ? ev.module.namespace + '.' : '') + ev.module.name + '.' : '')}${esc(ev.name || '')}</b>
+         <span class="muted xs">${esc(JSON.stringify(ev.params))}</span></div>`).join('')) : '') +
+    fila('requestKey', `<code>${esc(d.requestKey)}</code>`) +
+    txPie(d);
+}
+function txPie(d) {
+  const donde = d.encontrada
+    ? `${t('tx_nodo')} <code>${esc(String(d.nodo))}</code>`
+    : (Array.isArray(d.buscadaEn) && d.buscadaEn.length
+        ? `${t('tx_buscada')} ${esc(d.buscadaEn.join(', '))}` : '');
+  return `<div class="muted xs" style="margin-top:10px;line-height:1.6">
+    ${t('tx_chain')} ${esc(String(d.chain))}${d.encontrada ? ` · ${esc(String(d.red))} (${esc(String(d.networkId))})` : ''}<br>
+    ${donde}${d.fallos ? `<br><span style="color:var(--warn,#b45309)">${esc(d.fallos.join(' · '))}</span>` : ''}</div>`;
 }
 function fillHistWallet() {
   $('hist-wallet').innerHTML = WALLETS.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
