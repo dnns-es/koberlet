@@ -49,7 +49,10 @@ const DEFAULT_CONFIG = {
       { key: 'fork', name: 'Kadena', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true,
         nft: { ledger: 'marmalade-v2.ledger', chain: '0', descubridor: null, pasarela: 'https://ipfs.io/ipfs/' },
         tokens: [
-          { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null }
+          { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null },
+          // SPT (Smart Pacts, de Alex): fungible-v2 + fungible-xchain-v1, sin mint, 100.000 emitidos
+          // de una vez. La venta directa (SPT-launch) vive en la chain 0, así que el saldo se mira ahí.
+          { module: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT', symbol: 'SPT', precision: 12, chain: 0, cg: null }
         ] },
       // El descubridor es el CATÁLOGO PÚBLICO de piezas de la tienda (sin `?cuenta=`):
       // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
@@ -1114,6 +1117,53 @@ async function fetchAccountTxs(account) {
   return prev; // sin indexador: devuelve lo cacheado (resiliente a caídas)
 }
 // Historial de UNA wallet (la seleccionada): on-chain de su cuenta KDA vía kdaindex + local (EVM/puente de esa wallet).
+// Lo que el nodo guarda de una transaccion ya minada: estado, gas, resultado y
+// eventos. Es una consulta SUELTA a /poll, sin reintentos ni esperas: la tx ya
+// paso, o esta o no esta. (kda.pollResult es para esperar a una recien enviada:
+// duerme 3 s antes del primer intento y reintenta 12 veces.)
+ipcMain.handle('tx:info', async (_e, { requestKey, chain, redKey } = {}) => {
+    const rk = String(requestKey || '').trim();
+    if (!/^[A-Za-z0-9_-]{40,50}$/.test(rk)) throw new Error('requestKey no valido.');
+    const ch = String(chain === undefined || chain === null ? '' : chain).trim();
+    if (!/^([0-9]|1[0-9])$/.test(ch)) throw new Error('chain no valida (0-19).');
+    const c = loadConfig();
+    // Se busca en TODAS las redes definidas, no solo en la activa: se trabaja a
+    // ratos en devnet y a ratos en el fork, y el usuario no tiene por que saber
+    // de cual era una transaccion para poder mirarla. Orden: la pedida, luego
+    // las habilitadas, luego el resto. Se para en la primera que la tenga.
+    const todas = c.kda.networks || [];
+    const pedida = redKdaPorClave(redKey);
+    const orden = [];
+    for (const r of [pedida, ...todas.filter(r => r.enabled), ...todas]) {
+        if (r && !orden.some(x => x.key === r.key)) orden.push(r);
+    }
+    if (!orden.length) throw new Error('No hay redes de Kadena configuradas.');
+    const fallos = [];
+    for (const red of orden) {
+        const url = `${red.node}/chainweb/0.0/${red.networkId}/chain/${ch}/pact/api/v1/poll`;
+        try {
+            const res = await fetch(url, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ requestKeys: [rk] }),
+                signal: AbortSignal.timeout(12000)
+            });
+            const j = await res.json();
+            const ent = j && j[rk];
+            if (ent) {
+                return { encontrada: true, requestKey: rk, chain: ch, red: red.name,
+                         nodo: red.node, networkId: red.networkId, datos: ent,
+                         buscadaEn: orden.map(r => r.name) };
+            }
+        } catch (e) {
+            fallos.push(`${red.name}: ${String(e.message || e).slice(0, 60)}`);
+        }
+    }
+    return { encontrada: false, requestKey: rk, chain: ch,
+             red: orden[0].name, nodo: orden[0].node, networkId: orden[0].networkId,
+             datos: null, buscadaEn: orden.map(r => r.name),
+             fallos: fallos.length ? fallos : null };
+});
+
 ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
   const out = [];
   if (!unlocked) return out;
