@@ -85,6 +85,7 @@ const DEFAULT_CONFIG = {
     red: 'fork',
     modulo: 'free.ksw-dca2',
     moduloOrdenes: 'free.ksw2',   // ordenes limite, para el resumen del Panel
+    gasolinera: 'free.ksw-gasolinera',   // paga el gas de las operaciones del DCA
     tokens: {
       KDA: { modulo: 'coin', precision: 12, minCuota: 100 },
       'kb-USDC': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-USDC', precision: 6, minCuota: 1 }
@@ -812,7 +813,7 @@ function cfgDca() {
   const c = loadConfig();
   const net = c.kda.networks.find(n => n.key === c.dca.red) || c.kda.networks.find(n => n.fork);
   if (!net) throw new Error('La red del DCA no esta configurada.');
-  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes }, c, net };
+  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes, gasolinera: c.dca.gasolinera }, c, net };
 }
 // Precisiones por modulo, para el decimal canonico del topup.
 function precisionesDca(c) {
@@ -875,22 +876,25 @@ ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, 
   const { cfg, c } = cfgDca();
   const tIn = c.dca.tokens[de], tOut = c.dca.tokens[a];
   if (!tIn || !tOut) throw new Error('Ese par no esta soportado por el DCA.');
-  return dca.crearPlan(cfg, { owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret,
+  const rc = await dca.crearPlan(cfg, { owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret,
     tokenIn: tIn.modulo, tokenOut: tOut.modulo, precIn: tIn.precision,
     deposito, cuota, periodo, slippage });
+  return { ...rc, chain: cfg.chain };   // el renderer necesita la chain para sondear
 });
 ipcMain.handle('dca:recargar', async (_e, { passphrase, walletId, id, cantidad } = {}) => {
   const w = walletDca(walletId);
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
   const { cfg, c } = cfgDca();
-  return dca.recargar(cfg, { id, cantidad, owner: w.kda.account, publicHex: w.kda.public,
+  const rr = await dca.recargar(cfg, { id, cantidad, owner: w.kda.account, publicHex: w.kda.public,
     secretHex: w.kda.secret, precisiones: precisionesDca(c) });
+  return { ...rr, chain: cfg.chain };
 });
 ipcMain.handle('dca:accion', async (_e, { passphrase, walletId, id, que } = {}) => {
   const w = walletDca(walletId);
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
   const { cfg } = cfgDca();
-  return dca.accion(cfg, { id, que, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
+  const ra = await dca.accion(cfg, { id, que, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
+  return { ...ra, chain: cfg.chain };
 });
 
 // ---- Cambio de token en Ethereum (Uniswap V3) ----
