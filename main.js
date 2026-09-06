@@ -698,6 +698,12 @@ ipcMain.handle('wallet:export', (_e, { passphrase, walletId, chain }) => {
   return { chain, secret: acc.secret, public: acc.public, id: chain === 'kda' ? acc.account : acc.address };
 });
 
+// Por que falló una red, en corto y legible. Antes esto se tiraba a la basura y la tarjeta
+// solo decia "sin conexion", que ademas mentia: cualquier excepcion pinta ese cartel, tambien
+// las que no llegan a tocar la red. Sin el motivo no hay forma de distinguir un nodo caido de
+// un fallo nuestro, ni para el usuario ni para quien da soporte.
+const motivo = (e) => String((e && (e.shortMessage || e.message)) || e || 'error').replace(/\s+/g, ' ').slice(0, 160);
+
 // Dashboard: un BLOQUE (tarjeta) por cada red de cada wallet visible. Varias wallets a la vez.
 ipcMain.handle('balances', async () => {
   if (!unlocked) throw new Error('bloqueado');
@@ -726,7 +732,7 @@ ipcMain.handle('balances', async () => {
           const usd = net.key === 'devnet' ? 0 : k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
           total += usd;
-        } catch (_) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: 0, perChain: {}, tokens: [], usd: 0, error: true }); }
+        } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: 0, perChain: {}, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
       }
     } else if (w.kind === 'evm' && w.eth) {
       for (const n of c.evm.filter(x => x.enabled && !modoPruebas)) {
@@ -737,7 +743,7 @@ ipcMain.handle('balances', async () => {
           const usd = nativeUsd + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'evm', key: n.key, name: n.name, color: n.color, symbol: n.symbol, address: w.eth.address, native: b.native, nativeUsd, tokens, usd });
           total += usd;
-        } catch (_) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'evm', key: n.key, name: n.name, color: n.color, symbol: n.symbol, address: w.eth.address, native: 0, nativeUsd: 0, tokens: [], usd: 0, error: true }); }
+        } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'evm', key: n.key, name: n.name, color: n.color, symbol: n.symbol, address: w.eth.address, native: 0, nativeUsd: 0, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
       }
     }
   }
