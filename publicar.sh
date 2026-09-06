@@ -14,10 +14,22 @@ set -e
 cd "$(dirname "$0")"
 
 VER=$(node -p "require('./package.json').version")
-LLAVE=~/.ssh/vpsfran
-SRV=root@vpsfran.dnns.es
-DIR=/opt/descargas/kob7t2m9x4/koberlet
-BASE=https://descargas.dnns.es/kob7t2m9x4/koberlet
+
+# El destino de publicacion NO va en el repositorio: son datos del servidor de DNNS y
+# a quien clone Koberlet no le sirven de nada. Salen de .publicar.conf, que git ignora.
+# Copia .publicar.conf.ejemplo a .publicar.conf y rellenalo con lo tuyo.
+if [ -f .publicar.conf ]; then
+  . ./.publicar.conf
+else
+  echo "ERROR: falta .publicar.conf (destino de publicacion)."
+  echo "       Copia la plantilla y rellenala:  cp .publicar.conf.ejemplo .publicar.conf"
+  exit 1
+fi
+: "${LLAVE:?falta LLAVE en .publicar.conf}"
+: "${SRV:?falta SRV en .publicar.conf}"
+: "${DIR:?falta DIR en .publicar.conf}"
+: "${BASE:?falta BASE en .publicar.conf}"
+
 SOLO_APP=0
 [ "$1" = "--solo-app" ] && SOLO_APP=1
 
@@ -95,6 +107,10 @@ echo "--- comprobando que el paquete funciona ---"
 rm -rf .publicar-tmp/humo && mkdir -p .publicar-tmp/humo
 ( cd .publicar-tmp/humo && unzip -q "$APPZIP" )
 VER_ESPERADA="$VER" node comprobar-paquete.js .publicar-tmp/humo/app | sed "s/^/  /"
+# OJO: con el pipe, `set -e` mira el codigo de `sed` (siempre 0), no el del comprobador.
+# Sin esta linea el freno no frena: el 05/09/2026 se publico con 15 fallos en la
+# comprobacion y el script siguio adelante tan tranquilo.
+[ "${PIPESTATUS[0]}" = "0" ] || { echo "ERROR: el paquete NO pasa la comprobacion de humo. No se sube nada."; exit 1; }
 
 # --- 2. Copia de seguridad del latest.json ANTES de tocar produccion ---
 TS=$(date -u +%Y%m%d-%H%M%S)
