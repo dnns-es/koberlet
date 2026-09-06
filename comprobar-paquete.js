@@ -17,10 +17,14 @@
 const path = require('path');
 const fs = require('fs');
 
-const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup'];
+const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup', 'devnet-publico'];
 
 async function main() {
-  const raiz = process.argv[2];
+  // La ruta se resuelve a ABSOLUTA aqui. Con una relativa sin './' -como la que manda
+  // publicar.sh-, `require()` la toma por el nombre de un paquete y todas las libs
+  // salian 'Cannot find module': el comprobador decia que el paquete estaba roto
+  // cuando el roto era el comprobador.
+  const raiz = process.argv[2] ? path.resolve(process.argv[2]) : null;
   if (!raiz || !fs.existsSync(path.join(raiz, 'main.js'))) {
     console.error('uso: node comprobar-paquete.js <carpeta con main.js>');
     return 2;

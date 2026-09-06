@@ -11,10 +11,14 @@ const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
 const dca = require('./lib/dca');
+const ordenes = require('./lib/ordenes');
 const observadas = require('./lib/observadas');
+const launch = require('./lib/launch');
+const dex = require('./lib/dex');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const ktime = require('./lib/kdatime');
+const devnetPub = require('./lib/devnet-publico');
 const QRCode = require('qrcode');
 // Ledger: carga PEREZOSA (node-hid es un módulo nativo; si fallara en algún equipo, la app debe arrancar igual).
 let _ledger = null;
@@ -93,6 +97,28 @@ const DEFAULT_CONFIG = {
     comision: 0.005,        // 0,5% del contrato por compra, ademas del 0,3% del pool
     web: 'https://koberlusw.dnns.es'   // para consultarlo desde el movil
   },
+  // VENTAS DIRECTAS (Launch). Un token a precio fijo contra su contrato: sin pool,
+  // sin deslizamiento y sin comision. Anadir otra venta es una entrada mas aqui, no
+  // codigo. El renderer elige por `clave` y nunca manda direcciones de contrato.
+  launch: {
+    red: 'fork',
+    ventas: [
+      {
+        clave: 'spt',
+        nombre: 'SPT · Smart Pacts',
+        simbolo: 'SPT',
+        modulo: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT-launch',
+        token: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT',
+        precision: 12,
+        chain: '0',                    // OJO: la venta vive en la 0, Koberlet opera en la 2
+        de: 'Alex, de la comunidad de Pact',
+        web: 'https://koberlusw.dnns.es',
+        // Riesgos que la ficha DEBE ensenar. No son adorno: el contrato no esta
+        // congelado y su keyset de gobierno puede cambiarlo despues de que compres.
+        avisos: ['no_congelado', 'precio_variable', 'otra_chain']
+      }
+    ]
+  },
   // Cambios permitidos en Ethereum (Uniswap V3). Sirve sobre todo para pasar USDT a USDC
   // ANTES de cruzar el puente: en Kadena el unico token con mercado es kb-USDC, asi que un
   // USDT que llegue como kb-USDT no se puede cambiar a KDA (no existe ese pool en kaddex).
@@ -167,6 +193,7 @@ const loadConfig = () => {
     c.kdaSimple = true;
     try { saveConfig(c); } catch (_) { /* si aún no se puede escribir, se persistirá al siguiente guardado */ }
   }
+  c.launch = DEFAULT_CONFIG.launch;     // el catalogo de ventas es fijo del codigo
   c.dca = DEFAULT_CONFIG.dca;           // modulo y tokens del DCA: fijos del codigo
   c.evmSwap = DEFAULT_CONFIG.evmSwap;   // el catalogo de cambios es fijo del codigo, como el puente
   c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
@@ -717,13 +744,9 @@ ipcMain.handle('balances', async () => {
   return { blocks, total, modoPruebas };
 });
 
-// Grifo de la Devnet: sender00 (cuenta de desarrollo con claves PÚBLICAS, solo existe en la devnet) regala KDA de prueba.
-const GRIFO_DEVNET = {
-  from: 'sender00',
-  pub: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca',
-  sec: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898',
-  cantidad: 1000, chain: 0
-};
+// Grifo de la Devnet: sender00 regala KDA de prueba. Sus claves son PÚBLICAS y de
+// desarrollo (ver lib/devnet-publico.js); solo sirven en la devnet.
+const GRIFO_DEVNET = devnetPub.GRIFO;
 ipcMain.handle('devnet:faucet', async (_e, { walletId }) => {
   if (!unlocked) throw new Error('bloqueado');
   const c = loadConfig();
@@ -897,6 +920,178 @@ ipcMain.handle('dca:accion', async (_e, { passphrase, walletId, id, que } = {}) 
   return { ...ra, chain: cfg.chain };
 });
 
+// ---- ORDENES LIMITE de KoberluSW (contrato free.ksw2) ----
+// Koberlet crea y cancela; la ejecucion la dispara el vigilante de KoberluSW pagando
+// su propio gas. El contrato re-comprueba precio y minimo, asi que depender de un
+// vigilante ajeno no le da ningun poder sobre el dinero.
+//
+// El par va fijo porque el contrato solo admite dos tokens (ALLOWED-TOKENS): coin y
+// kb-USDC. Se arma desde la config del DCA para no repetir el modulo del token.
+function parOrdenes(c) {
+  const k = c.dca.tokens.KDA, u = c.dca.tokens['kb-USDC'];
+  return {
+    kda: { modulo: k.modulo, precision: k.precision, simbolo: 'KDA' },
+    usdc: { modulo: u.modulo, precision: u.precision, simbolo: 'kb-USDC' }
+  };
+}
+ipcMain.handle('ord:estado', async (_e, { walletId } = {}) => {
+  const { cfg, c } = cfgDca();
+  const par = parOrdenes(c);
+  const w = (unlocked && (unlocked.data.wallets.find(x => x.id === walletId) || active())) || null;
+  const cuenta = w && w.kda ? w.kda.account : null;
+  // list-open trae las ordenes de todo el mundo: se pide UNA vez y de ahi salen tanto
+  // las del usuario como el libro publico, en vez de leer la cadena dos veces.
+  const [todas, pausa, lim, res] = await Promise.all([
+    ordenes.todas(cfg, par).catch(() => []),
+    ordenes.pausado(cfg).catch(() => null),
+    ordenes.limites(cfg).catch(() => null),
+    ordenes.reservas(cfg, par).catch(() => null)
+  ]);
+  return {
+    cuenta, pausado: pausa, limites: lim,
+    precio: res ? res.precio : null,
+    mias: cuenta ? todas.filter(o => String(o.owner) === String(cuenta)) : [],
+    // El libro es publico y ANONIMO: se ensena que hay, no de quien es.
+    libro: todas.map(o => ({ lado: o.lado, cantidad: o.cantidad, precio: o.precio, minimo: o.minimo, simIn: o.simIn, simOut: o.simOut })),
+    web: c.dca.web
+  };
+});
+ipcMain.handle('ord:cotizar', async (_e, { direccion, cantidad, precio, slippage } = {}) => {
+  const { cfg, c } = cfgDca();
+  const q = await ordenes.cotizar(cfg, { par: parOrdenes(c), direccion, cantidad, precio, slippage });
+  // El renderer no necesita los modulos del token, solo el simbolo para pintarlo.
+  return { ...q, tokenIn: q.tokenIn.simbolo, tokenOut: q.tokenOut.simbolo };
+});
+ipcMain.handle('ord:crear', async (_e, { passphrase, walletId, direccion, cantidad, precio, slippage } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg, c } = cfgDca();
+  const r = await ordenes.crearOrden(cfg, {
+    par: parOrdenes(c), direccion, cantidad, precio, slippage,
+    owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret
+  });
+  return { requestKey: r.requestKey, id: r.id, chain: cfg.chain };
+});
+ipcMain.handle('ord:cancelar', async (_e, { passphrase, walletId, id } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg } = cfgDca();
+  const r = await ordenes.cancelarOrden(cfg, { id, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
+  return { ...r, chain: cfg.chain };
+});
+
+// ---- MERCADO KADENA: cualquier token del DEX contra cualquier otro ----
+// El catalogo NO esta escrito en ningun sitio: se lee de la cadena cada vez, porque
+// en este DEX los pares aparecen y se secan solos. Se cachea un minuto para no
+// castigar al nodo mientras el usuario teclea la cantidad.
+let MERCADO_CACHE = null;
+function cfgDex() {
+  const c = loadConfig();
+  const net = c.kda.networks.find(n => n.enabled && n.fork);
+  if (!net) throw new Error('La red del fork no esta activa.');
+  return { node: net.node, networkId: net.networkId, chain: '2' };
+}
+async function mercadoDex(forzar) {
+  const cfg = cfgDex();
+  if (!forzar && MERCADO_CACHE && Date.now() - MERCADO_CACHE.ts < 60000) return MERCADO_CACHE;
+  const m = await dex.mercado(cfg);
+  MERCADO_CACHE = { ts: Date.now(), m, cfg };
+  return MERCADO_CACHE;
+}
+ipcMain.handle('dex:tokens', async (_e, { forzar } = {}) => {
+  const { m } = await mercadoDex(forzar);
+  // Se manda la lista tal cual esta en la cadena, con el fondo, para que la pantalla
+  // pueda avisar de los charcos. KDA va primero: es la moneda de la casa.
+  return {
+    kda: { modulo: 'coin', simbolo: 'KDA', fondoKda: null },
+    tokens: m.tokens.map(t => ({ modulo: t.modulo, simbolo: t.simbolo, fondoKda: t.fondoKda, precioKda: t.precioKda })),
+    fondoMin: dex.FONDO_MIN, impactoMax: dex.IMPACTO_MAX
+  };
+});
+ipcMain.handle('dex:cotizar', async (_e, { de, a, cantidad, slippage } = {}) => {
+  const { m, cfg } = await mercadoDex(false);
+  const q = await dex.cotizar(cfg, m, de, a, cantidad, slippage);
+  return {
+    esperada: q.esperada, minimo: q.minimo, minimoStr: q.minimoStr, decOut: q.decOut,
+    impacto: q.impacto, impactoMax: q.impactoMax, frenado: q.frenado, saltos: q.saltos,
+    camino: q.camino.map(x => x === 'coin' ? 'KDA' : x.split('.').pop()),
+    precioEfectivo: q.precioEfectivo, precioSpot: q.precioSpot, slippagePct: q.slippagePct,
+    fondoEntrada: q.fondoEntrada
+  };
+});
+ipcMain.handle('dex:saldo', async (_e, { walletId, modulo } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w || !w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  const cfg = cfgDex();
+  const r = await kda.local(cfg.node, cfg.networkId, cfg.chain, '(' + modulo + '.get-balance "' + w.kda.account + '")');
+  // Que no exista la fila del token no es un error: es que tienes cero.
+  if (r.status !== 'success') return { saldo: 0 };
+  const v = r.data;
+  return { saldo: Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v) || 0 };
+});
+ipcMain.handle('dex:cambiar', async (_e, { passphrase, walletId, de, a, cantidad, slippage } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w || !w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  if (w.ledger) throw new Error('Con Ledger no se puede cambiar aqui: el aparato no sabe ensenar la llamada al AMM y seria firma ciega.');
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const cfg = cfgDex();
+  const r = await dex.cambiar(cfg, { de, a, cantidad, slippage, cuenta: w.kda.account,
+                                     publicHex: w.kda.public, secretHex: w.kda.secret });
+  MERCADO_CACHE = null;               // el pool acaba de moverse: la cache ya no vale
+  logHistory({ type: 'dex', wallet: w.label, chain: 2, id: r.requestKey, to: '',
+               desc: `Cambio ${cantidad} ${r.camino.map(x => x === 'coin' ? 'KDA' : x.split('.').pop()).join(' \u2192 ')}` });
+  return r;
+});
+
+// ---- LAUNCH: ventas directas a precio fijo ----
+// La venta y el token salen del catalogo del DEFAULT; el renderer solo manda la
+// clave y la cantidad. Con Ledger esta bloqueado, como todo lo que firma contrato.
+function cfgLaunch(clave) {
+  const c = loadConfig();
+  const v = (c.launch.ventas || []).find(x => x.clave === clave);
+  if (!v) throw new Error('Esa venta no existe.');
+  const net = c.kda.networks.find(n => n.key === c.launch.red) || c.kda.networks.find(n => n.enabled && n.fork);
+  if (!net) throw new Error('La red de la venta no esta configurada.');
+  return { cfg: { node: net.node, networkId: net.networkId, chain: v.chain,
+                  modulo: v.modulo, token: v.token, precision: v.precision }, v, net };
+}
+ipcMain.handle('launch:lista', () => {
+  const c = loadConfig();
+  return (c.launch.ventas || []).map(v => ({ clave: v.clave, nombre: v.nombre, simbolo: v.simbolo,
+    chain: v.chain, de: v.de, web: v.web, avisos: v.avisos || [] }));
+});
+ipcMain.handle('launch:estado', async (_e, { clave } = {}) => {
+  const { cfg, v } = cfgLaunch(clave);
+  const est = await launch.estado(cfg);
+  return Object.assign({}, est, { clave: v.clave, nombre: v.nombre, simbolo: v.simbolo,
+                                  de: v.de, web: v.web, avisos: v.avisos || [] });
+});
+ipcMain.handle('launch:saldo', async (_e, { clave, walletId } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w || !w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  const { cfg } = cfgLaunch(clave);
+  // Lo que importa aqui es el KDA EN LA CHAIN DE LA VENTA, no el total.
+  const enChain = await kda.getBalance(w.kda.account, { node: cfg.node, networkId: cfg.networkId, chains: [Number(cfg.chain)] });
+  const todas = await kda.getBalance(w.kda.account, { node: cfg.node, networkId: cfg.networkId });
+  return { cuenta: w.kda.account, enChain: enChain.total, total: todas.total, porChain: todas.perChain };
+});
+ipcMain.handle('launch:comprar', async (_e, { passphrase, walletId, clave, cantidad } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
+  if (!w || !w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
+  if (w.ledger) throw new Error('La compra con Ledger no esta disponible: el aparato no puede mostrar la llamada al contrato y seria firma ciega.');
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg, v } = cfgLaunch(clave);
+  const r = await launch.comprar(cfg, { comprador: w.kda.account, publicHex: w.kda.public,
+                                        secretHex: w.kda.secret, cantidad });
+  logHistory({ type: 'launch', wallet: w.label, desc: `Compra ${r.cantidad} ${v.simbolo} por ${r.coste} KDA \u00b7 chain ${r.chain}`,
+               to: '', id: r.requestKey, chain: Number(r.chain) });
+  return r;
+});
+
 // ---- Cambio de token en Ethereum (Uniswap V3) ----
 // El par SIEMPRE sale del catálogo del código: el renderer manda un símbolo, no direcciones.
 function parEvmSwap(c, deSym, aSym) {
@@ -934,10 +1129,9 @@ const NOTA_TARDA = { es: 'Está tardando más de lo normal. Tus fondos NO se han
                      en: 'This is taking longer than usual. Your funds are NOT lost: they left Kadena and the relayer will deliver them. Check your Ethereum balance again in a while.' };
 const NOTA_OK = { es: 'Recibido en Ethereum. Puente completado.', en: 'Received on Ethereum. Bridge complete.' };
 
-// Cuentas de desarrollo con claves PÚBLICAS (solo existen en la devnet): sirven de pagador de gas
-const DEV_SENDERS = {
-  sender00: { account: 'sender00', publicHex: '368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca', secretHex: '251a920c403ae8c8f65f59142316af3c82b631fba46ddea92ee8c95035bd2898' }
-};
+// Cuentas de desarrollo con claves PÚBLICAS (ver lib/devnet-publico.js): en la devnet
+// hacen de pagador de gas cuando la wallet aún no tiene saldo en la chain de destino.
+const DEV_SENDERS = { sender00: devnetPub.SENDER00 };
 ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();

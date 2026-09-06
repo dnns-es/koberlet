@@ -22,6 +22,50 @@ const LANG = {
     st_confirm: 'Vas a cambiar {a} {f} por unos {out} {t} en Uniswap. Si el precio se mueve mucho mientras tanto, la operación se cancela sola y no pierdes el dinero.',
     st_ok: 'Cambiado. Has recibido unos {out} {sym}.',
     st_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
+    nav_ordenes: 'Órdenes',
+    h_ord: 'Órdenes límite',
+    ord_sub: 'Dejas el dinero en el contrato y la operación se hace sola cuando el precio llega a tu objetivo. La firmas tú; el vigilante de KoberluSW dispara la ejecución pagando su propio gas, y el contrato vuelve a comprobar el precio antes de soltar nada. Puedes cancelar cuando quieras y recuperas el depósito entero.',
+    ord_nueva: 'Nueva orden',
+    ord_entregas: 'Entregas',
+    ord_recibes: 'Recibes',
+    ord_cantidad: 'Cantidad',
+    ord_precio: 'Precio objetivo',
+    ord_slip: 'Deslizamiento máximo',
+    ord_caduca: 'Caducidad',
+    ord_caduca_no: 'No caduca: vive hasta que se ejecute o la canceles.',
+    ord_crear: 'Crear orden',
+    ord_crear_venta: 'Crear venta vigilada',
+    ord_crear_compra: 'Crear compra vigilada',
+    ord_mias: 'Mis órdenes abiertas',
+    ord_libro: 'Libro de órdenes',
+    ord_anon: '· anónimo, de todo el mundo',
+    ord_leyendo: 'Leyendo las órdenes de la cadena…',
+    ord_pausado_global: 'El contrato de órdenes está pausado ahora mismo. No se pueden crear órdenes nuevas; cancelar sí funciona.',
+    ord_sin_ordenes: 'No tienes ninguna orden abierta.',
+    ord_sin_libro: 'No hay ninguna orden abierta ahora mismo.',
+    ord_cuenta: '({n} abiertas)',
+    ord_spot: 'Mercado ahora: {p} kb-USDC por KDA',
+    ord_lbl_cant: 'Cantidad ({s})',
+    ord_lbl_precio: 'Precio objetivo (kb-USDC por KDA)',
+    ord_min: 'La orden mínima es {m} {s}.',
+    ord_resumen_venta: 'Se venderán {c} KDA cuando 1 KDA llegue a {p} kb-USDC. Recibirás al menos {m} kb-USDC. Comisión del contrato: {f} KDA, además del 0,3% del pool.',
+    ord_resumen_compra: 'Se comprarán KDA con {c} kb-USDC cuando 1 KDA baje a {p} kb-USDC. Recibirás al menos {m} KDA. Comisión del contrato: {f} kb-USDC, además del 0,3% del pool.',
+    ord_impacto: ' Impacto estimado en el pool: {i}%.',
+    ord_ya_pasa: 'Ojo: ese precio ya se cumple ahora mismo, así que la orden se ejecutará en cuanto el vigilante la vea.',
+    ord_conf_venta: 'Vas a depositar {c} KDA en el contrato de órdenes. Se venderán solos cuando 1 KDA valga {p} kb-USDC, y recibirás al menos {m} kb-USDC. Puedes cancelar cuando quieras y recuperar los {c} KDA enteros.',
+    ord_conf_compra: 'Vas a depositar {c} kb-USDC en el contrato de órdenes. Comprarán KDA solos cuando 1 KDA valga {p} kb-USDC, y recibirás al menos {m} KDA. Puedes cancelar cuando quieras y recuperar los {c} kb-USDC enteros.',
+    ord_sin_cotizar: 'Espera a que salga el resumen: hasta que no sé cuánto vas a recibir, no firmo nada.',
+    ord_creada: 'Orden creada: {id}',
+    ord_cancelar: 'Cancelar',
+    ord_conf_cancelar: '¿Cancelar la orden {id} y recuperar los {c} {s} del depósito?',
+    ord_cancelada: 'Orden cancelada. El depósito vuelve a tu cuenta.',
+    ord_linea_venta: 'Vende {c} KDA a {p} kb-USDC · mínimo {m} kb-USDC',
+    ord_linea_compra: 'Compra KDA con {c} kb-USDC a {p} kb-USDC · mínimo {m} KDA',
+    ord_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
+    ord_confirmando: 'Firmada. Esperando a que la cadena la confirme…',
+    ord_confirmado: 'Confirmada en la cadena.',
+    ord_reverso: 'La cadena la rechazó. No se ha depositado nada.',
+    ord_tarda: 'Está tardando más de lo normal. Sigue su curso: mira el historial en un rato.',
     nav_dca: 'DCA',
     h_dca: 'DCA · compra periódica',
     dca_sub: 'Dejas un bote en el contrato y el vigilante de KoberluSW compra una cuota cada cierto tiempo. Lo firmas tú; Koberlet no ejecuta las compras ni custodia nada.',
@@ -133,6 +177,60 @@ const LANG = {
     dca_confirmado: 'Confirmado en la cadena.',
     dca_reverso: 'La cadena rechazó la operación. Mira el identificador en el historial para ver el motivo.',
     dca_tarda: 'Sigue sin confirmarse, pero la operación va en camino: no la repitas. Refresca dentro de un rato.',
+    nav_launch: 'Launch',
+    lz_ninguna: 'Ahora mismo no hay ninguna venta abierta.',
+    lz_leyendo: 'Leyendo la venta en la cadena…',
+    lz_abierta: 'Abierta',
+    lz_cerrada: 'Cerrada',
+    lz_precio: 'Precio',
+    lz_quedan: 'Quedan',
+    lz_chain: 'Chain',
+    lz_tienes: 'Tienes {c} KDA en la chain {ch}',
+    lz_en_otras: 'y {o} KDA repartidos por otras chains',
+    lz_cantidad: 'Cuánto {s} quieres comprar',
+    lz_max: 'Máximo',
+    lz_comprar: 'Comprar',
+    lz_coste: '{n} {s} te cuestan {k} KDA.',
+    lz_falta: 'te faltan {f} KDA en la chain {ch}. Mándalos antes desde Enviar, o la compra fallará.',
+    lz_no_hay: 'Solo quedan {r} {s} en la reserva.',
+    lz_ledger: 'Con Ledger no se puede: el aparato no sabe enseñarte la llamada al contrato, así que sería firmar a ciegas.',
+    lz_conf: 'Comprar {n} {s} por {k} KDA, en la chain {ch}.',
+    lz_conf_aviso: 'El precio y las condiciones los pone el contrato del vendedor, no Koberlet. Esto no es una recomendación de compra.',
+    lz_enviada: 'Compra enviada: {n} {s} por {k} KDA.',
+    lz_comprado: 'Compra confirmada. El token ya está en tu cuenta.',
+    lz_riesgos: 'Antes de comprar, lee esto',
+    lz_av_no_congelado: 'El contrato NO está congelado. Quien tenga la llave de gobierno puede cambiarlo después de que compres, incluido lo que el token hace o quién puede moverlo.',
+    lz_av_precio_variable: 'El precio lo fija el propio contrato y puede cambiarlo cuando quiera. El que ves es el de ahora mismo, no un compromiso.',
+    lz_av_otra_chain: 'La venta vive en esta chain y Koberlet trabaja en la 2. Aquí no basta con tener gas: necesitas el importe entero en esa chain. Puedes juntarlo desde Enviar.',
+    lz_av_ingresos: 'Tu KDA va a la cuenta {c}.',
+    lz_av_web: 'Del proyecto: {w}',
+    h_launch: 'Launch · venta directa',
+    lz_sub: 'Compras el token directamente a su contrato, al precio que tenga puesto. No hay pool ni intermediario, así que no hay deslizamiento: o queda reserva o no queda. Lee los riesgos antes de firmar.',
+    lz_venta: 'Lanzamiento',
+    lz_refrescar: 'Refrescar',
+    lz_lbl_venta: 'Venta',
+    mx_titulo: 'Cambiar',
+    mx_refrescar: 'Refrescar',
+    mx_red: 'Red',
+    mx_entregas: 'Entregas',
+    mx_recibes: 'Recibes',
+    mx_cantidad: 'Cantidad',
+    mx_cambiar: 'Cambiar',
+    mx_fondos: 'Cuánto fondo tiene cada pool',
+    mx_fondos_aviso: 'Este mercado es pequeño y hay pools con precios que no se parecen en nada a los de fuera. Fíjate en el fondo y en el impacto antes de cambiar nada.',
+    mx_atajos: 'Atajos de siempre',
+    mx_leyendo: 'Leyendo el mercado de la cadena…',
+    mx_calculando: 'Calculando…',
+    mx_recibiras: 'Recibirías unos {s} {t}',
+    mx_impacto: 'moverías el precio un {i} %',
+    mx_via: 'pasando por {c}',
+    mx_frenado: 'parado aquí: por encima del {m} % de impacto no se cambia. Prueba con menos cantidad.',
+    mx_mismos: 'Son el mismo token.',
+    mx_sin_cotizar: 'Espera a que salga el cálculo.',
+    mx_ruta_no: 'Ese cambio todavía no está montado en Ethereum. De momento solo USDC ⇄ ETH y USDT ⇄ USDC; para lo demás, pasa antes por USDC.',
+    mx_ledger: 'Con Ledger no se puede cambiar aquí: el aparato no sabe enseñarte la llamada al mercado, así que sería firmar a ciegas.',
+    mx_conf: 'Cambiar {a} {f} por unos {r} {t}.',
+    mx_hecho: 'Cambio confirmado.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
     nft_env_conf: 'Vas a enviar «{n}» a {to}. La pieza deja de ser tuya.',
@@ -324,6 +422,50 @@ const LANG = {
     st_confirm: 'You are about to swap {a} {f} for about {out} {t} on Uniswap. If the price moves too much meanwhile, the operation cancels itself and you lose nothing.',
     st_ok: 'Swapped. You received about {out} {sym}.',
     st_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
+    nav_ordenes: 'Orders',
+    h_ord: 'Limit orders',
+    ord_sub: 'You leave the money in the contract and the trade happens on its own once the price reaches your target. You sign it; the KoberluSW watcher wakes execution up paying its own gas, and the contract re-checks the price before releasing anything. You can cancel any time and get the whole deposit back.',
+    ord_nueva: 'New order',
+    ord_entregas: 'You give',
+    ord_recibes: 'You get',
+    ord_cantidad: 'Amount',
+    ord_precio: 'Target price',
+    ord_slip: 'Max slippage',
+    ord_caduca: 'Expiry',
+    ord_caduca_no: 'No expiry: it lives until it executes or you cancel it.',
+    ord_crear: 'Create order',
+    ord_crear_venta: 'Create watched sell',
+    ord_crear_compra: 'Create watched buy',
+    ord_mias: 'My open orders',
+    ord_libro: 'Order book',
+    ord_anon: '\u00b7 anonymous, everyone\u2019s',
+    ord_leyendo: 'Reading orders from the chain\u2026',
+    ord_pausado_global: 'The orders contract is paused right now. New orders cannot be created; cancelling still works.',
+    ord_sin_ordenes: 'You have no open orders.',
+    ord_sin_libro: 'There are no open orders right now.',
+    ord_cuenta: '({n} open)',
+    ord_spot: 'Market now: {p} kb-USDC per KDA',
+    ord_lbl_cant: 'Amount ({s})',
+    ord_lbl_precio: 'Target price (kb-USDC per KDA)',
+    ord_min: 'The minimum order is {m} {s}.',
+    ord_resumen_venta: '{c} KDA will be sold once 1 KDA reaches {p} kb-USDC. You will get at least {m} kb-USDC. Contract fee: {f} KDA, on top of the pool 0.3%.',
+    ord_resumen_compra: 'KDA will be bought with {c} kb-USDC once 1 KDA drops to {p} kb-USDC. You will get at least {m} KDA. Contract fee: {f} kb-USDC, on top of the pool 0.3%.',
+    ord_impacto: ' Estimated pool impact: {i}%.',
+    ord_ya_pasa: 'Heads up: that price already holds right now, so the order will execute as soon as the watcher sees it.',
+    ord_conf_venta: 'You are about to deposit {c} KDA into the orders contract. They will sell themselves once 1 KDA is worth {p} kb-USDC, and you will get at least {m} kb-USDC. You can cancel any time and get the full {c} KDA back.',
+    ord_conf_compra: 'You are about to deposit {c} kb-USDC into the orders contract. They will buy KDA on their own once 1 KDA is worth {p} kb-USDC, and you will get at least {m} KDA. You can cancel any time and get the full {c} kb-USDC back.',
+    ord_sin_cotizar: 'Wait for the summary: until I know how much you would get, I sign nothing.',
+    ord_creada: 'Order created: {id}',
+    ord_cancelar: 'Cancel',
+    ord_conf_cancelar: 'Cancel order {id} and get the {c} {s} deposit back?',
+    ord_cancelada: 'Order cancelled. The deposit is back in your account.',
+    ord_linea_venta: 'Sells {c} KDA at {p} kb-USDC \u00b7 min {m} kb-USDC',
+    ord_linea_compra: 'Buys KDA with {c} kb-USDC at {p} kb-USDC \u00b7 min {m} KDA',
+    ord_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
+    ord_confirmando: 'Signed. Waiting for the chain to confirm\u2026',
+    ord_confirmado: 'Confirmed on chain.',
+    ord_reverso: 'The chain rejected it. Nothing was deposited.',
+    ord_tarda: 'Taking longer than usual. It is still on its way: check the history in a while.',
     nav_dca: 'DCA',
     h_dca: 'DCA · recurring buys',
     dca_sub: 'You leave a pot in the contract and the KoberluSW watcher buys a slice every so often. You sign it; Koberlet neither executes the buys nor holds anything.',
@@ -435,6 +577,60 @@ const LANG = {
     dca_confirmado: 'Confirmed on chain.',
     dca_reverso: 'The chain rejected the operation. Check the ID in the history to see why.',
     dca_tarda: 'Still unconfirmed, but the operation is on its way: do not repeat it. Refresh in a while.',
+    nav_launch: 'Launch',
+    lz_ninguna: 'There is no open sale right now.',
+    lz_leyendo: 'Reading the sale from the chain…',
+    lz_abierta: 'Open',
+    lz_cerrada: 'Closed',
+    lz_precio: 'Price',
+    lz_quedan: 'Left',
+    lz_chain: 'Chain',
+    lz_tienes: 'You have {c} KDA on chain {ch}',
+    lz_en_otras: 'and {o} KDA spread across other chains',
+    lz_cantidad: 'How much {s} do you want',
+    lz_max: 'Max',
+    lz_comprar: 'Buy',
+    lz_coste: '{n} {s} cost you {k} KDA.',
+    lz_falta: 'you are {f} KDA short on chain {ch}. Send them from Send first, or the purchase will fail.',
+    lz_no_hay: 'Only {r} {s} left in the reserve.',
+    lz_ledger: 'Not available with Ledger: the device cannot show you the contract call, so it would be blind signing.',
+    lz_conf: 'Buy {n} {s} for {k} KDA, on chain {ch}.',
+    lz_conf_aviso: 'The price and terms are set by the seller\'s contract, not by Koberlet. This is not investment advice.',
+    lz_enviada: 'Purchase sent: {n} {s} for {k} KDA.',
+    lz_comprado: 'Purchase confirmed. The token is in your account.',
+    lz_riesgos: 'Read this before buying',
+    lz_av_no_congelado: 'The contract is NOT frozen. Whoever holds the governance key can change it after you buy — including what the token does and who can move it.',
+    lz_av_precio_variable: 'The price is set by the contract itself and can change at any time. What you see is the price right now, not a commitment.',
+    lz_av_otra_chain: 'The sale lives on this chain and Koberlet works on chain 2. Gas is not enough here: you need the full amount on that chain. You can gather it from Send.',
+    lz_av_ingresos: 'Your KDA goes to account {c}.',
+    lz_av_web: 'Project: {w}',
+    h_launch: 'Launch · direct sale',
+    lz_sub: 'You buy the token straight from its contract, at whatever price it has set. No pool, no middleman, so there is no slippage: either there is reserve left or there is not. Read the risks before signing.',
+    lz_venta: 'Launch',
+    lz_refrescar: 'Refresh',
+    lz_lbl_venta: 'Sale',
+    mx_titulo: 'Swap',
+    mx_refrescar: 'Refresh',
+    mx_red: 'Network',
+    mx_entregas: 'You give',
+    mx_recibes: 'You get',
+    mx_cantidad: 'Amount',
+    mx_cambiar: 'Swap',
+    mx_fondos: 'How deep each pool is',
+    mx_fondos_aviso: 'This market is small and some pools have prices nothing like the ones outside. Look at the depth and the impact before swapping anything.',
+    mx_atajos: 'The usual shortcuts',
+    mx_leyendo: 'Reading the market from the chain…',
+    mx_calculando: 'Working it out…',
+    mx_recibiras: 'You would get about {s} {t}',
+    mx_impacto: 'you would move the price by {i} %',
+    mx_via: 'routed through {c}',
+    mx_frenado: 'stopped here: above {m} % impact the swap is blocked. Try a smaller amount.',
+    mx_mismos: 'Those are the same token.',
+    mx_sin_cotizar: 'Wait for the quote.',
+    mx_ruta_no: 'That swap is not wired up on Ethereum yet. For now only USDC ⇄ ETH and USDT ⇄ USDC; for anything else, go through USDC first.',
+    mx_ledger: 'Not available with Ledger: the device cannot show you the market call, so it would be blind signing.',
+    mx_conf: 'Swap {a} {f} for about {r} {t}.',
+    mx_hecho: 'Swap confirmed.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
     nft_env_conf: 'You are about to send «{n}» to {to}. The piece will no longer be yours.',
@@ -712,7 +908,7 @@ function initConverter() {
 document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG === 'es' ? 'en' : 'es'));
 
 function screen(name) { ['scr-setup', 'scr-unlock', 'scr-visor'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
-function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'dca', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
+function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'dca', 'ordenes', 'launch', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
 
 // Opciones de red para crear/importar: KDA + cada red EVM. value = 'kda' o 'evm:<key>'.
 function netOptions() { return '<option value="kda">Kadena (KDA)</option>' + CFG.evm.map(n => `<option value="evm:${n.key}">${n.name}</option>`).join(''); }
@@ -1227,6 +1423,203 @@ function pintarDisponible(idZona, walletId, simbolo) {
     el.innerHTML = t('mk_disponible') + ' <b>' + (v === null ? '—' : fmtCorto(v, 6)) + '</b>';
 }
 
+// ===== MERCADO: dos desplegables, la red arriba =====
+// En Kadena la lista NO esta escrita en el codigo: se lee el DEX entero de la cadena cada
+// vez, porque aqui los pares aparecen y se secan solos. Se ensena el fondo de cada pool
+// junto al nombre, y se frena en seco por encima del 10% de impacto.
+//
+// En Ethereum solo hay las rutas que estan probadas de verdad (USDC/ETH y USDT/USDC). Si
+// se pide una que no existe se dice claramente, en vez de inventar un camino sin probar.
+const MX = { red: 'kda', tokens: [], de: 'coin', a: null, q: null, cargando: false, fondoMin: 1000, impactoMax: 10 };
+const MX_ETH = [
+  { sim: 'ETH', mod: 'ETH' }, { sim: 'USDC', mod: 'USDC' }, { sim: 'USDT', mod: 'USDT' }
+];
+const mxSim = (mod) => mod === 'coin' ? 'KDA' : String(mod).split('.').pop();
+// Cuatro decimales dejan en «0,0004» un cambio de 0,00036 kb-ETH. Segun el tamano.
+const mxNum = (n) => fmtCorto(n, Math.abs(Number(n)) < 1 ? 8 : 4);
+
+function renderMx() {
+  if (!$('mx-wallet')) return;
+  const evm = MX.red === 'eth';
+  const ws = WALLETS.filter(w => evm ? w.ethAddress : w.kdaAccount);
+  const prev = $('mx-wallet').value;
+  $('mx-wallet').innerHTML = ws.map(w => `<option value="${w.id}">${esc(w.label)} \u00b7 ${shortAddr(evm ? w.ethAddress : w.kdaAccount)}</option>`).join('')
+    || `<option value="">${t('no_wallet')}</option>`;
+  if (prev && ws.some(w => w.id === prev)) $('mx-wallet').value = prev;
+  if (!$('mx-slip').options.length) {
+    $('mx-slip').innerHTML = [0.5, 1, 2, 5].map(x => `<option value="${x / 100}"${x === 0.5 ? ' selected' : ''}>${x} %</option>`).join('');
+  }
+  // Leer el DEX cuesta una llamada a la cadena: no se hace al abrir la boveda si el
+  // usuario no esta mirando el mercado. Al entrar en la pestana ya se carga solo.
+  if (evm) mxPintarEth();
+  else if (!$('view-mercado').hidden || MX.tokens.length) mxCargarKda();
+}
+
+function mxPintarEth() {
+  const op = MX_ETH.map(x => `<option value="${x.mod}">${x.sim}</option>`).join('');
+  $('mx-de').innerHTML = op; $('mx-a').innerHTML = op;
+  // Se respeta lo que ya hubiera elegido el usuario; los valores de Kadena no valen aqui.
+  const val = (v, pordefecto) => MX_ETH.some(x => x.mod === v) ? v : pordefecto;
+  MX.de = val(MX.de, 'USDC'); MX.a = val(MX.a, 'ETH');
+  if (MX.de === MX.a) MX.a = MX.de === 'ETH' ? 'USDC' : 'ETH';
+  $('mx-de').value = MX.de; $('mx-a').value = MX.a;
+  $('mx-fondos').hidden = true;
+  mxSaldos(); mxCotizar();
+}
+
+async function mxCargarKda() {
+  $('mx-fondos').hidden = false;
+  if (MX.cargando) return;
+  MX.cargando = true;
+  msg($('mx-cot'), t('mx_leyendo'));
+  try {
+    const d = await window.api.dexTokens({ forzar: false });
+    MX.tokens = d.tokens; MX.fondoMin = d.fondoMin; MX.impactoMax = d.impactoMax;
+  } catch (e) { msg($('mx-cot'), cleanErr(e), 'err'); MX.cargando = false; return; }
+  MX.cargando = false;
+  // KDA primero y el resto por fondo: lo primero que se ve es lo que se puede cambiar sin
+  // destrozar el precio.
+  const op = [`<option value="coin">KDA</option>`].concat(MX.tokens.map(x =>
+    `<option value="${esc(x.modulo)}">${esc(x.simbolo)} \u00b7 ${fmtCorto(x.fondoKda, 0)} KDA</option>`)).join('');
+  $('mx-de').innerHTML = op; $('mx-a').innerHTML = op;
+  if (!MX.tokens.some(x => x.modulo === MX.a)) MX.a = (MX.tokens[0] || {}).modulo || null;
+  if (MX.de === MX.a) MX.de = 'coin';
+  $('mx-de').value = MX.de; if (MX.a) $('mx-a').value = MX.a;
+  $('mx-lista').innerHTML = MX.tokens.map(x => `<div class="vf-linea"><span>${esc(x.simbolo)}</span>`
+    + `<span class="cifra">${fmtCorto(x.fondoKda, 0)} KDA</span></div>`).join('');
+  msg($('mx-cot'), '');
+  mxSaldos(); mxCotizar();
+}
+
+async function mxSaldos() {
+  const wid = $('mx-wallet').value;
+  $('mx-bal-de').textContent = ''; $('mx-bal-a').textContent = '';
+  if (!wid || MX.red !== 'kda') return;
+  for (const [mod, el] of [[MX.de, 'mx-bal-de'], [MX.a, 'mx-bal-a']]) {
+    if (!mod) continue;
+    try {
+      const r = await window.api.dexSaldo({ walletId: wid, modulo: mod });
+      $(el).textContent = fmtCorto(r.saldo) + ' ' + mxSim(mod);
+      if (el === 'mx-bal-de') $(el).dataset.saldo = String(r.saldo);
+    } catch (_) { }
+  }
+}
+
+let MX_T = null;
+function mxCotizarPronto() { clearTimeout(MX_T); MX_T = setTimeout(mxCotizar, 450); }
+
+async function mxCotizar() {
+  MX.q = null;
+  const cant = Number($('mx-cant').value);
+  const btn = $('mx-cambiar');
+  if (!(cant > 0)) { msg($('mx-cot'), ''); btn.disabled = false; return; }
+  if (MX.de === MX.a) { msg($('mx-cot'), t('mx_mismos'), 'err'); btn.disabled = true; return; }
+  msg($('mx-cot'), t('mx_calculando'));
+  try {
+    if (MX.red === 'eth') {
+      const q = await mxCotizarEth(cant);
+      MX.q = q;
+      msg($('mx-cot'), tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) }));
+      btn.disabled = false;
+      return;
+    }
+    const q = await window.api.dexCotizar({ de: MX.de, a: MX.a, cantidad: String(cant), slippage: Number($('mx-slip').value) });
+    MX.q = q;
+    let txt = tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) })
+      + ' \u00b7 ' + tr('mx_impacto', { i: q.impacto.toFixed(2) })
+      + (q.saltos > 1 ? ' \u00b7 ' + tr('mx_via', { c: q.camino.join(' \u2192 ') }) : '');
+    if (q.frenado) {
+      msg($('mx-cot'), txt + ' \u2014 ' + tr('mx_frenado', { m: q.impactoMax }), 'err');
+      btn.disabled = true;
+    } else {
+      msg($('mx-cot'), txt, q.impacto > 3 ? 'warn' : '');
+      btn.disabled = false;
+    }
+  } catch (e) { msg($('mx-cot'), cleanErr(e), 'err'); btn.disabled = true; }
+}
+
+// En Ethereum solo estan cableadas las rutas probadas. Lo demas se dice, no se inventa.
+async function mxCotizarEth(cant) {
+  const par = MX.de + '>' + MX.a;
+  if (par === 'USDC>ETH' || par === 'ETH>USDC') {
+    const dir = par === 'USDC>ETH' ? 'usdc2eth' : 'eth2usdc';
+    const q = await window.api.ethswapQuote(dir, String(cant));
+    return { esperada: q.out, eth: true, dir, minOut: q.min };
+  }
+  if ((MX.de === 'USDT' && MX.a === 'USDC') || (MX.de === 'USDC' && MX.a === 'USDT')) {
+    const q = await window.api.evmSwapCotizar({ de: MX.de, a: MX.a, amount: String(cant) });
+    return { esperada: q.salida, eth: true, estable: true };
+  }
+  throw new Error(t('mx_ruta_no'));
+}
+
+function mxCambiar() {
+  const wid = $('mx-wallet').value, cant = $('mx-cant').value;
+  if (!wid) return msg($('mx-msg'), t('no_wallet'), 'err');
+  if (!(Number(cant) > 0)) return msg($('mx-msg'), t('err_need_amt'), 'err');
+  if (MX.red === 'kda' && isLedgerW(wid)) return msg($('mx-msg'), t('mx_ledger'), 'err');
+  if (!MX.q) return msg($('mx-msg'), t('mx_sin_cotizar'), 'err');
+  if (MX.q.frenado) return msg($('mx-msg'), tr('mx_frenado', { m: MX.impactoMax }), 'err');
+  const resumen = tr('mx_conf', { a: esc(cant), f: mxSim(MX.de), t: mxSim(MX.a), r: mxNum(MX.q.esperada) });
+  askSend(resumen, async (pass) => {
+    if (MX.red === 'eth') {
+      if (MX.q.estable) {
+        const r = await window.api.evmSwapEnviar({ passphrase: pass, walletId: wid, de: MX.de, a: MX.a, amount: cant });
+        return tr('st_ok', { out: r.esperado.toFixed(6), sym: MX.a }) + ' tx: ' + String(r.hash || '').slice(0, 14) + '…';
+      }
+      const r = await window.api.ethswapExec(pass, wid, MX.q.dir, cant, MX.q.minOut);
+      return (r.ok ? t('es_ok') : t('es_check')) + ' tx: ' + String(r.txHash || '').slice(0, 14) + '…';
+    }
+    const r = await window.api.dexCambiar({ passphrase: pass, walletId: wid, de: MX.de, a: MX.a, cantidad: cant, slippage: Number($('mx-slip').value) });
+    mxConfirmar(r);
+    return t('mk_sent') + r.requestKey;
+  });
+}
+
+// Se espera a que la cadena confirme antes de repintar, como en el DCA y en Launch.
+async function mxConfirmar(r) {
+  if (!r || !r.requestKey) return;
+  msg($('mx-msg'), t('dca_confirmando'));
+  for (let i = 0; i < 20; i++) {
+    await new Promise((res) => setTimeout(res, 6000));
+    let d = null;
+    try { d = await window.api.txInfo(r.requestKey, r.chain); } catch (_) { continue; }
+    if (d && d.encontrada) {
+      const est = (d.datos && d.datos.result) || {};
+      await mxCargarKda(); loadBalances();
+      msg($('mx-msg'), est.status === 'success' ? t('mx_hecho') : t('dca_reverso'), est.status === 'success' ? 'ok' : 'err');
+      return;
+    }
+  }
+  msg($('mx-msg'), t('dca_tarda'));
+}
+
+if ($('mx-red')) $('mx-red').onchange = () => { MX.red = $('mx-red').value; MX.q = null; $('mx-cant').value = ''; msg($('mx-msg'), ''); renderMx(); };
+if ($('mx-wallet')) $('mx-wallet').onchange = () => { mxSaldos(); };
+if ($('mx-de')) $('mx-de').onchange = () => { MX.de = $('mx-de').value; mxSaldos(); mxCotizar(); };
+if ($('mx-a')) $('mx-a').onchange = () => { MX.a = $('mx-a').value; mxSaldos(); mxCotizar(); };
+if ($('mx-invert')) $('mx-invert').onclick = () => {
+  const d = MX.de; MX.de = MX.a; MX.a = d;
+  $('mx-de').value = MX.de; $('mx-a').value = MX.a;
+  mxSaldos(); mxCotizar();
+};
+if ($('mx-cant')) $('mx-cant').oninput = mxCotizarPronto;
+if ($('mx-slip')) $('mx-slip').onchange = mxCotizar;
+if ($('mx-max')) $('mx-max').onclick = () => {
+  const s = Number($('mx-bal-de').dataset.saldo || 0);
+  // Si se entrega KDA hay que dejar algo para el gas, o no se puede ni firmar.
+  const libre = MX.de === 'coin' ? Math.max(0, s - 0.02) : s;
+  $('mx-cant').value = String(Math.floor(libre * 1e6) / 1e6);
+  mxCotizar();
+};
+if ($('mx-cambiar')) $('mx-cambiar').onclick = mxCambiar;
+if ($('mx-refrescar')) $('mx-refrescar').onclick = async () => {
+  if (MX.red !== 'kda') return mxCotizar();
+  try { await window.api.dexTokens({ forzar: true }); } catch (_) { }
+  mxCargarKda();
+};
+document.querySelectorAll('.nav[data-nav="mercado"]').forEach(a => a.addEventListener('click', () => { if (!MX.tokens.length) renderMx(); }));
+
 function renderMercado() {
   const kdaW = WALLETS.filter(w => w.kind === 'kda');
   $('mk-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('no_wallet_kda')}</option>`;
@@ -1415,6 +1808,135 @@ async function dcaConfirmar(r, elMsg) {
   aviso(t('dca_tarda'));
 }
 
+// ===== LAUNCH: comprar un token a precio fijo, directo a su contrato =====
+// Sin pool y sin comision: no hay deslizamiento, o queda reserva o no queda. Lo que si
+// hay son riesgos, y la ficha los ensena antes de que nadie firme nada. Se carga solo
+// cuando se entra en la pestana: son seis lecturas a la cadena y no valen para nada si
+// el usuario no esta mirando.
+let LAUNCH = null, LAUNCH_SALDO = null;
+
+function renderLaunch() {
+  if (!$('lz-wallet')) return;
+  const prev = $('lz-wallet').value;
+  const kdaW = WALLETS.filter(w => w.kdaAccount);
+  $('lz-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} \u00b7 ${shortAddr(w.kdaAccount)}</option>`).join('')
+    || `<option value="">${t('no_wallet')}</option>`;
+  if (prev && kdaW.some(w => w.id === prev)) $('lz-wallet').value = prev;
+  LAUNCH = null;                       // al cambiar de boveda se relee al entrar
+  if (!$('view-launch').hidden) lzCargar();
+}
+
+async function lzLista() {
+  if ($('lz-venta').options.length) return;
+  let ventas = [];
+  try { ventas = await window.api.launchLista(); } catch (_) { }
+  $('lz-venta').innerHTML = ventas.map(v => `<option value="${esc(v.clave)}">${esc(v.nombre)}</option>`).join('');
+}
+
+async function lzCargar() {
+  const c = $('lz-cuerpo');
+  await lzLista();
+  const clave = $('lz-venta').value;
+  if (!clave) { c.innerHTML = `<div class="muted xs">${t('lz_ninguna')}</div>`; return; }
+  c.innerHTML = `<div class="muted xs">${t('lz_leyendo')}</div>`;
+  try { LAUNCH = await window.api.launchEstado({ clave }); }
+  catch (e) { LAUNCH = null; c.innerHTML = `<div class="msg err">${esc(cleanErr(e))}</div>`; return; }
+  LAUNCH_SALDO = null;
+  // El saldo puede fallar sin que sea grave (boveda recien abierta, wallet sin KDA):
+  // la ficha se pinta igual, solo que sin la linea de "tienes X en la chain Y".
+  try { LAUNCH_SALDO = await window.api.launchSaldo({ clave, walletId: $('lz-wallet').value }); } catch (_) { }
+  lzPintar();
+}
+
+function lzPintar() {
+  const v = LAUNCH; if (!v) return;
+  const s = LAUNCH_SALDO;
+  const enOtras = s ? Math.max(0, s.total - s.enChain) : 0;
+  $('lz-cuerpo').innerHTML = `
+    <div class="lz-cab">
+      <div class="crece"><div class="lz-nom">${esc(v.nombre)}</div>
+        <div class="muted xs">${esc(v.de || '')}</div></div>
+      <span class="lz-estado ${v.activa ? 'abierta' : 'cerrada'}">${v.activa ? t('lz_abierta') : t('lz_cerrada')}</span>
+    </div>
+    <div class="lz-datos">
+      <div><div class="etiq">${t('lz_precio')}</div><div class="cifra">${fmtCorto(v.precio)} KDA</div></div>
+      <div><div class="etiq">${t('lz_quedan')}</div><div class="cifra">${fmtCorto(v.restante)} ${esc(v.simbolo)}</div></div>
+      <div><div class="etiq">${t('lz_chain')}</div><div class="cifra">${esc(v.chain)}</div></div>
+    </div>
+    ${s ? `<div class="lz-saldo">${tr('lz_tienes', { c: fmtCorto(s.enChain), ch: esc(v.chain) })}${
+      enOtras > 0.0001 ? ' \u00b7 ' + tr('lz_en_otras', { o: fmtCorto(enOtras) }) : ''}</div>` : ''}
+    <label>${tr('lz_cantidad', { s: esc(v.simbolo) })}</label>
+    <div class="amtrow"><input id="lz-cant" type="number" step="0.000001" placeholder="0.0" ${v.activa ? '' : 'disabled'}/>
+      <button type="button" class="tiny ghost" id="lz-max">${t('lz_max')}</button></div>
+    <div id="lz-resumen" class="msg"></div>
+    <button id="lz-comprar" class="primary" ${v.activa ? '' : 'disabled'}>${t('lz_comprar')}</button>
+    <div id="lz-msg" class="msg"></div>
+    <details class="lz-riesgos"><summary>${t('lz_riesgos')}</summary>
+      ${(v.avisos || []).map(x => `<p class="muted xs">${t('lz_av_' + x)}</p>`).join('')}
+      <p class="muted xs">${tr('lz_av_ingresos', { c: esc(v.cuentaIngresos) })}</p>
+      ${v.web ? `<p class="muted xs">${tr('lz_av_web', { w: esc(v.web) })}</p>` : ''}
+    </details>`;
+
+  const calc = () => {
+    const n = Number($('lz-cant').value);
+    if (!(n > 0)) { msg($('lz-resumen'), ''); return; }
+    if (n > v.restante) { msg($('lz-resumen'), tr('lz_no_hay', { r: fmtCorto(v.restante), s: v.simbolo }), 'err'); return; }
+    const coste = n * v.precio;
+    let txt = tr('lz_coste', { k: fmtCorto(coste), n: fmtCorto(n), s: v.simbolo });
+    // Aqui no basta con tener gas: hace falta el importe ENTERO en la chain de la venta.
+    const falta = s && s.enChain < coste + 0.02;
+    if (falta) txt += ' \u2014 ' + tr('lz_falta', { ch: v.chain, f: fmtCorto(coste + 0.02 - s.enChain) });
+    msg($('lz-resumen'), txt, falta ? 'err' : '');
+  };
+  $('lz-cant').oninput = calc;
+  $('lz-max').onclick = () => {
+    if (!s) return;
+    const cabe = Math.max(0, (s.enChain - 0.02) / v.precio);
+    $('lz-cant').value = String(Math.floor(Math.min(cabe, v.restante) * 1e6) / 1e6);
+    calc();
+  };
+  $('lz-comprar').onclick = lzComprar;
+}
+
+function lzComprar() {
+  const v = LAUNCH; if (!v) return;
+  const wid = $('lz-wallet').value, cant = $('lz-cant').value;
+  if (!wid) return msg($('lz-msg'), t('no_wallet'), 'err');
+  if (!(Number(cant) > 0)) return msg($('lz-msg'), t('err_need_amt'), 'err');
+  if (isLedgerW(wid)) return msg($('lz-msg'), t('lz_ledger'), 'err');
+  askSend(tr('lz_conf', { n: esc(cant), s: esc(v.simbolo), k: fmtCorto(Number(cant) * v.precio), ch: esc(v.chain) })
+    + `<br><span class="warn" style="display:block;margin-top:8px">${t('lz_conf_aviso')}</span>`,
+    async (pass) => {
+      const r = await window.api.launchComprar({ passphrase: pass, walletId: wid, clave: v.clave, cantidad: cant });
+      lzConfirmar(r);
+      return tr('lz_enviada', { n: r.cantidad, s: v.simbolo, k: r.coste });
+    });
+}
+
+// Como en el DCA: se espera a que la cadena confirme, no se refresca a ciegas a los 4 s.
+async function lzConfirmar(r) {
+  if (!r || !r.requestKey) { lzCargar(); return; }
+  msg($('lz-msg'), t('dca_confirmando'));
+  for (let i = 0; i < 20; i++) {
+    await new Promise((res) => setTimeout(res, 6000));
+    let d = null;
+    try { d = await window.api.txInfo(r.requestKey, r.chain); } catch (_) { continue; }
+    if (d && d.encontrada) {
+      const est = (d.datos && d.datos.result) || {};
+      await lzCargar(); loadBalances();
+      msg($('lz-msg'), est.status === 'success' ? t('lz_comprado') : t('dca_reverso'), est.status === 'success' ? 'ok' : 'err');
+      return;
+    }
+  }
+  await lzCargar();
+  msg($('lz-msg'), t('dca_tarda'));
+}
+
+if ($('lz-venta')) $('lz-venta').onchange = lzCargar;
+if ($('lz-wallet')) $('lz-wallet').onchange = lzCargar;
+if ($('lz-refrescar')) $('lz-refrescar').onclick = lzCargar;
+document.querySelectorAll('.nav[data-nav="launch"]').forEach(a => a.addEventListener('click', () => { if (!LAUNCH) lzCargar(); }));
+
 async function renderDca() {
   if (!$('dca-wallet')) return;
   const kdaW = WALLETS.filter(w => w.kdaAccount);
@@ -1533,6 +2055,198 @@ function dcaAccion(i, que) {
       const r = await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
       dcaConfirmar(r, $('dca-msg'));
       return t('dca_hecho');
+    });
+}
+
+
+// ===== ORDENES LIMITE (contrato free.ksw2 en el fork) =====
+// Koberlet solo crea y cancela. La ejecucion la dispara el vigilante de KoberluSW
+// pagando su propio gas, y el contrato re-comprueba el precio antes de soltar nada.
+let ORD = null;
+let ORD_DIR = { de: 'KDA', a: 'kb-USDC' };   // por defecto, venta vigilada de KDA
+const ORD_SLIPS = [[0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0.1, '10%'], [0.2, '20%']];
+let ORD_SEQ = 0;        // descarta cotizaciones viejas que lleguen tarde
+let ORD_Q = null;       // ultima cotizacion buena, para el texto de la confirmacion
+// Decimales con los que se ENSEÑAN las cantidades. Cuatro llegan de sobra para leer
+// una orden; por dentro se sigue trabajando con la precision del token (12 en KDA,
+// 6 en kb-USDC), que es la que viaja a la cadena.
+const ORD_DEC = 4;
+let ORD_TIMER = null;
+
+const ordDireccion = () => (ORD_DIR.de === 'KDA' ? 'venta' : 'compra');
+
+function ordPintarDireccion() {
+  if (!$('ord-de')) return;
+  $('ord-de').textContent = ORD_DIR.de;
+  $('ord-a').textContent = ORD_DIR.a;
+  const wid = $('ord-wallet') ? $('ord-wallet').value : '';
+  pintarDisponible('ord-bal-de', wid, ORD_DIR.de);
+  pintarDisponible('ord-bal-a', wid, ORD_DIR.a);
+  $('ord-lbl-cant').textContent = tr('ord_lbl_cant', { s: ORD_DIR.de });
+  $('ord-lbl-precio').textContent = t('ord_lbl_precio');
+  // El boton dice lo que va a pasar, no "aceptar": es la ultima cosa que se lee
+  // antes de firmar un deposito.
+  $('ord-crear').textContent = ordDireccion() === 'venta' ? t('ord_crear_venta') : t('ord_crear_compra');
+}
+
+async function renderOrdenes() {
+  if (!$('ord-wallet')) return;
+  const kdaW = WALLETS.filter(w => w.kdaAccount);
+  const prev = $('ord-wallet').value;
+  $('ord-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('nft_sin_wallet')}</option>`;
+  if (prev) $('ord-wallet').value = prev;
+  if (!$('ord-slip').options.length) {
+    $('ord-slip').innerHTML = ORD_SLIPS.map(([v, n]) => `<option value="${v}"${v === 0.05 ? ' selected' : ''}>${n}</option>`).join('');
+  }
+  $('ord-caduca').textContent = t('ord_caduca_no');
+  await ordCargar();
+}
+
+// Pone el precio de mercado en la casilla, para no tener que buscarlo y copiarlo. Se
+// deja EDITABLE y no se toca si ya hay algo escrito. Van los 6 decimales del precio de
+// verdad: redondear a 4 aqui seria proponer un precio que no es el del mercado.
+function ordPrecioDeMercado(forzar) {
+  const el = $('ord-precio');
+  if (!el || !ORD || !(ORD.precio > 0)) return;
+  if (!forzar && String(el.value).trim() !== '') return;
+  el.value = ORD.precio.toFixed(6);
+}
+
+async function ordCargar() {
+  if (!$('ord-wallet')) return;
+  msg($('ord-aviso'), t('ord_leyendo'));
+  try {
+    ORD = await window.api.ordEstado({ walletId: $('ord-wallet').value });
+  } catch (e) { ORD = null; return msg($('ord-aviso'), cleanErr(e), 'err'); }
+  if (ORD.pausado) { $('ord-aviso').innerHTML = `<span class="warn">${t('ord_pausado_global')}</span>`; }
+  else { $('ord-aviso').textContent = ''; $('ord-aviso').className = 'msg'; }
+  $('ord-spot').textContent = ORD.precio ? tr('ord_spot', { p: fmt(ORD.precio, 6) }) : '';
+  ordPrecioDeMercado();
+  ordPintarDireccion();
+  ordPintarMias();
+  ordPintarLibro();
+  ordResumen();
+}
+
+function ordPintarMias() {
+  const zona = $('ord-lista');
+  if (!zona) return;
+  const mias = (ORD && ORD.mias) || [];
+  if ($('ord-cuenta')) $('ord-cuenta').textContent = mias.length ? tr('ord_cuenta', { n: mias.length }) : '';
+  if (!mias.length) { zona.innerHTML = `<div class="muted xs">${t('ord_sin_ordenes')}</div>`; return; }
+  zona.innerHTML = mias.map((o, i) => `<div class="asset dcaplan">
+    <div><b>${esc(o.simIn)} → ${esc(o.simOut)}</b> <span class="muted xs">${esc(o.id)}</span></div>
+    <div class="muted xs">${tr('ord_linea_' + o.lado, { c: fmt(o.cantidad, ORD_DEC), p: fmt(o.precio, 6), m: fmt(o.minimo, ORD_DEC) })}</div>
+    <div class="dcabtns"><button class="tiny ghost ord-cancel" data-i="${i}">${t('ord_cancelar')}</button></div>
+  </div>`).join('');
+  zona.querySelectorAll('.ord-cancel').forEach(b => b.onclick = () => ordCancelar(Number(b.dataset.i)));
+}
+
+// Libro publico: se ve QUE hay, nunca de quien. Las ventas primero, de la mas barata
+// a la mas cara, que es como se lee un libro de ordenes.
+function ordPintarLibro() {
+  const zona = $('ord-libro');
+  if (!zona) return;
+  const libro = ((ORD && ORD.libro) || []).slice().sort((a, b) => a.precio - b.precio);
+  if (!libro.length) { zona.innerHTML = `<div class="muted xs">${t('ord_sin_libro')}</div>`; return; }
+  const fila = (o) => `<div class="muted xs">${o.lado === 'venta' ? '🔴' : '🟢'} ${tr('ord_linea_' + o.lado, { c: fmt(o.cantidad, 4), p: fmt(o.precio, 6), m: fmt(o.minimo, 4) })}</div>`;
+  zona.innerHTML = libro.filter(o => o.lado === 'venta').map(fila).join('')
+    + libro.filter(o => o.lado === 'compra').map(fila).join('');
+}
+
+// La cotizacion sale de la cadena (hay que leer las reservas del pool), asi que se
+// espera a que el usuario deje de teclear en vez de preguntar en cada tecla.
+function ordResumen() {
+  if (!$('ord-resumen')) return;
+  if (ORD_TIMER) clearTimeout(ORD_TIMER);
+  const cant = Number($('ord-cant').value), precio = Number($('ord-precio').value);
+  if (!(cant > 0) || !(precio > 0)) { ORD_Q = null; $('ord-resumen').textContent = ''; $('ord-resumen').className = 'msg'; return; }
+  ORD_TIMER = setTimeout(ordCotizar, 450);
+}
+
+async function ordCotizar() {
+  const dir = ordDireccion();
+  const cant = $('ord-cant').value, precio = Number($('ord-precio').value);
+  const slip = Number($('ord-slip').value);
+  const seq = ++ORD_SEQ;
+  let q;
+  try {
+    q = await window.api.ordCotizar({ direccion: dir, cantidad: cant, precio: precio, slippage: slip });
+  } catch (e) {
+    if (seq !== ORD_SEQ) return;                 // llego tarde: manda la ultima
+    ORD_Q = null;
+    return msg($('ord-resumen'), cleanErr(e), 'err');
+  }
+  if (seq !== ORD_SEQ) return;
+  ORD_Q = q;
+  let txt = tr('ord_resumen_' + dir, { c: fmt(Number(q.cantidad), ORD_DEC), p: fmt(q.precio, 6), m: fmt(Number(q.minOut), ORD_DEC), f: fmt(q.comision, ORD_DEC) });
+  if (q.impacto != null) txt += tr('ord_impacto', { i: fmt(q.impacto, 2) });
+  // Que el precio objetivo ya se cumpla no es un error, pero conviene decirlo: la
+  // orden se ejecutara enseguida y eso no es lo que suele buscar quien pone un limite.
+  const spot = ORD && ORD.precio;
+  const yaPasa = spot && (dir === 'venta' ? precio <= spot : precio >= spot);
+  if (q.avisoPool) return msg($('ord-resumen'), q.avisoPool, 'err');
+  msg($('ord-resumen'), txt + (yaPasa ? ' ' + t('ord_ya_pasa') : ''), yaPasa ? 'warn' : '');
+}
+
+// Espera a que la cadena confirme y recarga ENTONCES: minar tarda entre 30 y 90 s, y
+// recargar antes ensena el estado viejo y hace creer que la orden no ha entrado.
+async function ordConfirmar(r, elMsg) {
+  const rk = r && r.requestKey, chain = r && r.chain;
+  if (!rk || chain === undefined) { setTimeout(() => { ordCargar(); renderOrdenesActivas(); }, 4000); return; }
+  const aviso = (txt) => { if (elMsg) msg(elMsg, txt); };
+  aviso(t('ord_confirmando'));
+  for (let i = 0; i < 20; i++) {
+    await new Promise((res) => setTimeout(res, 6000));
+    let d = null;
+    try { d = await window.api.txInfo(rk, chain); } catch (_) { continue; }
+    if (d && d.encontrada) {
+      const res = (d.datos && d.datos.result) || {};
+      ordCargar(); renderOrdenesActivas();
+      aviso(res.status === 'success' ? t('ord_confirmado') : t('ord_reverso'));
+      return;
+    }
+  }
+  ordCargar(); renderOrdenesActivas();
+  aviso(t('ord_tarda'));
+}
+
+if ($('ord-wallet')) $('ord-wallet').onchange = () => { ordPintarDireccion(); ordCargar(); };
+if ($('ord-invert')) $('ord-invert').onclick = () => { ORD_DIR = { de: ORD_DIR.a, a: ORD_DIR.de }; ordPintarDireccion(); ordResumen(); };
+for (const idc of ['ord-cant', 'ord-precio', 'ord-slip']) {
+  if ($(idc)) { $(idc).oninput = ordResumen; $(idc).onchange = ordResumen; }
+}
+
+if ($('ord-crear')) $('ord-crear').onclick = () => {
+  const wid = $('ord-wallet').value;
+  const dir = ordDireccion();
+  const cant = $('ord-cant').value, precio = $('ord-precio').value;
+  const slip = Number($('ord-slip').value);
+  if (!wid) return msg($('ord-msg'), t('nft_sin_wallet'), 'err');
+  if (!Number(cant) || !Number(precio)) return msg($('ord-msg'), t('err_fill_dest_amt'), 'err');
+  if (isLedgerW(wid)) return msg($('ord-msg'), t('ord_ledger'), 'err');
+  // Se enseña el minimo de la ultima cotizacion. El que acaba en la transaccion se
+  // vuelve a calcular dentro de crearOrden con las reservas del momento de firmar,
+  // asi que este es orientativo: por eso no se firma nada hasta que hay cotizacion.
+  if (!ORD_Q) return msg($('ord-msg'), t('ord_sin_cotizar'), 'err');
+  askSend(tr('ord_conf_' + dir, { c: esc(cant), p: esc(precio), m: esc(fmt(Number(ORD_Q.minOut), ORD_DEC)) }),
+    async (pass) => {
+      const r = await window.api.ordCrear({ passphrase: pass, walletId: wid, direccion: dir, cantidad: cant, precio: precio, slippage: slip });
+      $('ord-cant').value = ''; ORD_Q = null;
+      $('ord-resumen').textContent = ''; $('ord-resumen').className = 'msg';
+      ordPrecioDeMercado(true);
+      ordConfirmar(r, $('ord-msg'));
+      return tr('ord_creada', { id: r.id });
+    });
+};
+
+function ordCancelar(i) {
+  const o = ORD && ORD.mias[i]; if (!o) return;
+  askSend(tr('ord_conf_cancelar', { id: esc(o.id), c: fmt(o.cantidad, ORD_DEC), s: esc(o.simIn) }),
+    async (pass) => {
+      const r = await window.api.ordCancelar({ passphrase: pass, walletId: $('ord-wallet').value, id: o.id });
+      ordConfirmar(r, $('ord-msg'));
+      return t('ord_cancelada');
     });
 }
 
@@ -1847,6 +2561,9 @@ async function applyView(v) {
   renderEthSwap();
   renderStableSwap();
   renderDca();
+  renderOrdenes();
+  renderLaunch();
+  renderMx();
   pintarKpis(null);
   renderOrdenesActivas();
   updateNetContext();
