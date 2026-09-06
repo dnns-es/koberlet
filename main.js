@@ -71,15 +71,20 @@ const DEFAULT_CONFIG = {
   },
   // Redes EVM (la MISMA dirección 0x vale en todas). cg = id CoinGecko del nativo. enabled = mostrar por defecto.
   evm: [
-    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://ethereum-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#627eea',
+    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://ethereum-rpc.publicnode.com', chainId: 1,
+      reservas: ['https://eth.drpc.org', 'https://rpc.mevblocker.io', 'https://gateway.tenderly.co/public/mainnet'], symbol: 'ETH', cg: 'ethereum', color: '#627eea',
       tokens: [{ symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', cg: 'tether' }] },
-    { key: 'arb', name: 'Arbitrum', enabled: false, rpc: 'https://arbitrum-one-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#28a0f0',
+    { key: 'arb', name: 'Arbitrum', enabled: false, rpc: 'https://arbitrum-one-rpc.publicnode.com', chainId: 42161,
+      reservas: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum.drpc.org'], symbol: 'ETH', cg: 'ethereum', color: '#28a0f0',
       tokens: [{ symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', cg: 'tether' }] },
-    { key: 'base', name: 'Base', enabled: false, rpc: 'https://base-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#0052ff',
+    { key: 'base', name: 'Base', enabled: false, rpc: 'https://base-rpc.publicnode.com', chainId: 8453,
+      reservas: ['https://mainnet.base.org', 'https://base.drpc.org'], symbol: 'ETH', cg: 'ethereum', color: '#0052ff',
       tokens: [{ symbol: 'USDC', address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', cg: 'usd-coin' }] },
-    { key: 'bnb', name: 'BNB Chain', enabled: false, rpc: 'https://bsc-rpc.publicnode.com', symbol: 'BNB', cg: 'binancecoin', color: '#f0b90b',
+    { key: 'bnb', name: 'BNB Chain', enabled: false, rpc: 'https://bsc-rpc.publicnode.com', chainId: 56,
+      reservas: ['https://bsc-dataseed.bnbchain.org', 'https://bsc.drpc.org'], symbol: 'BNB', cg: 'binancecoin', color: '#f0b90b',
       tokens: [{ symbol: 'USDT', address: '0x55d398326f99059fF775485246999027B3197955', cg: 'tether' }, { symbol: 'USDC', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', cg: 'usd-coin' }] },
-    { key: 'pol', name: 'Polygon', enabled: false, rpc: 'https://polygon-bor-rpc.publicnode.com', symbol: 'POL', cg: 'polygon-ecosystem-token', color: '#8247e5',
+    { key: 'pol', name: 'Polygon', enabled: false, rpc: 'https://polygon-bor-rpc.publicnode.com', chainId: 137,
+      reservas: ['https://polygon.drpc.org'], symbol: 'POL', cg: 'polygon-ecosystem-token', color: '#8247e5',
       tokens: [{ symbol: 'USDC', address: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', cg: 'tether' }] }
   ],
   // DCA de KoberluSW: contrato en el fork que custodia el bote y compra periodicamente.
@@ -133,7 +138,8 @@ const DEFAULT_CONFIG = {
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
-    evm: { rpc: 'https://ethereum-rpc.publicnode.com', name: 'Ethereum', domain: 1 },
+    evm: { rpc: 'https://ethereum-rpc.publicnode.com', name: 'Ethereum', domain: 1, chainId: 1,
+           reservas: ['https://eth.drpc.org', 'https://rpc.mevblocker.io', 'https://gateway.tenderly.co/public/mainnet'] },
     // OJO con las mayusculas de estas direcciones: en Ethereum el patron de mayusculas ES la
     // suma de verificacion (EIP-55) y ethers RECHAZA la direccion antes de llamar. Los routers
     // de USDT, DAI y WBTC lo tenian mal y el puente fallaba con "bad address checksum" en la
@@ -391,7 +397,7 @@ ipcMain.handle('visor:cuenta', async (_e, { red, direccion } = {}) => {
     const salidas = [];
     for (const net of c.evm.filter((n) => n.enabled)) {
       try {
-        const b = await eth.getBalances(direccion, { rpc: net.rpc, tokens: net.tokens });
+        const b = await eth.getBalances(direccion, { rpc: await rpcDe(net), tokens: net.tokens });
         salidas.push({ red: net.name, color: net.color, nativo: b.native, simbolo: net.symbol,
                        usd: b.native * px(net.cg), tokens: (b.tokens || []).map((t) => ({ ...t, usd: t.amount * px(t.cg) })) });
       } catch (_) { /* esa red no responde: se sigue con las demas */ }
@@ -646,7 +652,7 @@ ipcMain.handle('seed:accounts', async (_e, { mnemonic, kind, net, start, count }
     return Promise.all(idxs.map(async (i) => {
       const e = wallets.deriveEth(mnemonic, i);
       let amount = 0;
-      try { const b = await eth.getBalances(e.address, { rpc: nd.rpc, tokens: nd.tokens }); amount = b.native + b.tokens.reduce((sm, t) => sm + t.amount, 0); } catch (_) {}
+      try { const b = await eth.getBalances(e.address, { rpc: await rpcDe(nd), tokens: nd.tokens }); amount = b.native + b.tokens.reduce((sm, t) => sm + t.amount, 0); } catch (_) {}
       return { index: i, method: 'evm', id: e.address, amount, unit: nd.symbol };
     }));
   }
@@ -702,6 +708,11 @@ ipcMain.handle('wallet:export', (_e, { passphrase, walletId, chain }) => {
 // solo decia "sin conexion", que ademas mentia: cualquier excepcion pinta ese cartel, tambien
 // las que no llegan a tocar la red. Sin el motivo no hay forma de distinguir un nodo caido de
 // un fallo nuestro, ni para el usuario ni para quien da soporte.
+// El RPC vivo de una red EVM: el que el usuario tiene puesto si responde y sirve la cadena
+// correcta, y si no, la primera reserva del catalogo que cumpla las dos cosas. Ver elegirRpc
+// en lib/eth.js, que es donde esta el porque y la comprobacion del chainId.
+const rpcDe = (n, clave) => eth.elegirRpc({ clave: clave || n.key, rpc: n.rpc, reservas: n.reservas, chainId: n.chainId });
+
 const motivo = (e) => String((e && (e.shortMessage || e.message)) || e || 'error').replace(/\s+/g, ' ').slice(0, 160);
 
 // Dashboard: un BLOQUE (tarjeta) por cada red de cada wallet visible. Varias wallets a la vez.
@@ -737,7 +748,7 @@ ipcMain.handle('balances', async () => {
     } else if (w.kind === 'evm' && w.eth) {
       for (const n of c.evm.filter(x => x.enabled && !modoPruebas)) {
         try {
-          const b = await eth.getBalances(w.eth.address, { rpc: n.rpc, tokens: n.tokens });
+          const b = await eth.getBalances(w.eth.address, { rpc: await rpcDe(n), tokens: n.tokens });
           const tokens = b.tokens.map(t => ({ ...t, usd: t.amount * px((n.tokens.find(x => x.symbol === t.symbol) || {}).cg) }));
           const nativeUsd = b.native * px(n.cg);
           const usd = nativeUsd + tokens.reduce((s, t) => s + t.usd, 0);
@@ -1109,7 +1120,7 @@ function parEvmSwap(c, deSym, aSym) {
 }
 ipcMain.handle('evmswap:cotizar', async (_e, { de, a, amount } = {}) => {
   const c = loadConfig(); const { p, net } = parEvmSwap(c, de, a);
-  return evmswap.cotizar({ rpc: net.rpc, tokenIn: p.tokenDe, tokenOut: p.tokenA, decIn: p.decDe, decOut: p.decA, amount });
+  return evmswap.cotizar({ rpc: await rpcDe(net), tokenIn: p.tokenDe, tokenOut: p.tokenA, decIn: p.decDe, decOut: p.decA, amount });
 });
 ipcMain.handle('evmswap:enviar', async (_e, { passphrase, walletId, de, a, amount, slippage } = {}) => {
   if (!unlocked) throw new Error('bloqueado');
@@ -1120,7 +1131,7 @@ ipcMain.handle('evmswap:enviar', async (_e, { passphrase, walletId, de, a, amoun
   if (w.ledger) throw new Error('El cambio de tokens con Ledger no está disponible: el aparato no puede mostrar la llamada al contrato y seria firma ciega.');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const { p, net } = parEvmSwap(c, de, a);
-  const r = await evmswap.swap({ rpc: net.rpc, secretHex: w.eth.secret, tokenIn: p.tokenDe, tokenOut: p.tokenA,
+  const r = await evmswap.swap({ rpc: await rpcDe(net), secretHex: w.eth.secret, tokenIn: p.tokenDe, tokenOut: p.tokenA,
     decIn: p.decDe, decOut: p.decA, amount, slippage: Math.min(5, Math.max(0.05, Number(slippage) || 0.5)) },
     (m) => { try { _e.sender.send('evmswap:progress', m); } catch (_) {} });
   logHistory({ type: 'evm-swap', wallet: w.label, desc: `Cambio ${amount} ${de} → ${r.esperado.toFixed(4)} ${a} · Uniswap`, to: '', id: r.hash });
@@ -1186,11 +1197,14 @@ ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to
   if (!w.eth) throw new Error('Esta wallet no tiene cuenta EVM.');
   const n = c.evm.find(x => x.key === network); if (!n) throw new Error('Red no válida.');
   const nativo = !token || token === n.symbol;
+  // El nodo se elige ANTES de firmar y con el chainId comprobado: si el configurado esta
+  // caido se usa una reserva, pero nunca una que sirva otra cadena.
+  const rpcEnvio = await rpcDe(n);
   const r = w.ledger
-    ? (nativo ? await ledger().sendNative({ index: w.hwIndex, rpc: n.rpc, to, amount })
-              : await ledger().sendToken({ index: w.hwIndex, rpc: n.rpc, token, to, amount }))
-    : (nativo ? await eth.sendNative({ rpc: n.rpc, secretHex: w.eth.secret, to, amount })
-              : await eth.sendToken({ rpc: n.rpc, secretHex: w.eth.secret, token, to, amount }));
+    ? (nativo ? await ledger().sendNative({ index: w.hwIndex, rpc: rpcEnvio, to, amount })
+              : await ledger().sendToken({ index: w.hwIndex, rpc: rpcEnvio, token, to, amount }))
+    : (nativo ? await eth.sendNative({ rpc: rpcEnvio, secretHex: w.eth.secret, to, amount })
+              : await eth.sendToken({ rpc: rpcEnvio, secretHex: w.eth.secret, token, to, amount }));
   logHistory({ type: 'send-evm', wallet: w.label, desc: `Envío ${amount} ${nativo ? n.symbol : 'token'} · ${n.name}`, to, id: r.hash });
   return r;
 });
@@ -1201,7 +1215,7 @@ const walletById = (id) => unlocked.data.wallets.find(w => w.id === id);
 ipcMain.handle('bridge:tokens', async (_e, { walletId, dir }) => {
   if (!unlocked) throw new Error('bloqueado');
   const w = walletById(walletId); const b = loadConfig().bridge; if (!w) return [];
-  if (dir === 'evm2kda') { if (!w.eth) return []; return bridge.getEvmBalances({ rpc: b.evm.rpc, address: w.eth.address, routes: b.routes }); }
+  if (dir === 'evm2kda') { if (!w.eth) return []; return bridge.getEvmBalances({ rpc: await rpcDe(b.evm, 'puente-evm'), address: w.eth.address, routes: b.routes }); }
   if (!w.kda) return []; return bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: b.routes, account: w.kda.account });
 });
 ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipient, amount }) => {
@@ -1210,7 +1224,7 @@ ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipien
   const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
-    return bridge.dryRunEvm2Kda({ rpc: b.evm.rpc, router: route.evmRouter, evmToken: route.evmToken, fromAddress: w.eth.address, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
+    return bridge.dryRunEvm2Kda({ rpc: await rpcDe(b.evm, 'puente-evm'), router: route.evmRouter, evmToken: route.evmToken, fromAddress: w.eth.address, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
   }
   if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
   return bridge.dryRunKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount });
@@ -1229,7 +1243,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
     const kb = async () => (await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: [route], account: recipient }))[0].balance;
     const before = await kb().catch(() => 0);
-    const res = await bridge.sendEvm2Kda({ rpc: b.evm.rpc, secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
+    const res = await bridge.sendEvm2Kda({ rpc: await rpcDe(b.evm, 'puente-evm'), secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
     // Esperar la llegada a Kadena (relayer)
     onStep({ step: 'kadena', status: 'run', detail: 'Esperando al relayer del puente…' });
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -1242,7 +1256,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   // KADENA -> EVM real: dispatch firmado en el fork + espera de llegada del token al lado EVM
   if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
-  const evmBal = async () => { try { return (await bridge.getEvmBalances({ rpc: b.evm.rpc, address: recipient, routes: [route] }))[0].balance; } catch (_) { return 0; } };
+  const evmBal = async () => { try { return (await bridge.getEvmBalances({ rpc: await rpcDe(b.evm, 'puente-evm'), address: recipient, routes: [route] }))[0].balance; } catch (_) { return 0; } };
   const before = await evmBal();
   const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
