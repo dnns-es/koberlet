@@ -570,3 +570,25 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .rklink{background:none;border:none;padding:0;font:inherit;color:var(--kda-d);
         cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
 .rklink:hover{text-decoration:underline solid}
+
+/* Launch: ficha de la venta */
+.lz-cab{display:flex;align-items:flex-start;gap:10px;margin:14px 0 12px}
+.lz-nom{font-weight:700;font-size:15px}
+.lz-estado{flex:none;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
+.lz-estado.abierta{background:rgba(99,224,56,.16);color:#3d8a1f}
+.lz-estado.cerrada{background:rgba(140,140,140,.18);color:#666}
+.lz-datos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.lz-datos>div{background:var(--soft,#f4f7f2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.lz-datos .etiq{font-size:11px;text-transform:uppercase;letter-spacing:.4px;opacity:.65;margin-bottom:4px}
+.lz-datos .cifra{font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.lz-saldo{font-size:12px;opacity:.8;margin-bottom:12px}
+.lz-riesgos{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.lz-riesgos summary{cursor:pointer;font-weight:600;font-size:13px}
+.lz-riesgos p{margin:8px 0 0;line-height:1.45}
+:root[data-theme="dark"] .lz-datos>div{background:rgba(255,255,255,.04)}
+:root[data-theme="dark"] .lz-estado.abierta{color:#8ce85f}
+
+/* Ordenes limite: la caducidad es un dato fijo, no un campo. Se alinea con el
+   desplegable de al lado para que la fila no quede coja. */
+#ord-caduca{padding-top:10px;line-height:1.35}
+#ord-libro>div{padding:3px 0}

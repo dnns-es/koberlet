@@ -31,3 +31,13 @@ _seed.txt
 diag-deriv.js
 .publicar-tmp/
 dist-installer/
+
+# Destino de publicacion (servidor y rutas reales de quien publica)
+.publicar.conf
+
+# Bitacora interna: lleva rutas de otros proyectos y negocio de terceros.
+# Se queda en el PC de quien publica, no en el repositorio.
+CUADERNO.md
+
+# Informes internos de auditoria de secretos (citan infraestructura real)
+AUDITORIA_SECRETOS_*.md

@@ -8,6 +8,8 @@ Monedero de escritorio **no custodial** multi-cadena (Kadena + EVM) hecho con El
 - **Crear/importar**: semilla BIP-39 (compatible eckoWallet/Chainweaver/MetaMask, con escaneo de índices) o clave privada.
 - **Enviar/recibir**: firma ed25519 (KDA, tweetnacl+blakejs) y secp256k1 (EVM, ethers v6). Todo envío exige la contraseña.
 - **Mercado**: swap KDA ⇄ kb-USDC no custodial contra el pool kaddex.exchange del fork (chain 2).
+- **Órdenes límite**: depósito en el contrato `free.ksw2` del fork; se ejecuta solo cuando el precio llega al objetivo. Las dispara el vigilante de KoberluSW pagando su propio gas — Koberlet solo crea y cancela. Cancelar devuelve el depósito entero.
+- **DCA**: planes de compra periódica sobre `free.ksw-dca2`, mismo reparto de papeles.
 - **Puente Kinesis** (experimental): Kadena ⇄ EVM en ambos sentidos, con dry-run sin firmar antes de ejecutar.
 - **Historial** on-chain (indexador kdaindex.dnns.es con caché incremental) + registro local EVM/puente.
 - **Auto-update in-place**: descarga solo el código (`resources/app`), lo aplica con respaldo y se reinicia; la bóveda no se toca.
@@ -30,6 +32,8 @@ lib/wallets.js   derivación BIP-39 / import-export
 lib/kda.js       saldos + envío Kadena (20 chains)
 lib/eth.js       saldos + envío EVM multi-red
 lib/swap.js      swap AMM kaddex (fork chain 2)
+lib/dca.js       planes DCA + fontaneria de firma que comparten DCA y ordenes
+lib/ordenes.js   ordenes limite free.ksw2 (cotizar, crear, cancelar, libro)
 lib/bridge.js    puente Kinesis (dry-run + envío real)
 renderer/        UI (HTML/CSS/JS plano, sin frameworks)
 build-portable.sh    ensambla el portable en portable-build/
@@ -38,6 +42,27 @@ build-app-zip.sh     el paquete de auto-update (solo el codigo)
 publicar.sh          publica una version entera y deja el enlace al dia
 notas/<version>.json novedades que ve el usuario al actualizar
 ```
+
+## Órdenes límite — qué está comprobado y qué no
+
+Contrastado contra la cadena el **05/09/2026** (`free.ksw2`, chain 2 del fork, mainnet01):
+
+- Constantes vivas del contrato: comisión 0,5 %, mínimos 100 KDA / 1 kb-USDC,
+  `MAX-POOL-FRACTION` 10 %, sin caducidad práctica (100 años), `paused` = false.
+- Cuenta de custodia `c:aTPrDBF5HQWwLBXmMwNc3JF83cA5cBywkYbQdac5XaY`.
+- Las cotizaciones salen igual que las de KoberluSW: reservas proyectadas al precio de
+  disparo (k = rk·ru constante) y cálculo sobre el **neto** tras la comisión. Comprobado
+  a mano contra el pool real en los dos sentidos.
+- `test/ordenes.test.js` fija el truncado hacia abajo y la inversión del trigger en las
+  compras. Son los dos fallos que no darían la cara hasta tener dinero puesto.
+
+**Sin comprobar todavía:** no se ha creado ninguna orden real en mainnet desde Koberlet
+(hace falta la contraseña de la bóveda y dinero de verdad), ni se ha visto la pantalla
+con la bóveda abierta. La primera orden conviene hacerla por el mínimo (100 KDA).
+
+**Una diferencia a propósito con KoberluSW:** si no se puede leer la liquidez del pool,
+la web cae al precio "de pizarra" y firma igual; Koberlet se niega a firmar. Un mínimo
+calculado sin pool sale demasiado alto y deja la orden abierta sin ejecutarse nunca.
 
 ## Desarrollo
 

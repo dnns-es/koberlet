@@ -1,0 +1,20 @@
+# Plantilla del destino de publicacion. Copiala a .publicar.conf y pon lo tuyo:
+#
+#   cp .publicar.conf.ejemplo .publicar.conf
+#
+# .publicar.conf esta en .gitignore y no se sube nunca: ahi van el servidor y las rutas
+# reales de quien publica. Esta plantilla existe para que el proceso de publicacion sea
+# auditable sin tener que enseñar la infraestructura de nadie.
+
+# Llave SSH con la que se entra al servidor (ruta local, la llave NO va en el repo).
+LLAVE=~/.ssh/mi-llave
+
+# usuario@host del servidor donde se dejan los paquetes.
+SRV=usuario@mi-servidor.example
+
+# Carpeta del servidor donde aterrizan los zip y latest.json.
+DIR=/ruta/en/el/servidor/koberlet
+
+# URL publica que sirve esa misma carpeta. La app consulta $BASE/latest.json
+# para saber si hay version nueva, asi que tiene que apuntar al mismo sitio que DIR.
+BASE=https://descargas.example/koberlet
