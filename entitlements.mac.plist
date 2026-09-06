@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- V8 genera código en tiempo de ejecución: sin esto Electron no arranca
+       bajo runtime endurecido (obligatorio para notarizar). -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- Electron usa ELECTRON_RUN_AS_NODE y otras variables DYLD_*. -->
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+
+  <!-- Carga de módulos nativos (.node): node-hid (Ledger) y keccak.
+       Se deja como red de seguridad, pero probablemente sobra: build-mac.sh
+       firma cada .node con esta misma identidad, y en pruebas locales node-hid
+       y keccak cargaron igual sin esta clave. Quitarla endurece un poco la
+       app; antes de publicar así, comprobar el flujo Ledger completo (añadir
+       cuenta y firmar un envío) en un Mac limpio. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>

@@ -31,8 +31,15 @@ hdiutil create \
   -ov \
   "$DMG" >/dev/null
 
-echo "==> Firmando el DMG ad-hoc"
-codesign --force --sign - "$DMG" 2>/dev/null || true
+# El DMG se firma con la misma identidad que la app: con Developer ID queda
+# listo para notarizar, y sin ella se mantiene la firma ad-hoc de siempre.
+if [ -n "${DEVELOPER_ID:-}" ]; then
+  echo "==> Firmando el DMG con Developer ID"
+  codesign --force --timestamp --sign "$DEVELOPER_ID" "$DMG"
+else
+  echo "==> Firmando el DMG ad-hoc"
+  codesign --force --sign - "$DMG" 2>/dev/null || true
+fi
 
 rm -rf "$STAGE"
 
