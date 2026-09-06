@@ -2620,7 +2620,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err">${t('offline')}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? fmtCorto(bl.native || 0, 2) + ' KDA' : '$' + fmt(bl.usd || 0, 2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err" title="${esc(bl.errorMsg || '')}">${t('offline')}${bl.errorMsg ? ' ⓘ' : ''}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? fmtCorto(bl.native || 0, 2) + ' KDA' : '$' + fmt(bl.usd || 0, 2)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
