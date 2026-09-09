@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 // Toda direccion Ethereum del codigo tiene que llevar bien el checksum EIP-55.
 //
 // No es cosmetico: en Ethereum el patron de mayusculas ES la suma de verificacion, y

@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 // Proceso principal. Las privadas viven SOLO aquí (nunca en el renderer). Se firma y se exporta aquí.
 const { app, BrowserWindow, ipcMain, shell, dialog, nativeImage } = require('electron');
 const path = require('path');

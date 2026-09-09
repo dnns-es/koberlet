@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 // Puente seguro renderer <-> main. El renderer solo ve estas funciones; nunca las claves (salvo export explícito).
 const { contextBridge, ipcRenderer } = require('electron');
 
