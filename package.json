@@ -5,7 +5,7 @@
   "description": "Koberlet — monedero de escritorio multi-cadena (Kadena + EVM) de DNNS",
   "main": "main.js",
   "author": "DNNS",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
     "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js"
