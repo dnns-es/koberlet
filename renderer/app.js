@@ -2833,7 +2833,30 @@ function askSend(summary, fn, recipient, opts) {
   } else { chk.hidden = true; btn.disabled = false; ok.onchange = null; }
   $('modal-send').hidden = false;
 }
-$('btn-confirm-send').onclick = async () => { if ($('btn-confirm-send').disabled) return; try { msg($('send-msg'), t('signing')); const okmsg = await window._sendFn($('send-pass').value); msg($('send-msg'), '✅ ' + okmsg, 'ok'); loadBalances(); setTimeout(() => { $('modal-send').hidden = true; }, 2500); } catch (e) { const m = cleanErr(e); msg($('send-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err'); } };
+// Este boton es el que dispara TODAS las operaciones que mueven dinero: envios, puente,
+// mercado, launch, DCA, ordenes y NFT pasan por aqui. Firmar y difundir tarda segundos y en
+// pantalla solo cambia un texto, asi que es normal que alguien vuelva a pulsar. Hasta ahora
+// eso mandaba la operacion DOS VECES: la guarda miraba si el boton estaba desactivado, pero
+// nadie lo desactivaba nunca. Se desactiva mientras dura, y solo se devuelve si ha fallado
+// (si ha salido bien no hay nada que repetir y el modal se cierra solo).
+$('btn-confirm-send').onclick = async () => {
+  const b = $('btn-confirm-send');
+  if (b.disabled) return;
+  b.disabled = true;
+  try {
+    msg($('send-msg'), t('signing'));
+    const okmsg = await window._sendFn($('send-pass').value);
+    msg($('send-msg'), '✅ ' + okmsg, 'ok');
+    loadBalances();
+    setTimeout(() => { $('modal-send').hidden = true; }, 2500);
+  } catch (e) {
+    const m = cleanErr(e);
+    msg($('send-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err');
+    // Se devuelve el boton como estaba, respetando la casilla de comprobar el destinatario:
+    // si esta sin marcar tiene que seguir bloqueado, como al abrir el dialogo.
+    b.disabled = !$('send-addr-check').hidden && !$('send-addr-ok').checked;
+  }
+};
 $('send-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-confirm-send').click(); });
 $('btn-refresh').onclick = loadBalances;
 
