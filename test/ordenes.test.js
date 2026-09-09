@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 // Test de las cuentas de las ordenes limite (contrato free.ksw2). Sin red: comprueba
 // las dos cosas que romperian en silencio y solo se notarian con dinero puesto.
 //

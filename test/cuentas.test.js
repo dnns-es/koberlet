@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 // Test del validador de cuentas Kadena. Sin red: es la foto de lo que la cadena acepta,
 // contrastada el 26/08/2026 contra coin.validate-account e is-principal en mainnet
 // (nodo api.chainweb-community.org, chain 2). Si algun dia cambia el contrato, se repite

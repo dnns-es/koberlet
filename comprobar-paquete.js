@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Comprobacion de humo del paquete recien construido, ANTES de subirlo.
  *

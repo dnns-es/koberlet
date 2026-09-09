@@ -1,5 +1,7 @@
 # Koberlet
 
+[![Licencia: Apache 2.0](https://img.shields.io/badge/licencia-Apache%202.0-blue.svg)](LICENSE)
+
 Monedero de escritorio **no custodial** multi-cadena (Kadena + EVM) hecho con Electron. Portable: se copia la carpeta y se ejecuta, sin instalar nada.
 
 ## Qué hace
@@ -69,15 +71,22 @@ calculado sin pool sale demasiado alto y deja la orden abierta sin ejecutarse nu
 ```
 npm install
 npm start            # lanza la app con Electron
-npm test             # validador de cuentas Kadena (42 casos, sin red)
+npm test             # 78 casos sin red: cuentas Kadena, direcciones EVM y ordenes
 bash build-portable.sh   # genera el portable (Windows)
 ```
 
 ## Publicar una version
 
+Esto es para quien publica las compilaciones oficiales; si has hecho un fork, tendras que
+apuntarlo a tu propio servidor.
+
 ```
+cp .publicar.conf.ejemplo .publicar.conf   # una vez por maquina: servidor y rutas
 bash publicar.sh
 ```
+
+`.publicar.conf` no va en el repositorio: lleva el servidor y las rutas reales de quien
+publica, y a nadie mas le sirven. El script se niega a arrancar si falta.
 
 Un solo comando. Sube la version en `package.json`, escribe `notas/<version>.json` con
 las novedades y lanza eso: construye el paquete de auto-update **y** el instalador
@@ -97,3 +106,25 @@ queda en la version anterior a proposito y el script lo avisa.
 Node 20 / Electron. Sin backend propio: habla directo con los nodos Chainweb, RPCs EVM públicos, CoinGecko y el indexador.
 
 > Este repo no contiene ninguna clave ni dato de wallet; ver `.gitignore`.
+
+## Licencia y nombre
+
+El **codigo** es libre, bajo [Apache 2.0](LICENSE). El **nombre** no: "Koberlet" y "DNNS"
+son marcas de DNNS.es y no se licencian con el software. Puedes hacer un fork y
+distribuirlo, con otro nombre. El porque y los limites, en [TRADEMARK.md](TRADEMARK.md).
+
+**Las unicas compilaciones oficiales son las publicadas por DNNS.es.** Nadie mas firma
+Koberlet. Si te llega una copia firmada por otro, no es nuestra.
+
+## Colaborar
+
+- Fallos, ideas y PRs: [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Fallos de seguridad: no abras un issue.** Lee [SECURITY.md](SECURITY.md) primero.
+- El proyecto ha pasado auditorias propias y una externa; los informes estan en el repo.
+
+## Aviso
+
+Esto custodia claves privadas y firma transacciones con dinero real. Se publica **tal
+cual**, sin garantia de ningun tipo, como dice la licencia. Prueba con cantidades
+pequenas, guarda tu frase de recuperacion fuera del ordenador y no confies en ningun
+monedero -este incluido- mas de lo que estes dispuesto a perder.
