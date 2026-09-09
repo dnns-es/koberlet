@@ -1,3 +1,6 @@
+// Koberlet - Copyright 2026 DNNS.es (Oberluss)
+// SPDX-License-Identifier: Apache-2.0
+
 const $ = (id) => document.getElementById(id);
 function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textContent = text; }
 // L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
