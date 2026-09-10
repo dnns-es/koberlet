@@ -106,6 +106,7 @@ function proveedorFalso(guion) {
 
   // Pero "row not found" SI es un cero de verdad: la cuenta aun no tiene ese token.
   // Se levanta un nodo Pact de mentira en loopback para provocar cada respuesta.
+  const cerrar = (s) => new Promise((res) => { s.closeAllConnections(); s.close(() => res()); });
   const responde = (cuerpo) => new Promise((res) => {
     const s = http.createServer((_q, r) => { r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify(cuerpo)); });
     s.listen(0, '127.0.0.1', () => res(s));
@@ -113,17 +114,17 @@ function proveedorFalso(guion) {
   let s = await responde({ result: { status: 'failure', error: { message: 'with-read: row not found: k:abc' } } });
   let k = await bridge.getKadenaBalances({ node: 'http://127.0.0.1:' + s.address().port, networkId: 'mainnet01', chain: 2, routes: [rutas[0]], account: 'k:x' });
   comprueba('Kadena "row not found" SI es cero de verdad', k[0].balance, 0);
-  s.close();
+  await cerrar(s);
 
   s = await responde({ result: { status: 'failure', error: { message: 'Database exception: node on fire' } } });
   k = await bridge.getKadenaBalances({ node: 'http://127.0.0.1:' + s.address().port, networkId: 'mainnet01', chain: 2, routes: [rutas[0]], account: 'k:x' });
   comprueba('Kadena: otro fallo cualquiera NO es cero', k[0].balance, null);
-  s.close();
+  await cerrar(s);
 
   s = await responde({ result: { status: 'success', data: { decimal: '12.5' } } });
   k = await bridge.getKadenaBalances({ node: 'http://127.0.0.1:' + s.address().port, networkId: 'mainnet01', chain: 2, routes: [rutas[0]], account: 'k:x' });
   comprueba('Kadena: un saldo bueno se lee bien', k[0].balance, 12.5);
-  s.close();
+  await cerrar(s);
 
   // --- 4. Que nadie vuelva a construir el proveedor por su cuenta ----------------
   // Diez sitios lo hacian a mano; el tope de grupo y la espera sin bloques solo sirven
@@ -141,6 +142,22 @@ function proveedorFalso(guion) {
   comprueba('nadie construye un JsonRpcProvider fuera de evmnodo.js', sueltos.join(',') || '(ninguno)', '(ninguno)');
   comprueba('nadie usa tx.wait() (escanea bloques): se usa esperarRecibo', esperas.join(',') || '(ninguno)', '(ninguno)');
 
+  // --- 5. Todo proveedor que se crea, se destruye --------------------------------
+  // ethers v6 no suelta un JsonRpcProvider: si el nodo no contesta, se queda reintentando
+  // la deteccion de red cada segundo PARA SIEMPRE. Diez sitios lo creaban y ninguno lo
+  // destruia, asi que cada consulta contra un nodo caido dejaba un zombi. Se comprueba
+  // leyendo el codigo, que es lo unico que salta cuando alguien anada el sitio once.
+  const fugas = [];
+  for (const f of fs.readdirSync(dirLib).filter(f => f.endsWith('.js'))) {
+    const txt = fs.readFileSync(path.join(dirLib, f), 'utf8');
+    const codigo = txt.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');
+    if (/nodo\.proveedor\(|[^.\w]proveedor\(/.test(codigo) && !/\.destroy\(\)/.test(codigo)) fugas.push(f);
+  }
+  comprueba('quien crea un proveedor lo destruye', fugas.join(',') || '(ninguno)', '(ninguno)');
+
   console.log(fallos === 0 ? 'OK: ' + casos + ' casos, 0 fallos' : 'HAY ' + fallos + ' FALLOS');
-  process.exit(fallos === 0 ? 0 : 1);
+  // Sin process.exit(): si algo queda abierto, el test se queda colgado y se nota.
+  // Forzar la salida tapaba una fuga real (proveedores sin destruir) y, de propina,
+  // reventaba libuv en Windows al cortar mientras aun se cerraban sockets.
+  process.exitCode = fallos === 0 ? 0 : 1;
 })();
