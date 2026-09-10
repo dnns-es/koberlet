@@ -11,6 +11,17 @@ instalador y la distribución.
 **Contexto:** el instalador se acaba de repartir en el grupo de Telegram de KDA → usuarios
 reales con fondos reales.
 
+> **RESOLUCIÓN (comprobada el 2026-09-10 sobre la v2.8.3).** A-1 corregido: `publicar.sh` firma
+> Ed25519 el instalador completo además del paquete de auto-update, y publica los dos sha256.
+> A-2 corregido (todo campo remoto pasa por `esc()`). A-3 corregido: fuera los `axios` con
+> vulnerabilidades altas; `npm audit --omit=dev` solo deja 9 bajas. F-1 corregido (los botones
+> se enganchan por JS, no con `onclick=` en línea). M-1 corregido (`MAX_SALTOS = 3` y se rechaza
+> el salto de https a http). M-3 corregido (las comillas de la ruta se escapan antes de ir a
+> PowerShell). B-1 corregido (techo `N <= 2^20`). B-2 es informativo.
+>
+> **Sigue abierto M-2** (sin firma de código): requiere un certificado que aún no se ha comprado.
+> Es visible para cualquiera que instale la app, porque Windows lo avisa por su cuenta.
+
 ## Resumen ejecutivo
 
 El núcleo sigue sano: las claves privadas no salen del proceso principal, el auto-update

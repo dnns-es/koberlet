@@ -86,3 +86,15 @@ something privately, with no details, and you'll be given a contact route.
 The repository includes the reports from the audits this project has been through. If
 you find something an audit called fixed and it isn't, say so — that is even more
 interesting.
+
+### Gracias / Acknowledgements
+
+- **Alex ([@DaisukeFlowers](https://github.com/DaisukeFlowers))** — auditoría externa de julio de
+  2026 (`docs/security/AUDIT-2026-07.md`), por su cuenta y sin cobrar nada. Encontró el fallo
+  crítico del auto-update sin firmar. Publicada aquí con su permiso expreso.
+- **01dCod3r** — el trabajo sobre los nodos EVM de la 2.8.3 y el empaquetado para macOS.
+
+- **Alex ([@DaisukeFlowers](https://github.com/DaisukeFlowers))** — external audit, July 2026
+  (`docs/security/AUDIT-2026-07.md`), unpaid and on his own initiative. He found the critical
+  unsigned auto-update flaw. Published here with his express permission.
+- **01dCod3r** — the EVM node work in 2.8.3 and the macOS packaging.
