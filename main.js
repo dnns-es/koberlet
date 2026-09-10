@@ -71,7 +71,14 @@ const DEFAULT_CONFIG = {
   },
   // Redes EVM (la MISMA dirección 0x vale en todas). cg = id CoinGecko del nativo. enabled = mostrar por defecto.
   evm: [
-    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://ethereum-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#627eea',
+    // OJO con el nodo de Ethereum: publicnode dejo de servir bloques PEDIDOS POR NUMERO
+    // (eth_getBlockByNumber con un numero, aunque sea el ultimo bloque) y contesta
+    // "Archive requests require a personal token" con HTTP 403. Ethers usa justo esa
+    // llamada dentro de tx.wait() para mirar si te reemplazaron la transaccion, asi que
+    // TODO envio en Ethereum (puente, cambio USDT/USDC, transferencia) reventaba al
+    // esperar la confirmacion, con la transaccion ya firmada y en la cadena. Solo pasa en
+    // Ethereum: los nodos de Arbitrum/Base/BNB/Polygon de publicnode siguen sirviendolos.
+    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://eth.drpc.org', symbol: 'ETH', cg: 'ethereum', color: '#627eea',
       tokens: [{ symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', cg: 'tether' }] },
     { key: 'arb', name: 'Arbitrum', enabled: false, rpc: 'https://arbitrum-one-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#28a0f0',
       tokens: [{ symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', cg: 'tether' }] },
@@ -133,7 +140,7 @@ const DEFAULT_CONFIG = {
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
-    evm: { rpc: 'https://ethereum-rpc.publicnode.com', name: 'Ethereum', domain: 1 },
+    evm: { rpc: 'https://eth.drpc.org', name: 'Ethereum', domain: 1 },   // mismo motivo que en `evm` (publicnode ya no da bloques por numero); loadConfig lo reemplaza por el que tengas en Ajustes
     // OJO con las mayusculas de estas direcciones: en Ethereum el patron de mayusculas ES la
     // suma de verificacion (EIP-55) y ethers RECHAZA la direccion antes de llamar. Los routers
     // de USDT, DAI y WBTC lo tenian mal y el puente fallaba con "bad address checksum" en la
@@ -196,7 +203,6 @@ const loadConfig = () => {
   c.launch = DEFAULT_CONFIG.launch;     // el catalogo de ventas es fijo del codigo
   c.dca = DEFAULT_CONFIG.dca;           // modulo y tokens del DCA: fijos del codigo
   c.evmSwap = DEFAULT_CONFIG.evmSwap;   // el catalogo de cambios es fijo del codigo, como el puente
-  c.bridge = DEFAULT_CONFIG.bridge; // el puente (rutas/tokens/cg) es fijo del fork; una config guardada vieja podía quedarse sin `cg` → precios kb-* a 0
   // Auditoría Alex #4: las redes EVM se reconstruyen desde DEFAULT (routers, tokens, símbolos fijos del código);
   // del usuario solo se conserva `enabled` y un `rpc` que sea https válido. Así el renderer no puede repuntar
   // los endpoints de firma a un nodo hostil ni inyectar contratos de token arbitrarios.
@@ -206,6 +212,14 @@ const loadConfig = () => {
     const s = savedEvm ? savedEvm.find(x => x.key === n.key) : null;
     return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: (s && httpsOk(s.rpc)) ? s.rpc : n.rpc };
   });
+  // El puente (rutas/tokens/cg) es fijo del fork: una config guardada vieja podia quedarse sin `cg` -> precios kb-* a 0.
+  // Lo unico que NO se fija aqui es el nodo: el puente usa el mismo que la red Ethereum, para que cambiarlo en Ajustes
+  // sirva tambien para el puente. Antes no: `bridge.evm.rpc` estaba clavado en el codigo, asi que cuando el nodo de
+  // fabrica se caia (o dejaba de servir bloques por numero) el usuario no tenia forma de arreglarlo sin recompilar.
+  // El valor sale del MISMO campo ya saneado de `c.evm` (https validado, auditoria Alex #4): no abre via nueva para
+  // repuntar la firma a un nodo hostil, es exactamente el nodo que el usuario ya eligio para Ethereum.
+  const redEth = c.evm.find(n => n.key === 'eth');
+  c.bridge = { ...DEFAULT_CONFIG.bridge, evm: { ...DEFAULT_CONFIG.bridge.evm, rpc: (redEth && redEth.rpc) || DEFAULT_CONFIG.bridge.evm.rpc } };
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   c.lockMinutes = (c.lockMinutes === undefined || c.lockMinutes === null) ? 10 : Math.max(0, Number(c.lockMinutes) || 0); // M-2: auto-bloqueo, 10 min por defecto (0=nunca)
   // Libreta de direcciones (idea 1): lista {alias, address, kind:'kda'|'evm'} saneada. No es secreto.
