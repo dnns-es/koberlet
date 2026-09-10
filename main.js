@@ -1271,8 +1271,10 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   // KADENA -> EVM real: dispatch firmado en el fork + espera de llegada del token al lado EVM
   if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
-  const evmBal = async () => { try { return (await bridge.getEvmBalances({ rpc: b.evm.rpc, address: recipient, routes: [route] }))[0].balance; } catch (_) { return 0; } };
-  const before = await evmBal();
+  // Devuelve null cuando no se pudo preguntar. Antes devolvia 0, y un 0 falso al principio hacia
+  // que CUALQUIER lectura posterior pareciera "ha llegado el dinero". Mejor no saber que mentir.
+  const evmBal = async () => { try { const v = (await bridge.getEvmBalances({ rpc: b.evm.rpc, address: recipient, routes: [route] }))[0].balance; return (v === null || v === undefined) ? null : v; } catch (_) { return null; } };
+  let before = await evmBal();
   const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
   let arrived = false;
@@ -1287,6 +1289,8 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     for (let i = 0; i < 24 && !arrived; i++) {
       await sleep(15000);
       const now = await evmBal();
+      if (now === null) continue;              // no se pudo leer: ni confirma ni desmiente, se reintenta
+      if (before === null) { before = now; continue; }   // primera lectura buena: sirve de referencia
       if (now > before + 1e-9) {
         onStep({ step: 'evm', status: 'ok', detail: 'recibido · saldo ' + now, nota: NOTA_OK });
         arrived = true;

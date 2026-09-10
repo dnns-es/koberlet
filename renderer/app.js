@@ -319,6 +319,7 @@ const LANG = {
     lbl_to_kda: 'Cuenta Kadena destino (k:…)', lbl_to_evm: 'Dirección EVM destino (0x…)',
     no_wallet: '— sin wallet —', other_addr: 'Otra dirección…',
     loading_tokens: 'cargando saldos…', tok_balance: '(saldo {b})',
+    bal_unknown: 'saldo no disponible: el nodo no contesto. NO quiere decir que sea cero.',
     br_no_from: 'No hay wallet origen para esa dirección.', br_need: 'Elige destino y cantidad.', br_simulating: 'Simulando…',
     br_sim_ok: '✅ La transacción se arma bien (simulación correcta).',
     br_toll: ' <b>Peaje del puente: {t} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).',
@@ -719,6 +720,7 @@ const LANG = {
     lbl_to_kda: 'Destination Kadena account (k:…)', lbl_to_evm: 'Destination EVM address (0x…)',
     no_wallet: '— no wallet —', other_addr: 'Other address…',
     loading_tokens: 'loading balances…', tok_balance: '(balance {b})',
+    bal_unknown: 'balance unavailable: the node did not answer. This does NOT mean zero.',
     br_no_from: 'No source wallet for that address.', br_need: 'Choose destination and amount.', br_simulating: 'Simulating…',
     br_sim_ok: '✅ The transaction builds correctly (simulation OK).',
     br_toll: ' <b>Bridge toll: {t} KDA</b> (charged on Kadena when dispatching, besides the bridged token).',
@@ -1255,8 +1257,17 @@ async function loadBridgeTokens(walletId) {
   if (!walletId) { $('br-token').innerHTML = ''; return; }
   $('br-token').innerHTML = `<option>${t('loading_tokens')}</option>`; $('br-tokhint').textContent = '';
   const toks = await window.api.bridgeTokens(walletId, DIR);
-  $('br-token').innerHTML = toks.map(tk => `<option value="${tk.symbol}" data-bal="${tk.balance}">${tk.symbol} — ${tk.balance}</option>`).join('');
-  $('br-token').onchange = () => { const o = $('br-token').selectedOptions[0]; $('br-tokhint').textContent = o ? tr('tok_balance', { b: o.dataset.bal }) : ''; };
+  // balance null = no se pudo preguntar. Se pinta '?' y NO '0': un cero aqui se lee como
+  // "no tienes fondos", que es justo lo que no sabemos. El motivo va en la pista de abajo.
+  $('br-token').innerHTML = toks.map(tk => {
+    const hay = tk.balance !== null && tk.balance !== undefined;
+    const txt = hay ? tk.balance : '?';
+    return `<option value="${tk.symbol}" data-bal="${txt}" data-err="${hay ? '' : esc(String(tk.error || '1'))}">${tk.symbol} — ${txt}</option>`;
+  }).join('');
+  $('br-token').onchange = () => {
+    const o = $('br-token').selectedOptions[0];
+    $('br-tokhint').textContent = !o ? '' : (o.dataset.err ? t('bal_unknown') : tr('tok_balance', { b: o.dataset.bal }));
+  };
   $('br-token').onchange();
 }
 $('btn-bridge-sim').onclick = async () => {
