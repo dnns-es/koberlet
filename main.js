@@ -208,9 +208,16 @@ const loadConfig = () => {
   // los endpoints de firma a un nodo hostil ni inyectar contratos de token arbitrarios.
   const savedEvm = Array.isArray(c.evm) ? c.evm : null;
   const httpsOk = (u) => { try { return new URL(u).protocol === 'https:'; } catch (_) { return false; } };
+  // El nodo se guarda en config.json, asi que cambiar el de fabrica NO arregla a quien ya haya abierto
+  // Koberlet alguna vez: tiene el de antes pegado ahi y seguiria yendo al nodo que ya no sirve bloques
+  // por numero. Hay que soltarlo a mano, una sola vez. Del minimo alcance posible: solo la red 'eth' y
+  // solo si lo guardado es EXACTAMENTE ese endpoint, para no pisarle a nadie un nodo elegido a conciencia.
+  // Los de Arbitrum/Base/BNB/Polygon de publicnode siguen bien y no se tocan.
+  const NODO_ETH_ROTO = 'https://ethereum-rpc.publicnode.com';
   c.evm = DEFAULT_CONFIG.evm.map(n => {
     const s = savedEvm ? savedEvm.find(x => x.key === n.key) : null;
-    return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: (s && httpsOk(s.rpc)) ? s.rpc : n.rpc };
+    const suyo = (s && httpsOk(s.rpc) && !(n.key === 'eth' && s.rpc === NODO_ETH_ROTO)) ? s.rpc : null;
+    return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: suyo || n.rpc };
   });
   // El puente (rutas/tokens/cg) es fijo del fork: una config guardada vieja podia quedarse sin `cg` -> precios kb-* a 0.
   // Lo unico que NO se fija aqui es el nodo: el puente usa el mismo que la red Ethereum, para que cambiarlo en Ajustes
