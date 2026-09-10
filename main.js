@@ -218,10 +218,13 @@ const loadConfig = () => {
   // por numero. Hay que soltarlo a mano, una sola vez. Del minimo alcance posible: solo la red 'eth' y
   // solo si lo guardado es EXACTAMENTE ese endpoint, para no pisarle a nadie un nodo elegido a conciencia.
   // Los de Arbitrum/Base/BNB/Polygon de publicnode siguen bien y no se tocan.
-  //  - ethereum-rpc.publicnode.com dejo de dar bloques por numero (rompe tx.wait()).
-  //  - eth.drpc.org rechaza grupos de mas de 3 llamadas, y el puente pide 4 saldos de golpe: los
-  //    ensenaba todos a CERO. Estuvo de nodo por defecto un rato, asi que puede haberse guardado.
-  const NODOS_ETH_INSERVIBLES = ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org'];
+  //  - ethereum-rpc.publicnode.com dejo de dar bloques por numero (rompe la espera de la tx).
+  // OJO al anadir: esta lista es para nodos INSERVIBLES, y quitarle a alguien el nodo que ha
+  // elegido es intrusivo. eth.drpc.org estuvo aqui unas horas porque rechazaba los grupos de mas
+  // de 3 llamadas y pintaba cuatro saldos a cero; desde que lib/evmnodo.js limita el tamano del
+  // grupo funciona perfectamente (medido: 6 de 6 lecturas correctas), asi que ya no pinta nada
+  // aqui. Si un nodo se arregla, sale de la lista; si no, no es un nodo inservible, es una mania.
+  const NODOS_ETH_INSERVIBLES = ['https://ethereum-rpc.publicnode.com'];
   c.evm = DEFAULT_CONFIG.evm.map(n => {
     const s = savedEvm ? savedEvm.find(x => x.key === n.key) : null;
     const suyo = (s && httpsOk(s.rpc) && !(n.key === 'eth' && NODOS_ETH_INSERVIBLES.includes(s.rpc))) ? s.rpc : null;
