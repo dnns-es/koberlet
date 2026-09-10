@@ -78,7 +78,12 @@ const DEFAULT_CONFIG = {
     // TODO envio en Ethereum (puente, cambio USDT/USDC, transferencia) reventaba al
     // esperar la confirmacion, con la transaccion ya firmada y en la cadena. Solo pasa en
     // Ethereum: los nodos de Arbitrum/Base/BNB/Polygon de publicnode siguen sirviendolos.
-    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://eth.drpc.org', symbol: 'ETH', cg: 'ethereum', color: '#627eea',
+    // Y OJO al elegir recambio: ethers AGRUPA varias llamadas en un solo envio (hasta 100), y hay nodos
+    // que limitan el tamano del grupo. eth.drpc.org, sin ir mas lejos, rechaza grupos de mas de 3 en su
+    // plan gratis; como el puente pide los 4 saldos de golpe, fallaba el grupo entero y los cuatro
+    // tokens salian a CERO, que en una cartera es de lo peor que puede pasar. Recambio valido = sirve
+    // bloques por numero Y aguanta grupos de 20. Comprobado asi antes de poner este.
+    { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://eth-mainnet.public.blastapi.io', symbol: 'ETH', cg: 'ethereum', color: '#627eea',
       tokens: [{ symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', cg: 'tether' }] },
     { key: 'arb', name: 'Arbitrum', enabled: false, rpc: 'https://arbitrum-one-rpc.publicnode.com', symbol: 'ETH', cg: 'ethereum', color: '#28a0f0',
       tokens: [{ symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', cg: 'tether' }] },
@@ -140,7 +145,7 @@ const DEFAULT_CONFIG = {
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
-    evm: { rpc: 'https://eth.drpc.org', name: 'Ethereum', domain: 1 },   // mismo motivo que en `evm` (publicnode ya no da bloques por numero); loadConfig lo reemplaza por el que tengas en Ajustes
+    evm: { rpc: 'https://eth-mainnet.public.blastapi.io', name: 'Ethereum', domain: 1 },   // mismo nodo que la red `evm`; loadConfig lo reemplaza por el que tengas en Ajustes
     // OJO con las mayusculas de estas direcciones: en Ethereum el patron de mayusculas ES la
     // suma de verificacion (EIP-55) y ethers RECHAZA la direccion antes de llamar. Los routers
     // de USDT, DAI y WBTC lo tenian mal y el puente fallaba con "bad address checksum" en la
@@ -213,10 +218,13 @@ const loadConfig = () => {
   // por numero. Hay que soltarlo a mano, una sola vez. Del minimo alcance posible: solo la red 'eth' y
   // solo si lo guardado es EXACTAMENTE ese endpoint, para no pisarle a nadie un nodo elegido a conciencia.
   // Los de Arbitrum/Base/BNB/Polygon de publicnode siguen bien y no se tocan.
-  const NODO_ETH_ROTO = 'https://ethereum-rpc.publicnode.com';
+  //  - ethereum-rpc.publicnode.com dejo de dar bloques por numero (rompe tx.wait()).
+  //  - eth.drpc.org rechaza grupos de mas de 3 llamadas, y el puente pide 4 saldos de golpe: los
+  //    ensenaba todos a CERO. Estuvo de nodo por defecto un rato, asi que puede haberse guardado.
+  const NODOS_ETH_INSERVIBLES = ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org'];
   c.evm = DEFAULT_CONFIG.evm.map(n => {
     const s = savedEvm ? savedEvm.find(x => x.key === n.key) : null;
-    const suyo = (s && httpsOk(s.rpc) && !(n.key === 'eth' && s.rpc === NODO_ETH_ROTO)) ? s.rpc : null;
+    const suyo = (s && httpsOk(s.rpc) && !(n.key === 'eth' && NODOS_ETH_INSERVIBLES.includes(s.rpc))) ? s.rpc : null;
     return { ...n, enabled: s ? !!s.enabled : n.enabled, rpc: suyo || n.rpc };
   });
   // El puente (rutas/tokens/cg) es fijo del fork: una config guardada vieja podia quedarse sin `cg` -> precios kb-* a 0.
