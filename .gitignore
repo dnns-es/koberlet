@@ -41,3 +41,6 @@ CUADERNO.md
 
 # Informes internos de auditoria de secretos (citan infraestructura real)
 AUDITORIA_SECRETOS_*.md
+
+# Paquetes sellados en copyright.dnns.es: son una foto del propio repo, no van dentro de el.
+releases/
