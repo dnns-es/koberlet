@@ -8,7 +8,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js"
+    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js && node test/nodo-evm.test.js && node test/config-nodo.test.js"
   },
   "dependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
