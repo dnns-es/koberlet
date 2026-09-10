@@ -20,7 +20,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup', 'devnet-publico'];
+const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup', 'devnet-publico', 'evmnodo'];
 
 async function main() {
   // La ruta se resuelve a ABSOLUTA aqui. Con una relativa sin './' -como la que manda
