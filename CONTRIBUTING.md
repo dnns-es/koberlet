@@ -43,10 +43,14 @@ probaste y contra qué**: devnet, mainnet, con qué wallet, con qué nodo.
 
 ### Licencia y autoría
 
-Mandar un PR significa que aceptas que tu contribución se publique bajo Apache 2.0.
+Mandar un PR significa que aceptas las condiciones de [CLA.md](CLA.md). En resumen:
+**conservas tu copyright** y puedes seguir usando tu código donde quieras, y a cambio das a
+DNNS.es permiso perpetuo para distribuirlo, incluida la licencia que el proyecto decida en
+cada momento. Se firma una sola vez, con una línea en el cuerpo del primer PR.
+
 Conservas tu autoría: quedas en el historial de git y, si el cambio es de peso, en las
-notas de la versión. El nombre "Koberlet" no entra en la licencia — ver
-[TRADEMARK.md](TRADEMARK.md).
+notas de la versión y en [SECURITY.md](SECURITY.md). El nombre "Koberlet" no entra en la
+licencia — ver [TRADEMARK.md](TRADEMARK.md).
 
 ---
 
@@ -89,7 +93,11 @@ against what**: devnet, mainnet, which wallet, which node.
 
 ### Licence and authorship
 
-Sending a PR means you agree to your contribution being published under Apache 2.0. You
-keep your authorship: you stay in the git history and, for significant changes, in the
-release notes. The name "Koberlet" is not part of the licence — see
-[TRADEMARK.md](TRADEMARK.md).
+Sending a PR means you accept the terms of [CLA.md](CLA.md). In short: **you keep your
+copyright** and may go on using your code anywhere you like, and in exchange you give
+DNNS.es perpetual permission to distribute it, including under whatever licence the project
+chooses at any given time. You sign once, with one line in the body of your first PR.
+
+You keep your authorship: you stay in the git history and, for significant changes, in the
+release notes and in [SECURITY.md](SECURITY.md). The name "Koberlet" is not part of the
+licence — see [TRADEMARK.md](TRADEMARK.md).
