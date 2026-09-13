@@ -216,7 +216,12 @@ const rpcDe = (n, clave) => nodo.elegirVivo({
 
 // El puente va por Ethereum: mismas reservas y misma comprobacion que la red 'eth', y misma
 // clave de cache para no sondear dos veces lo mismo.
+// Lee la config el mismo si no se la pasan. REGRESION 2.8.3 (09→13-09-2026): cuatro manejadores
+// del puente lo llamaban con una `c` que no existia en su ambito → ReferenceError → el sentido
+// Ethereum→Kadena entero (saldos, simular, enviar) muerto, y la lista de tokens clavada en
+// "cargando saldos…". Con el argumento opcional ya no hay forma de volver a tropezar ahi.
 const rpcEvmPuente = async (c) => {
+  c = c || loadConfig();
   const eth1 = c.evm.find(n => n.key === 'eth');
   return eth1 ? rpcDe(eth1) : c.bridge.evm.rpc;
 };
@@ -1264,7 +1269,7 @@ async function migrarPuentesViejos() {
     const dir = m[3] === 'Kadena → Ethereum' ? 'kda2evm' : 'evm2kda';
     const msgId = dir === 'kda2evm'
       ? await bridge.messageIdDeRequestKey({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, requestKey: h.id })
-      : await bridge.messageIdDeTxHash({ rpc: await rpcEvmPuente(c), txHash: h.id });
+      : await bridge.messageIdDeTxHash({ rpc: await rpcEvmPuente(), txHash: h.id });
     if (!msgId) continue;
     updateHistory(h.id, { dir, amount: m[1], symbol: m[2], msgId, estado: 'pendiente', desc: String(h.desc).replace(/ \(pendiente relayer\)$/, ' (en camino)') });
   }
@@ -1350,7 +1355,7 @@ const walletById = (id) => unlocked.data.wallets.find(w => w.id === id);
 ipcMain.handle('bridge:tokens', async (_e, { walletId, dir }) => {
   if (!unlocked) throw new Error('bloqueado');
   const w = walletById(walletId); const b = loadConfig().bridge; if (!w) return [];
-  if (dir === 'evm2kda') { if (!w.eth) return []; return bridge.getEvmBalances({ rpc: await rpcEvmPuente(c), address: w.eth.address, routes: b.routes }); }
+  if (dir === 'evm2kda') { if (!w.eth) return []; return bridge.getEvmBalances({ rpc: await rpcEvmPuente(), address: w.eth.address, routes: b.routes }); }
   if (!w.kda) return []; return bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: b.routes, account: w.kda.account });
 });
 ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipient, amount }) => {
@@ -1359,7 +1364,7 @@ ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipien
   const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
-    return bridge.dryRunEvm2Kda({ rpc: await rpcEvmPuente(c), router: route.evmRouter, evmToken: route.evmToken, fromAddress: w.eth.address, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
+    return bridge.dryRunEvm2Kda({ rpc: await rpcEvmPuente(), router: route.evmRouter, evmToken: route.evmToken, fromAddress: w.eth.address, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
   }
   if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
   return bridge.dryRunKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount });
@@ -1378,7 +1383,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
     const kb = async () => (await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: [route], account: recipient }))[0].balance;
     const before = await kb().catch(() => 0);
-    const res = await bridge.sendEvm2Kda({ rpc: await rpcEvmPuente(c), secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
+    const res = await bridge.sendEvm2Kda({ rpc: await rpcEvmPuente(), secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
     // Al historial YA, como "en camino": si el usuario cierra la app en mitad de la espera, el
     // envio no desaparece y el vigilante lo sigue comprobando al volver a abrir.
     const entrada = { type: 'bridge', dir: 'evm2kda', wallet: w.label || '', amount, symbol, msgId: res.messageId || null, estado: 'pendiente', desc: `Puente ${amount} ${symbol} · Ethereum → Kadena (en camino)`, to: recipient, id: res.txHash };
@@ -1393,7 +1398,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
   // Devuelve null cuando no se pudo preguntar. Antes devolvia 0, y un 0 falso al principio hacia
   // que CUALQUIER lectura posterior pareciera "ha llegado el dinero". Mejor no saber que mentir.
-  const evmBal = async () => { try { const v = (await bridge.getEvmBalances({ rpc: await rpcEvmPuente(c), address: recipient, routes: [route] }))[0].balance; return (v === null || v === undefined) ? null : v; } catch (_) { return null; } };
+  const evmBal = async () => { try { const v = (await bridge.getEvmBalances({ rpc: await rpcEvmPuente(), address: recipient, routes: [route] }))[0].balance; return (v === null || v === undefined) ? null : v; } catch (_) { return null; } };
   const before = await evmBal();
   const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
