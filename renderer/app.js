@@ -337,8 +337,13 @@ const LANG = {
     br_warn_k2e: '⚠️ Mueve fondos reales por el puente. Quemará el kb-token en Kadena (dispatch) y cobrará además el PEAJE del puente en KDA de la chain 2 (~37 KDA hacia Ethereum; míralo exacto con Simular). Usa importes que compensen el peaje.',
     br_toll_line: '<br><b>Peaje del puente: {t} KDA</b> (en KDA de la chain 2, aparte del token).',
     br_confirm: '<b>ENVÍO REAL por el puente</b> ({r})<br>Puentear <b>{a} {s}</b> a <span class="mono">{to}</span>',
-    br_done_kda: '✅ Puente completado — recibido en Kadena.', br_pend_kda: '⏳ Enviado y confirmado en Ethereum. Esperando al relayer para que llegue a Kadena.',
-    br_done_eth: '✅ Puente completado — recibido en Ethereum.', br_pend_eth: '⏳ Enviado y confirmado en Kadena. Esperando al relayer hacia Ethereum.',
+    br_done_kda: '✅ Puente completado — recibido en Kadena.', br_pend_kda: '⏳ Enviado y confirmado en Ethereum. En camino hacia Kadena: Koberlet sigue vigilándolo y te avisará al llegar (míralo en el Historial).',
+    br_done_eth: '✅ Puente completado — recibido en Ethereum.', br_pend_eth: '⏳ Enviado y confirmado en Kadena. En camino hacia Ethereum: Koberlet sigue vigilándolo y te avisará al llegar (míralo en el Historial).',
+    hist_br_title: 'Puente {a} {s} · {r}', hist_br_k2e: 'Kadena → Ethereum', hist_br_e2k: 'Ethereum → Kadena',
+    hist_br_pend: '⏳ En camino (esperando al relé)', hist_br_ok: '✅ Entregado', hist_br_check: 'Comprobar', hist_br_checking: 'Comprobando…',
+    hist_br_still: 'Todavía en camino. El relé no lo ha entregado aún; tus fondos no se han perdido.',
+    hist_br_unknown: 'Envío de una versión anterior: no se guardó su identificador, compruébalo mirando el saldo de destino.',
+    toast_br_ok: '🌉 Puente entregado: {a} {s} han llegado a {r}.',
     evm_ctx_on: 'Marca las redes EVM que quieras ver (la misma dirección 0x vale en todas).',
     evm_ctx_off: 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.',
     no_wallet_kda: '— sin wallet Kadena —', no_wallet_eth: '— sin wallet Ethereum —',
@@ -738,8 +743,13 @@ const LANG = {
     br_warn_k2e: '⚠️ Moves real funds through the bridge. It burns the kb-token on Kadena (dispatch) and also charges the bridge TOLL in KDA on chain 2 (~37 KDA towards Ethereum; check the exact value with Simulate). Use amounts that make the toll worth it.',
     br_toll_line: '<br><b>Bridge toll: {t} KDA</b> (in KDA on chain 2, besides the token).',
     br_confirm: '<b>REAL SEND through the bridge</b> ({r})<br>Bridge <b>{a} {s}</b> to <span class="mono">{to}</span>',
-    br_done_kda: '✅ Bridge completed — received on Kadena.', br_pend_kda: '⏳ Sent and confirmed on Ethereum. Waiting for the relayer to deliver on Kadena.',
-    br_done_eth: '✅ Bridge completed — received on Ethereum.', br_pend_eth: '⏳ Sent and confirmed on Kadena. Waiting for the relayer towards Ethereum.',
+    br_done_kda: '✅ Bridge completed — received on Kadena.', br_pend_kda: '⏳ Sent and confirmed on Ethereum. On its way to Kadena: Koberlet keeps watching and will tell you when it arrives (see History).',
+    br_done_eth: '✅ Bridge completed — received on Ethereum.', br_pend_eth: '⏳ Sent and confirmed on Kadena. On its way to Ethereum: Koberlet keeps watching and will tell you when it arrives (see History).',
+    hist_br_title: 'Bridge {a} {s} · {r}', hist_br_k2e: 'Kadena → Ethereum', hist_br_e2k: 'Ethereum → Kadena',
+    hist_br_pend: '⏳ On its way (waiting for the relayer)', hist_br_ok: '✅ Delivered', hist_br_check: 'Check', hist_br_checking: 'Checking…',
+    hist_br_still: 'Still on its way. The relayer has not delivered it yet; your funds are not lost.',
+    hist_br_unknown: 'Sent with an earlier version: its identifier was not saved, check the destination balance instead.',
+    toast_br_ok: '🌉 Bridge delivered: {a} {s} have arrived on {r}.',
     evm_ctx_on: 'Tick the EVM networks you want to see (the same 0x address works on all of them).',
     evm_ctx_off: 'These networks are shown when you have an EVM wallet visible on the dashboard.',
     no_wallet_kda: '— no Kadena wallet —', no_wallet_eth: '— no Ethereum wallet —',
@@ -2876,7 +2886,12 @@ async function refreshHistory() {
     const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
     const idShort = h.id ? esc(String(h.id).slice(0, 12)) + '…' : '';
     // on-chain: campos estructurados (amt/chain se fuerzan a número); locales EVM/puente usan title/sub
-    const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${esc(Number(h.amt))} ${esc(h.tok)}` : esc(h.title);
+    // puentes con seguimiento: titulo traducido + estado (en camino / entregado) + boton de comprobar
+    const esPuente = h.kind === 'bridge' && h.estado;
+    const ruta = esPuente ? t(h.bdir === 'kda2evm' ? 'hist_br_k2e' : 'hist_br_e2k') : '';
+    const estado = esPuente ? `<span class="brst ${h.estado === 'entregado' ? 'ok' : 'pend'}">${t(h.estado === 'entregado' ? 'hist_br_ok' : 'hist_br_pend')}</span>${h.estado !== 'entregado' ? ` <button class="tiny ghost brcheck" data-id="${esc(h.id)}">${t('hist_br_check')}</button>` : ''}` : '';
+    const title = h.dir ? `${t(h.dir === 'in' ? 'hist_in' : 'hist_out')} ${esc(Number(h.amt))} ${esc(h.tok)}`
+      : esPuente ? `${tr('hist_br_title', { a: esc(h.amt), s: esc(h.tok), r: ruta })} ${estado}` : esc(h.title);
     const sub = h.dir ? `${esc(h.wlabel)} · ${t(h.dir === 'in' ? 'hist_from' : 'hist_to')} ${esc(h.other)} · chain ${esc(Number(h.chain))}` : esc(h.sub);
     // solo las de Kadena se pueden consultar en el nodo: las locales (EVM y
     // puente) llevan un id que no es un requestKey de Chainweb
@@ -2886,7 +2901,27 @@ async function refreshHistory() {
   $('hist-list').querySelectorAll('.rklink').forEach(b => {
     b.onclick = () => verTx(b.dataset.rk, b.dataset.ch);
   });
+  // "Comprobar": pregunta a la cadena de destino ahora mismo. Si ya llego, el main manda el
+  // aviso bridge:entregado y el historial se repinta solo; si no, se dice con calma que sigue en camino.
+  $('hist-list').querySelectorAll('.brcheck').forEach(b => {
+    b.onclick = async () => {
+      b.disabled = true; const txt = b.textContent; b.textContent = t('hist_br_checking');
+      try {
+        const r = await window.api.bridgeCheck(b.dataset.id);
+        if (r.estado === 'pendiente') toast(t('hist_br_still'), 6000);
+        else if (r.estado === 'desconocido') toast(t('hist_br_unknown'), 8000);
+      } catch (e) { toast(cleanErr(e), 6000); }
+      finally { b.disabled = false; b.textContent = txt; }
+    };
+  });
 }
+// El rele ha entregado un puente que estaba en camino (lo detecta el vigilante del main, aunque
+// el envio se hiciera en otra sesion): aviso, historial al dia y saldos frescos.
+if (window.api.onBridgeDelivered) window.api.onBridgeDelivered((d) => {
+  toast(tr('toast_br_ok', { a: d.amount, s: d.symbol, r: t(d.dir === 'kda2evm' ? 'hist_br_k2e' : 'hist_br_e2k').split('→').pop().trim() }), 9000);
+  if ($('history-panel') && !$('history-panel').hidden) refreshHistory();
+  try { loadBalances(); } catch (_) {}
+});
 
 // Ficha de una transaccion, leida del nodo en el momento. Nada se guarda: es lo
 // que la cadena dice AHORA, que es la unica version que cuenta.

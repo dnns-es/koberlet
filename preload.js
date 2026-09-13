@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld('api', {
   bridgeDryRun: (dir, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:dryrun', { dir, fromWalletId, symbol, recipient, amount }),
   bridgeSend: (dir, passphrase, fromWalletId, symbol, recipient, amount) => ipcRenderer.invoke('bridge:send', { dir, passphrase, fromWalletId, symbol, recipient, amount }),
   onBridgeStep: (cb) => { const h = (_e, d) => cb(d); ipcRenderer.on('bridge:step', h); return () => ipcRenderer.removeListener('bridge:step', h); },
+  // seguimiento del puente: aviso cuando el rele entrega un envio que estaba en camino, y comprobacion a mano
+  onBridgeDelivered: (cb) => { ipcRenderer.on('bridge:entregado', (_e, d) => cb(d)); },
+  bridgeCheck: (id) => ipcRenderer.invoke('bridge:comprobar', { id }),
   pingActivity: () => ipcRenderer.send('activity:ping'),
   onLocked: (cb) => { ipcRenderer.on('locked', () => cb()); },
   swapQuote: (dir, amount) => ipcRenderer.invoke('swap:quote', { dir, amount }),

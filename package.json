@@ -1,14 +1,14 @@
 {
   "name": "koberlet",
   "productName": "Koberlet",
-  "version": "2.8.3",
+  "version": "2.8.4",
   "description": "Koberlet — monedero de escritorio multi-cadena (Kadena + EVM) de DNNS",
   "main": "main.js",
   "author": "DNNS",
   "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
-    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js && node test/nodo-evm.test.js && node test/config-nodo.test.js"
+    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js && node test/nodo-evm.test.js && node test/config-nodo.test.js && node test/puente-seguimiento.test.js"
   },
   "dependencies": {
     "@kadena/cryptography-utils": "^0.4.4",
