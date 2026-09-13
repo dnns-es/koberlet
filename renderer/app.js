@@ -1269,7 +1269,11 @@ $('btn-invert').onclick = () => { DIR = DIR === 'evm2kda' ? 'kda2evm' : 'evm2kda
 async function loadBridgeTokens(walletId) {
   if (!walletId) { $('br-token').innerHTML = ''; return; }
   $('br-token').innerHTML = `<option>${t('loading_tokens')}</option>`; $('br-tokhint').textContent = '';
-  const toks = await window.api.bridgeTokens(walletId, DIR);
+  // Si la consulta revienta, que se vea el motivo: sin esto la lista se quedaba en
+  // "cargando saldos…" para siempre y parecia que era el puente el que fallaba (13-09-2026).
+  let toks;
+  try { toks = await window.api.bridgeTokens(walletId, DIR); }
+  catch (e) { $('br-token').innerHTML = ''; $('br-tokhint').textContent = t('bal_unknown') + ' ' + cleanErr(e); return; }
   // balance null = no se pudo preguntar. Se pinta '?' y NO '0': un cero aqui se lee como
   // "no tienes fondos", que es justo lo que no sabemos. El motivo va en la pista de abajo.
   $('br-token').innerHTML = toks.map(tk => {
