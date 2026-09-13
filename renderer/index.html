@@ -556,6 +556,7 @@
               <p>El puente Kinesis conecta <b>Kadena (Community)</b> con redes EVM. Funciona en ambos sentidos: Ethereum→Kadena (recibes kb-USDC, kb-USDT… en la chain 2) y Kadena→EVM.</p>
               <p>Antes de enviar de verdad puedes pulsar <b>🧪 Simular</b>: ejecuta la transacción contra el nodo SIN firmar ni mover fondos y te enseña el resultado. ⚠️ Es un puente <b>experimental</b>: usa importes pequeños. Recuerda que en Kadena todo pasa por la <b>chain 2</b> (tokens y KDA para gas).</p>
               <p>💰 <b>Peaje:</b> en sentido Kadena→EVM el puente cobra un peaje en <b>KDA</b> (paga al relayer que entrega en Ethereum; ~37 KDA, la simulación muestra el importe exacto). En sentido EVM→Kadena el peaje va subvencionado. Puentea importes que compensen el peaje.</p>
+              <p>⏳ <b>La espera:</b> cuando tu envío ya está confirmado en la cadena de origen, la entrega en la otra orilla la hace el <b>relé del puente</b>, no Koberlet, y suele tardar entre 5 y 15 minutos (a veces más). No hace falta que esperes mirando: puedes cerrar la ventana o Koberlet entero. El envío queda en el <b>Historial</b> como «en camino», Koberlet le pregunta a la cadena de destino cada medio minuto si ya se entregó y te avisa cuando llega. Si quieres, el botón <b>Comprobar</b> lo consulta en el momento. Mientras esté en camino <b>no lo repitas</b>: los fondos ya salieron y llegarán.</p>
             </details>
             <details>
               <summary><b>🛡️ Seguridad</b> — cómo se protegen tus claves</summary>
@@ -633,6 +634,7 @@
               <p>The Kinesis bridge connects <b>Kadena (Community)</b> with EVM networks, in both directions: Ethereum→Kadena (you receive kb-USDC, kb-USDT… on chain 2) and Kadena→EVM.</p>
               <p>Before sending for real you can hit <b>🧪 Simulate</b>: it runs the transaction against the node WITHOUT signing or moving funds and shows the result. ⚠️ The bridge is <b>experimental</b>: use small amounts. On Kadena everything happens on <b>chain 2</b> (tokens and KDA for gas).</p>
               <p>💰 <b>Toll:</b> in the Kadena→EVM direction the bridge charges a toll in <b>KDA</b> (it pays the relayer that delivers on Ethereum; ~37 KDA, the simulation shows the exact amount). In the EVM→Kadena direction the toll is subsidised. Bridge amounts that make the toll worthwhile.</p>
+              <p>⏳ <b>The wait:</b> once your send is confirmed on the source chain, delivery on the other side is done by the <b>bridge relayer</b>, not by Koberlet, and it usually takes 5 to 15 minutes (sometimes longer). There is no need to sit and watch: you can close the window or Koberlet altogether. The send stays in the <b>History</b> as "on its way", Koberlet asks the destination chain every half minute whether it has been delivered, and tells you when it arrives. The <b>Check</b> button asks right now if you want. While it is on its way, <b>do not send it again</b>: the funds have already left and will arrive.</p>
             </details>
             <details>
               <summary><b>🛡️ Security</b> — how your keys are protected</summary>

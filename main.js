@@ -41,6 +41,14 @@ const HISTORY = () => path.join(app.getPath('userData'), 'history.json');
 // Historial local de operaciones (el indexador del fork está caído; lo llevamos nosotros). No es secreto → fichero plano.
 const loadHistory = () => { try { return JSON.parse(fs.readFileSync(HISTORY(), 'utf8')); } catch (_) { return []; } };
 function logHistory(e) { try { const h = loadHistory(); h.unshift({ ts: Date.now(), ...e }); fs.writeFileSync(HISTORY(), JSON.stringify(h.slice(0, 300), null, 2)); } catch (_) {} }
+// Cambia campos de una entrada ya escrita (se busca por su id: requestKey o hash). Sirve para
+// que un puente pase de "en camino" a "entregado" sin duplicar la fila.
+function updateHistory(id, patch) {
+  try {
+    const h = loadHistory(); const i = h.findIndex(x => x.id === id); if (i < 0) return false;
+    h[i] = { ...h[i], ...patch }; fs.writeFileSync(HISTORY(), JSON.stringify(h, null, 2)); return true;
+  } catch (_) { return false; }
+}
 
 const DEFAULT_CONFIG = {
   // Redes Kadena: la OFICIAL (donde están los fondos reales de la mayoría) y el FORK comunitario. Se activan como las EVM.
@@ -154,7 +162,9 @@ const DEFAULT_CONFIG = {
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
     kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
-    evm: { rpc: 'https://eth-mainnet.public.blastapi.io', name: 'Ethereum', domain: 1 },   // mismo nodo que la red `evm`; loadConfig lo reemplaza por el que tengas en Ajustes
+    // mailbox: el buzon Hyperlane del fork en Ethereum (NO el de Hyperlane oficial). Se le pregunta
+    // `delivered(messageId)` para saber si el rele ya entrego un envio Kadena→Ethereum.
+    evm: { rpc: 'https://eth-mainnet.public.blastapi.io', name: 'Ethereum', domain: 1, mailbox: '0x82A729A4c7B2aeBDdbFCCF533e7B75c61c45c23c' },   // mismo nodo que la red `evm`; loadConfig lo reemplaza por el que tengas en Ajustes
     // OJO con las mayusculas de estas direcciones: en Ethereum el patron de mayusculas ES la
     // suma de verificacion (EIP-55) y ethers RECHAZA la direccion antes de llamar. Los routers
     // de USDT, DAI y WBTC lo tenian mal y el puente fallaba con "bad address checksum" en la
@@ -374,6 +384,8 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
   app.whenReady().then(() => {
     createWindow(); ensureDesktopShortcut();
+    // puentes que quedaron en camino al cerrar la ultima vez: se retoma la vigilancia sin esperar a nada
+    setTimeout(() => { migrarPuentesViejos().catch(() => {}).then(armarVigilantePuente); }, 5000);
     // limpiar restos de actualizaciones anteriores (_update y _update-<ts>; el bat no siempre puede borrar su propia carpeta)
     try {
       const d0 = path.dirname(app.getPath('exe'));
@@ -1185,11 +1197,89 @@ ipcMain.handle('evmswap:enviar', async (_e, { passphrase, walletId, de, a, amoun
 
 // Textos de la espera del puente. Viajan en los dos idiomas y el renderer elige el
 // suyo: el proceso principal no tiene por que saber en que idioma esta la ventana.
-const NOTA_RELAY = { es: 'Kadena ya lo ha enviado y está confirmado. Ahora depende del relé del puente, que suele tardar entre 2 y 5 minutos. Puedes cerrar esta ventana: el envío sigue su curso y no hay que repetir nada.',
-                     en: 'Kadena has already sent it and it is confirmed. It now depends on the bridge relayer, which usually takes between 2 and 5 minutes. You can close this window: the transfer is on its way and nothing needs repeating.' };
-const NOTA_TARDA = { es: 'Está tardando más de lo normal. Tus fondos NO se han perdido: salieron de Kadena y el relé los entregará. Compruébalo dentro de un rato mirando tu saldo en Ethereum.',
-                     en: 'This is taking longer than usual. Your funds are NOT lost: they left Kadena and the relayer will deliver them. Check your Ethereum balance again in a while.' };
+// Frases de la espera del rele. Lo que tranquiliza no es el reloj, es saber tres cosas: que el
+// dinero ya salio y esta confirmado, que la espera es normal, y que no hay que quedarse mirando
+// porque Koberlet sigue vigilando y avisa. Tiempos medidos en real: 6-7 min el 10-09-2026 y
+// mas de 15 min el 13-09-2026, con la misma ruta. Por eso no se promete una cifra corta.
+const NOTA_RELAY = { es: 'Kadena ya lo ha enviado y está confirmado: el dinero está en manos del relé del puente. Normalmente tarda entre 5 y 15 minutos, a veces más. No hace falta que esperes aquí: puedes cerrar esta ventana y seguir usando Koberlet, o cerrarlo del todo. Se sigue vigilando y te avisará cuando llegue.',
+                     en: 'Kadena has already sent it and it is confirmed: the money is now with the bridge relayer. It usually takes 5 to 15 minutes, sometimes longer. There is no need to wait here: you can close this window and keep using Koberlet, or close it altogether. It keeps watching and will tell you when it arrives.' };
+const NOTA_TARDA = { es: 'Está tardando más de lo habitual, y eso pasa a veces. Tus fondos NO se han perdido: ya salieron de Kadena y el relé los entregará. Koberlet sigue comprobándolo en segundo plano y te avisará al llegar; en el Historial verás el envío como «en camino» hasta entonces, con un botón para comprobarlo cuando quieras. No lo repitas.',
+                     en: 'It is taking longer than usual, which happens sometimes. Your funds are NOT lost: they already left Kadena and the relayer will deliver them. Koberlet keeps checking in the background and will tell you when it arrives; until then the History shows it as "on its way", with a button to check whenever you like. Do not send it again.' };
 const NOTA_OK = { es: 'Recibido en Ethereum. Puente completado.', en: 'Received on Ethereum. Bridge complete.' };
+const NOTA_RELAY_KDA = { es: 'Ethereum ya lo ha enviado y está confirmado: el dinero está en manos del relé del puente. Normalmente tarda entre 5 y 15 minutos, a veces más. Puedes cerrar esta ventana o Koberlet entero: se sigue vigilando y te avisará cuando llegue a Kadena.',
+                         en: 'Ethereum has already sent it and it is confirmed: the money is now with the bridge relayer. It usually takes 5 to 15 minutes, sometimes longer. You can close this window or Koberlet altogether: it keeps watching and will tell you when it arrives on Kadena.' };
+const NOTA_TARDA_KDA = { es: 'Está tardando más de lo habitual. Tus fondos NO se han perdido: ya salieron de Ethereum y el relé los entregará en Kadena. Koberlet sigue comprobándolo y te avisará; en el Historial lo verás como «en camino» con un botón para comprobarlo. No lo repitas.',
+                         en: 'It is taking longer than usual. Your funds are NOT lost: they already left Ethereum and the relayer will deliver them on Kadena. Koberlet keeps checking and will tell you; the History shows it as "on its way" with a button to check. Do not send it again.' };
+const NOTA_OK_KDA = { es: 'Recibido en Kadena. Puente completado.', en: 'Received on Kadena. Bridge complete.' };
+
+// ---- VIGILANTE DEL PUENTE ----
+// Un envio por el puente NO termina cuando Koberlet lo firma: termina cuando el rele lo entrega
+// en la otra orilla, y eso lo hace otro, a su ritmo. Antes se esperaba 6 minutos mirando el
+// saldo y, si no llegaba, el historial decia "pendiente relayer" para siempre aunque llegara a
+// los 7. Ahora cada envio guarda su messageId y se le pregunta al mailbox de destino
+// `delivered(id)`, que es la respuesta de la propia cadena, no una deduccion por saldos.
+const PUENTE_VIGILA_MS = 30 * 1000;          // cada cuanto se repasan los pendientes
+const PUENTE_OLVIDA_MS = 3 * 24 * 3600 * 1000; // pasados 3 dias se deja de preguntar solo (el boton manual sigue)
+let puenteTimer = null, puenteOcupado = false;
+function puentesPendientes() { return loadHistory().filter(h => h.type === 'bridge' && h.estado === 'pendiente' && h.msgId); }
+// true = entregado, false = aun no, null = no se pudo preguntar (no se cambia nada)
+async function comprobarPuente(h) {
+  const b = loadConfig().bridge;
+  if (h.dir === 'kda2evm') return bridge.entregadoEnEvm({ rpc: await rpcEvmPuente(loadConfig()), mailbox: b.evm.mailbox, messageId: h.msgId });
+  if (h.dir === 'evm2kda') return bridge.entregadoEnKadena({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, messageId: h.msgId });
+  return null;
+}
+function marcarEntregado(h) {
+  updateHistory(h.id, { estado: 'entregado', entregadoTs: Date.now(), desc: String(h.desc || '').replace(/ \((pendiente relayer|en camino)\)$/, '') + ' (recibido)' });
+  for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send('bridge:entregado', { id: h.id, dir: h.dir, amount: h.amount, symbol: h.symbol, to: h.to }); } catch (_) {} }
+}
+async function repasarPuentes() {
+  if (puenteOcupado) return; puenteOcupado = true;
+  try {
+    const pend = puentesPendientes();
+    for (const h of pend) {
+      if (Date.now() - h.ts > PUENTE_OLVIDA_MS) continue;
+      const r = await comprobarPuente(h).catch(() => null);
+      if (r === true) marcarEntregado(h);
+    }
+    // sin pendientes vivos, el reloj se para solo; se rearma al hacer un envio nuevo
+    if (!puentesPendientes().some(h => Date.now() - h.ts <= PUENTE_OLVIDA_MS) && puenteTimer) { clearInterval(puenteTimer); puenteTimer = null; }
+  } finally { puenteOcupado = false; }
+}
+function armarVigilantePuente() {
+  if (!puentesPendientes().length) return;
+  if (!puenteTimer) puenteTimer = setInterval(() => { repasarPuentes(); }, PUENTE_VIGILA_MS);
+  repasarPuentes();
+}
+// Entradas de versiones anteriores que se quedaron en "(pendiente relayer)" sin messageId: se
+// recupera el id de la cadena (requestKey → /poll, hash → recibo) y pasan a vigilarse como las
+// nuevas. Se hace una vez por arranque; lo que no se pueda recuperar se queda como estaba.
+async function migrarPuentesViejos() {
+  const viejas = loadHistory().filter(h => h.type === 'bridge' && !h.estado && / \(pendiente relayer\)$/.test(String(h.desc || '')) && h.id);
+  if (!viejas.length) return;
+  const c = loadConfig(); const b = c.bridge;
+  for (const h of viejas) {
+    const m = String(h.desc).match(/^Puente (\S+) (\S+) · (Kadena → Ethereum|Ethereum → Kadena)/);
+    if (!m) continue;
+    const dir = m[3] === 'Kadena → Ethereum' ? 'kda2evm' : 'evm2kda';
+    const msgId = dir === 'kda2evm'
+      ? await bridge.messageIdDeRequestKey({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, requestKey: h.id })
+      : await bridge.messageIdDeTxHash({ rpc: await rpcEvmPuente(c), txHash: h.id });
+    if (!msgId) continue;
+    updateHistory(h.id, { dir, amount: m[1], symbol: m[2], msgId, estado: 'pendiente', desc: String(h.desc).replace(/ \(pendiente relayer\)$/, ' (en camino)') });
+  }
+}
+// Comprobar UNO a mano (boton del historial). Devuelve el estado que diga la cadena ahora mismo.
+ipcMain.handle('bridge:comprobar', async (_e, { id }) => {
+  const h = loadHistory().find(x => x.id === id && x.type === 'bridge');
+  if (!h) throw new Error('No encuentro ese envío en el historial.');
+  if (h.estado === 'entregado') return { estado: 'entregado' };
+  if (!h.msgId) return { estado: 'desconocido' }; // envios de versiones anteriores, sin messageId guardado
+  const r = await comprobarPuente(h);
+  if (r === true) { marcarEntregado(h); return { estado: 'entregado' }; }
+  if (r === false) return { estado: 'pendiente' };
+  throw new Error('No se ha podido preguntar al nodo de destino. Prueba en un momento.');
+});
 
 // Cuentas de desarrollo con claves PÚBLICAS (ver lib/devnet-publico.js): en la devnet
 // hacen de pagador de gas cuando la wallet aún no tiene saldo en la chain de destino.
@@ -1289,13 +1379,13 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
     const kb = async () => (await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: [route], account: recipient }))[0].balance;
     const before = await kb().catch(() => 0);
     const res = await bridge.sendEvm2Kda({ rpc: await rpcEvmPuente(c), secretHex: w.ledger ? undefined : w.eth.secret, ledgerIndex: w.ledger ? w.hwIndex : undefined, router: route.evmRouter, token: route.evmToken, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain }, onStep);
-    // Esperar la llegada a Kadena (relayer)
-    onStep({ step: 'kadena', status: 'run', detail: 'Esperando al relayer del puente…' });
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    let arrived = false;
-    for (let i = 0; i < 24 && !arrived; i++) { await sleep(15000); const now = await kb().catch(() => before); if (now > before + 1e-9) { onStep({ step: 'kadena', status: 'ok', detail: 'recibido · saldo ' + now }); arrived = true; } }
-    if (!arrived) onStep({ step: 'kadena', status: 'pending', detail: 'aún no entregado; el relayer del puente puede tardar (fondos no perdidos)' });
-    logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Ethereum → Kadena${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.txHash });
+    // Al historial YA, como "en camino": si el usuario cierra la app en mitad de la espera, el
+    // envio no desaparece y el vigilante lo sigue comprobando al volver a abrir.
+    const entrada = { type: 'bridge', dir: 'evm2kda', wallet: w.label || '', amount, symbol, msgId: res.messageId || null, estado: 'pendiente', desc: `Puente ${amount} ${symbol} · Ethereum → Kadena (en camino)`, to: recipient, id: res.txHash };
+    logHistory(entrada);
+    const arrived = await esperarEntrega({ entrada, onStep, step: 'kadena', notas: { relay: NOTA_RELAY_KDA, ok: NOTA_OK_KDA, tarda: NOTA_TARDA_KDA },
+      // sin messageId (no deberia pasar) se cae al metodo viejo: comparar el saldo kb-* del destino
+      porSaldo: res.messageId ? null : { antes: before, leer: kb } });
     return { ...res, arrived };
   }
   // KADENA -> EVM real: dispatch firmado en el fork + espera de llegada del token al lado EVM
@@ -1304,35 +1394,59 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   // Devuelve null cuando no se pudo preguntar. Antes devolvia 0, y un 0 falso al principio hacia
   // que CUALQUIER lectura posterior pareciera "ha llegado el dinero". Mejor no saber que mentir.
   const evmBal = async () => { try { const v = (await bridge.getEvmBalances({ rpc: await rpcEvmPuente(c), address: recipient, routes: [route] }))[0].balance; return (v === null || v === undefined) ? null : v; } catch (_) { return null; } };
-  let before = await evmBal();
+  const before = await evmBal();
   const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
   let arrived = false;
   if (res.minedOk) {
-    // La entrega en Ethereum no la hace Koberlet: la hace el relé del puente. Aquí solo
-    // se vigila el saldo del destinatario. Lo importante durante esta espera no es el
-    // reloj, es que el usuario sepa que puede cerrar sin miedo: si duda, reenvía.
-    const reloj = (seg) => Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
-    onStep({ step: 'evm', status: 'run', detail: 'esperando al relé · 0:00', nota: NOTA_RELAY });
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    const t0 = Date.now();
-    for (let i = 0; i < 24 && !arrived; i++) {
-      await sleep(15000);
-      const now = await evmBal();
-      if (now === null) continue;              // no se pudo leer: ni confirma ni desmiente, se reintenta
-      if (before === null) { before = now; continue; }   // primera lectura buena: sirve de referencia
-      if (now > before + 1e-9) {
-        onStep({ step: 'evm', status: 'ok', detail: 'recibido · saldo ' + now, nota: NOTA_OK });
-        arrived = true;
-      } else {
-        onStep({ step: 'evm', status: 'run', detail: 'esperando al relé · ' + reloj(Math.round((Date.now() - t0) / 1000)) });
-      }
-    }
-    if (!arrived) onStep({ step: 'evm', status: 'pending', detail: 'aún no entregado', nota: NOTA_TARDA });
+    const entrada = { type: 'bridge', dir: 'kda2evm', wallet: w.label || '', amount, symbol, msgId: res.messageId || null, estado: 'pendiente', desc: `Puente ${amount} ${symbol} · Kadena → Ethereum (en camino)`, to: recipient, id: res.requestKey };
+    logHistory(entrada);
+    arrived = await esperarEntrega({ entrada, onStep, step: 'evm', notas: { relay: NOTA_RELAY, ok: NOTA_OK, tarda: NOTA_TARDA },
+      porSaldo: res.messageId ? null : { antes: before, leer: evmBal } });
+  } else {
+    // sin confirmacion de minado no hay messageId: queda en el historial como envio a secas
+    logHistory({ type: 'bridge', dir: 'kda2evm', wallet: w.label || '', amount, symbol, desc: `Puente ${amount} ${symbol} · Kadena → Ethereum (sin confirmar)`, to: recipient, id: res.requestKey });
   }
-  logHistory({ type: 'bridge', wallet: w.label || '', desc: `Puente ${amount} ${symbol} · Kadena → Ethereum${arrived ? ' (recibido)' : ' (pendiente relayer)'}`, to: recipient, id: res.requestKey });
   return { ...res, txHash: res.requestKey, arrived };
 });
+
+// La espera visible tras un envio por el puente. La entrega la hace el rele, no Koberlet: aqui
+// solo se le pregunta al mailbox de destino cada 15 s, durante un rato razonable, y se le va
+// diciendo al usuario que todo va bien. Si se acaba el rato sin entrega, NO es un fallo: la
+// entrada queda "en camino" en el historial y el vigilante de fondo sigue preguntando.
+// `porSaldo` es el metodo antiguo (comparar saldos), solo por si no hubiera messageId.
+const PUENTE_ESPERA_VISIBLE = 40; // x 15 s = 10 minutos en la ventana; despues, en segundo plano
+async function esperarEntrega({ entrada, onStep, step, notas, porSaldo }) {
+  const reloj = (seg) => Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  onStep({ step, status: 'run', detail: 'esperando al relé · 0:00', nota: notas.relay });
+  armarVigilantePuente();
+  const t0 = Date.now();
+  let antes = porSaldo ? porSaldo.antes : null;
+  for (let i = 0; i < PUENTE_ESPERA_VISIBLE; i++) {
+    await sleep(15000);
+    let llego = null;
+    if (porSaldo) {
+      const ahora = await porSaldo.leer();
+      if (ahora === null) llego = null;                         // no se pudo leer: ni confirma ni desmiente
+      else if (antes === null) { antes = ahora; llego = null; }  // primera lectura buena: referencia
+      else llego = ahora > antes + 1e-9;
+    } else {
+      // el vigilante de fondo puede haberlo marcado ya entre dos vueltas
+      const h = loadHistory().find(x => x.id === entrada.id);
+      llego = (h && h.estado === 'entregado') ? true : await comprobarPuente(entrada).catch(() => null);
+    }
+    if (llego === true) {
+      const h = loadHistory().find(x => x.id === entrada.id);
+      if (h && h.estado !== 'entregado') marcarEntregado(h);
+      onStep({ step, status: 'ok', detail: 'recibido · ' + reloj(Math.round((Date.now() - t0) / 1000)), nota: notas.ok });
+      return true;
+    }
+    onStep({ step, status: 'run', detail: 'esperando al relé · ' + reloj(Math.round((Date.now() - t0) / 1000)) });
+  }
+  onStep({ step, status: 'pending', detail: 'en camino · ' + reloj(Math.round((Date.now() - t0) / 1000)), nota: notas.tarda });
+  return false;
+}
 
 // Mercado: swap KDA <-> kb-USDC en el pool del fork (kaddex.exchange, chain 2). No custodial: firma el main con la clave de la wallet.
 ipcMain.handle('swap:quote', async (_e, { dir, amount }) => swap.quote(dir, amount));
@@ -1446,8 +1560,14 @@ ipcMain.handle('history:list', async (_e, { walletId } = {}) => {
   }));
   const labels = new Set(wallets.map(w => w.label));
   for (const h of loadHistory()) {
-    if ((h.type === 'send-evm' || h.type === 'bridge') && (!walletId || labels.has(h.wallet))) out.push({ ts: h.ts, kind: h.type, title: h.desc, sub: (h.wallet || '') + (h.to ? ' → ' + shortA(h.to) : ''), id: h.id });
+    if ((h.type === 'send-evm' || h.type === 'bridge') && (!walletId || labels.has(h.wallet))) {
+      // los puentes llevan ademas su estado (pendiente/entregado) y datos sueltos para que el renderer los traduzca
+      out.push({ ts: h.ts, kind: h.type, title: h.desc, sub: (h.wallet || '') + (h.to ? ' → ' + shortA(h.to) : ''), id: h.id,
+        ...(h.type === 'bridge' ? { bdir: h.dir, estado: h.estado, amt: h.amount, tok: h.symbol, wlabel: h.wallet, other: shortA(h.to || ''), conMsgId: !!h.msgId } : {}) });
+    }
   }
+  // Abrir el historial es buen momento para repasar los puentes en camino (no bloquea: si alguno llego, llega el aviso)
+  armarVigilantePuente();
   out.sort((a, b) => b.ts - a.ts);
   return out.slice(0, 80);
 });
