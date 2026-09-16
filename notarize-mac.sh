@@ -64,8 +64,10 @@ notarizar() {  # notarizar <ruta>
   local ruta="$1" salida id estado
   salida=$(xcrun notarytool submit "$ruta" "${CREDS[@]}" --wait 2>&1) || true
   echo "$salida" | sed 's/^/    /'
-  id=$(echo "$salida" | awk '/id:/ {print $2; exit}')
-  estado=$(echo "$salida" | awk -F': *' '/status:/ {print $2; exit}')
+  id=$(echo "$salida" | awk '/^ *id:/ {print $2; exit}')
+  # La ULTIMA linea "status:": con --wait, notarytool va imprimiendo
+  # "Current status: In Progress..." y el veredicto solo esta al final.
+  estado=$(echo "$salida" | awk -F': *' '/status:/ {s=$2} END {print s}' | tr -d '.')
   if [ "$estado" != "Accepted" ]; then
     echo "ERROR: Apple rechazó $ruta (status: ${estado:-desconocido})"
     if [ -n "$id" ]; then
