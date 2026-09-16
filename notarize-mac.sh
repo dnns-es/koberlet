@@ -12,6 +12,11 @@
 #   b) Variables sueltas:
 #        export APPLE_ID=CORREO APPLE_TEAM_ID=TEAMID1234 APPLE_APP_PASSWORD=CLAVE
 #
+#   c) Clave API de App Store Connect (la que usa GitHub Actions; no lleva la
+#      contraseña de nadie):
+#        export APPLE_API_KEY=/ruta/AuthKey_XXXXXXXXXX.p8 APPLE_API_KEY_ID=XXXXXXXXXX \
+#               APPLE_API_ISSUER=uuid-del-issuer
+#
 # La clave específica de aplicación se genera en appleid.apple.com, no es la
 # contraseña normal del Apple ID.
 set -e
@@ -43,9 +48,12 @@ if [ -n "${NOTARY_PROFILE:-}" ]; then
   CREDS=(--keychain-profile "$NOTARY_PROFILE")
 elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ] && [ -n "${APPLE_APP_PASSWORD:-}" ]; then
   CREDS=(--apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD")
+elif [ -n "${APPLE_API_KEY:-}" ] && [ -n "${APPLE_API_KEY_ID:-}" ] && [ -n "${APPLE_API_ISSUER:-}" ]; then
+  CREDS=(--key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER")
 else
   echo "ERROR: faltan credenciales de notarización."
-  echo "Define NOTARY_PROFILE, o APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD."
+  echo "Define NOTARY_PROFILE, APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD,"
+  echo "o APPLE_API_KEY + APPLE_API_KEY_ID + APPLE_API_ISSUER."
   echo "Ver la cabecera de este script para el detalle."
   exit 1
 fi
