@@ -348,9 +348,9 @@ const LANG = {
     evm_ctx_off: 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.',
     no_wallet_kda: '— sin wallet Kadena —', no_wallet_eth: '— sin wallet Ethereum —',
     mk_quoting: 'Calculando precio del pool…',
-    mk_quote_html: 'Recibes ≈ <b>{out} {tok}</b> · mínimo {min} (slippage {slip}%)<br>Precio {p} kb-USDC/KDA · impacto {imp}%',
+    mk_quote_html: 'Recibes ≈ <b>{out} {tok}</b> · mínimo {min} (slippage {slip}%)<br>Precio {p} kb-USDC/KDA · impacto {imp}%<br>Comisión de Koberlet {fpc}%: {fee} {ftok} · al pool {neto} {ftok}',
     err_no_kda_wallet: 'No hay wallet Kadena.', err_no_eth_wallet: 'No hay wallet Ethereum.', err_need_amt: 'Indica la cantidad.',
-    mk_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Pool de Kadena (kaddex.exchange, chain 2), no custodial. Precio fresco al firmar.</span>',
+    mk_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Pool de Kadena (kaddex.exchange, chain 2), no custodial. Precio fresco al firmar.<br>De esos {a} {f}, <b>{fee} {f}</b> son la comisión de Koberlet ({fpc}%) y el resto va al pool. Las dos cosas van en la misma transacción: si el cambio falla, no se cobra nada.</span>',
     mk_sent: 'Swap enviado. requestKey: ',
     es_quoting: 'Consultando Uniswap…',
     es_quote_html: 'Recibes ≈ <b>{out} {sym}</b> · mínimo {min} (slippage {slip}%)',
@@ -754,9 +754,9 @@ const LANG = {
     evm_ctx_off: 'These networks are shown when you have an EVM wallet visible on the dashboard.',
     no_wallet_kda: '— no Kadena wallet —', no_wallet_eth: '— no Ethereum wallet —',
     mk_quoting: 'Reading pool price…',
-    mk_quote_html: 'You receive ≈ <b>{out} {tok}</b> · minimum {min} (slippage {slip}%)<br>Price {p} kb-USDC/KDA · impact {imp}%',
+    mk_quote_html: 'You receive ≈ <b>{out} {tok}</b> · minimum {min} (slippage {slip}%)<br>Price {p} kb-USDC/KDA · impact {imp}%<br>Koberlet fee {fpc}%: {fee} {ftok} · to the pool {neto} {ftok}',
     err_no_kda_wallet: 'No Kadena wallet.', err_no_eth_wallet: 'No Ethereum wallet.', err_need_amt: 'Enter the amount.',
-    mk_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Kadena pool (kaddex.exchange, chain 2), non-custodial. Fresh price at signing.</span>',
+    mk_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Kadena pool (kaddex.exchange, chain 2), non-custodial. Fresh price at signing.<br>Out of those {a} {f}, <b>{fee} {f}</b> is the Koberlet fee ({fpc}%) and the rest goes to the pool. Both go in the same transaction: if the swap fails, nothing is charged.</span>',
     mk_sent: 'Swap sent. requestKey: ',
     es_quoting: 'Querying Uniswap…',
     es_quote_html: 'You receive ≈ <b>{out} {sym}</b> · minimum {min} (slippage {slip}%)',
@@ -1417,6 +1417,7 @@ function renderNodes() {
 }
 
 // MERCADO (swap KDA <-> kb-USDC en el pool del fork)
+let MKQ = null;
 let MKDIR = 'compra'; // 'compra' = entregas kb-USDC, recibes KDA · 'venta' = al revés
 // Saldo disponible de una wallet para un símbolo concreto, sacado del último
 // refresco de saldos. Devuelve null si aún no se han cargado o no aparece.
@@ -1678,7 +1679,8 @@ async function mkQuote() {
   try {
     msg($('mk-quote'), t('mk_quoting'));
     const q = await window.api.swapQuote(MKDIR, amt);
-    $('mk-quote').innerHTML = tr('mk_quote_html', { out: q.esperada.toFixed(6), tok: q.tokenOut, min: q.minimo.toFixed(6), slip: q.slippagePct, p: q.precio.toFixed(6), imp: q.impacto.toFixed(2) });
+    MKQ = q;
+    $('mk-quote').innerHTML = tr('mk_quote_html', { out: q.esperada.toFixed(6), tok: q.tokenOut, min: q.minimo.toFixed(6), slip: q.slippagePct, p: q.precio.toFixed(6), imp: q.impacto.toFixed(2), fpc: q.comisionPct, fee: q.comision, ftok: q.tokenIn, neto: q.alPool });
     $('mk-quote').className = 'msg';
   } catch (e) { msg($('mk-quote'), e.message, 'err'); }
 }
@@ -1687,7 +1689,8 @@ $('mk-swap').onclick = () => {
   if (!wid) return msg($('mk-msg'), t('err_no_kda_wallet'), 'err');
   if (!amt || Number(amt) <= 0) return msg($('mk-msg'), t('err_need_amt'), 'err');
   const compra = MKDIR === 'compra';
-  askSend(tr('mk_confirm', { a: esc(amt), f: compra ? 'kb-USDC' : 'KDA', t: compra ? 'KDA' : 'kb-USDC' }),
+  const fee = MKQ && MKQ.dir === MKDIR ? MKQ.comision : Number((Number(amt) * 0.005).toFixed(compra ? 6 : 12));
+  askSend(tr('mk_confirm', { a: esc(amt), f: compra ? 'kb-USDC' : 'KDA', t: compra ? 'KDA' : 'kb-USDC', fee, fpc: 0.5 }),
     async (pass) => { const r = await window.api.swapExec(pass, wid, MKDIR, amt); return t('mk_sent') + r.requestKey; });
 };
 
