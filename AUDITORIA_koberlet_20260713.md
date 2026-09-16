@@ -1,7 +1,7 @@
 # Auditoría de seguridad y calidad — Koberlet
 
 **Fecha:** 2026-07-13
-**Auditor:** Claude (skill protocolo-auditoria-dnns)
+**Auditor:** auditoría interna DNNS (protocolo de auditoría DNNS)
 **Alcance:** cliente de escritorio Electron multi-cadena (Kadena + EVM). Proceso principal (`main.js`), `preload.js`, `lib/*` (vault, kda, eth, swap, bridge, ethswap, wallets), `renderer/*`, build y dependencias. **No hay backend/BD/servidor** → se saltan las categorías de servidor (WebDAV, IMAP, rate-limiting web, RGPD de servidor, backups de servidor, headers HTTP, operativa SSH).
 **Contexto:** auditoría posterior a las correcciones de la auditoría externa de Alex (v1.7.0). Se verifica que esos 8 fixes aguantan y se buscan hallazgos nuevos.
 
