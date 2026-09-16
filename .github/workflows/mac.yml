@@ -45,6 +45,13 @@ jobs:
       - name: Dependencias
         run: npm ci
 
+      # El binario de Electron para macOS: el postinstall no siempre lo deja
+      # (cache de npm, scripts ignorados), y build-mac.sh lo exige.
+      - name: Electron.app
+        run: |
+          [ -d node_modules/electron/dist/Electron.app ] || node node_modules/electron/install.js
+          ls node_modules/electron/dist/
+
       - name: Tests
         run: npm test
 
