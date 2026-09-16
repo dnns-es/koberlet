@@ -1,0 +1,114 @@
+# Koberlet - Copyright 2026 DNNS.es (Oberluss)
+# SPDX-License-Identifier: Apache-2.0
+#
+# KOBERLET PARA MAC, COMPILADO EN GITHUB ACTIONS.
+#
+# Nadie en DNNS tiene un Mac: el runner de macOS de GitHub es el Mac. Ejecuta
+# los mismos scripts que O1d Cod3r escribio para hacerlo a mano (build-mac.sh,
+# package-dmg.sh, notarize-mac.sh), asi que en un Mac de verdad se puede seguir
+# haciendo igual.
+#
+# Sin secretos: .dmg con firma ad-hoc (se abre con clic derecho -> Abrir).
+# Con secretos: firma Developer ID + notarizacion + grapado, y el .dmg se abre
+# en cualquier Mac sin avisos. Secretos:
+#   APPLE_DEVID_P12 / APPLE_DEVID_PASSWORD  certificado Developer ID Application (.p12 en base64)
+#   APPLE_TEAM_ID                           el equipo de Apple
+#   APPLE_ASC_KEY_P8 / APPLE_ASC_KEY_ID / APPLE_ASC_ISSUER_ID  clave API de App Store Connect (notarytool)
+# Se lanza a mano (Actions -> Mac -> Run workflow) o con una etiqueta v*.
+name: Mac
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  dmg:
+    name: Koberlet.app + .dmg
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      APPLE_DEVID_P12: ${{ secrets.APPLE_DEVID_P12 }}
+      APPLE_DEVID_PASSWORD: ${{ secrets.APPLE_DEVID_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_ASC_KEY_P8: ${{ secrets.APPLE_ASC_KEY_P8 }}
+      APPLE_ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
+      APPLE_ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dependencias
+        run: npm ci
+
+      - name: Tests
+        run: npm test
+
+      # Llavero temporal con el certificado Developer ID y su intermedio
+      # (Developer ID CA G2, distinto del WWDR de las apps de la tienda).
+      - name: Certificado Developer ID
+        id: firma
+        run: |
+          set -e
+          if [ -z "$APPLE_DEVID_P12" ]; then
+            echo "Sin certificado: el .dmg saldra con firma ad-hoc."
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LLAVERO="$RUNNER_TEMP/firma.keychain-db"
+          CLAVE_LLAVERO="$(uuidgen)"
+          security create-keychain -p "$CLAVE_LLAVERO" "$LLAVERO"
+          security set-keychain-settings -lut 21600 "$LLAVERO"
+          security unlock-keychain -p "$CLAVE_LLAVERO" "$LLAVERO"
+          echo "$APPLE_DEVID_P12" | base64 --decode > "$RUNNER_TEMP/devid.p12"
+          security import "$RUNNER_TEMP/devid.p12" -P "$APPLE_DEVID_PASSWORD" -A -t cert -f pkcs12 -k "$LLAVERO"
+          rm -f "$RUNNER_TEMP/devid.p12"
+          curl -sSfo "$RUNNER_TEMP/devid-ca.cer" https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer
+          security import "$RUNNER_TEMP/devid-ca.cer" -k "$LLAVERO" -A || echo "El intermedio ya estaba."
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$CLAVE_LLAVERO" "$LLAVERO" > /dev/null
+          security list-keychains -d user -s "$LLAVERO" $(security list-keychains -d user | tr -d '"')
+          IDENTIDAD="$(security find-identity -v -p codesigning "$LLAVERO" | grep 'Developer ID Application' | head -1 | sed -E 's/.*"(.*)"/\1/')"
+          if [ -z "$IDENTIDAD" ]; then echo "No hay identidad Developer ID Application en el .p12"; exit 1; fi
+          echo "Identidad: $IDENTIDAD"
+          echo "identidad=$IDENTIDAD" >> "$GITHUB_OUTPUT"
+          echo "hay=true" >> "$GITHUB_OUTPUT"
+
+      - name: Koberlet.app
+        env:
+          DEVELOPER_ID: ${{ steps.firma.outputs.identidad }}
+        run: ./build-mac.sh
+
+      - name: Notarizar y .dmg (firmado)
+        if: steps.firma.outputs.hay == 'true'
+        env:
+          DEVELOPER_ID: ${{ steps.firma.outputs.identidad }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/asc"
+          echo "$APPLE_ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey.p8"
+          export APPLE_API_KEY="$RUNNER_TEMP/asc/AuthKey.p8"
+          export APPLE_API_KEY_ID="$APPLE_ASC_KEY_ID"
+          export APPLE_API_ISSUER="$APPLE_ASC_ISSUER_ID"
+          ./notarize-mac.sh
+          rm -rf "$RUNNER_TEMP/asc"
+
+      - name: .dmg (ad-hoc)
+        if: steps.firma.outputs.hay != 'true'
+        run: ./package-dmg.sh
+
+      - name: Nombre del artefacto
+        id: nombre
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          ls -la dist/mac/*.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Koberlet-${{ steps.nombre.outputs.version }}-mac
+          path: dist/mac/Koberlet-*.dmg
+          retention-days: 30
