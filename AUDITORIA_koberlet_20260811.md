@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-08-11
 **Versión auditada:** v2.7.4 (commit 11d908e)
-**Auditor:** Claude (skill protocolo-auditoria-dnns)
+**Auditor:** auditoría interna DNNS (protocolo de auditoría DNNS)
 **Alcance:** app de escritorio Electron (main + preload + renderer), librerías `lib/*`, canal de
 distribución y auto-update. Foco en lo **no cubierto** por las revisiones anteriores (externa
 sobre v1.16.5/v2.0.0 y auditoría interna 2026-07-13): `lib/nft.js`, `lib/backup.js`, tokens
