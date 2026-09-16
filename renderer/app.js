@@ -22,6 +22,7 @@ const LANG = {
     mkt_st_sub: 'USDT ⇄ USDC · Uniswap V3, antes de cruzar el puente',
     st_porque: 'En Kadena el único con mercado es kb-USDC: un USDT cruzado tal cual no se puede cambiar a KDA. Cámbialo aquí antes de pasar el puente.',
     st_quote: 'Recibirás aproximadamente {out} {sym} (pool del {fee}%).',
+    st_quote_com: ' Comisión de Koberlet ({p} %): {f} {sym}, de lo que recibes.',
     st_confirm: 'Vas a cambiar {a} {f} por unos {out} {t} en Uniswap. Si el precio se mueve mucho mientras tanto, la operación se cancela sola y no pierdes el dinero.',
     st_ok: 'Cambiado. Has recibido unos {out} {sym}.',
     st_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
@@ -226,6 +227,7 @@ const LANG = {
     mx_calculando: 'Calculando…',
     mx_recibiras: 'Recibirías unos {s} {t}',
     mx_impacto: 'moverías el precio un {i} %',
+    mx_comision: 'comisión de Koberlet ({p} %): {f} {s}',
     mx_via: 'pasando por {c}',
     mx_frenado: 'parado aquí: por encima del {m} % de impacto no se cambia. Prueba con menos cantidad.',
     mx_mismos: 'Son el mismo token.',
@@ -233,6 +235,8 @@ const LANG = {
     mx_ruta_no: 'Ese cambio todavía no está montado en Ethereum. De momento solo USDC ⇄ ETH y USDT ⇄ USDC; para lo demás, pasa antes por USDC.',
     mx_ledger: 'Con Ledger no se puede cambiar aquí: el aparato no sabe enseñarte la llamada al mercado, así que sería firmar a ciegas.',
     mx_conf: 'Cambiar {a} {f} por unos {r} {t}.',
+    mx_conf_comision: ' De lo que das se aparta antes el {p} % para Koberlet: {f} {s}. Va en la misma transacción: si el cambio falla, no se cobra nada.',
+    mx_conf_comision_eth: ' Koberlet se queda el {p} % de lo que recibes: {f} {s}. Va en la misma transacción: si el cambio falla, no se cobra nada.',
     mx_hecho: 'Cambio confirmado.',
     nft_env_saleonly: 'Esta pieza se acuñó como «solo venta»: el contrato no deja regalarla ni transferirla, '
         + 'ni siquiera a su creador. Solo cambia de dueño vendiéndose.',
@@ -354,6 +358,7 @@ const LANG = {
     mk_sent: 'Swap enviado. requestKey: ',
     es_quoting: 'Consultando Uniswap…',
     es_quote_html: 'Recibes ≈ <b>{out} {sym}</b> · mínimo {min} (slippage {slip}%)',
+    es_fee_note: '<br>Comisión de Koberlet ({p}%): {f} {sym} — se aparta de lo que recibes, en la misma transacción.',
     es_gas_note: '<br>⛽ Gas estimado del swap: ~{g} ETH — se paga en ETH: no esperes a quedarte a cero.',
     es_wait_quote: 'Espera a la cotización (o vuelve a escribir la cantidad) antes de firmar.',
     es_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b> en Uniswap (Ethereum)<br><span class="muted">No custodial; recibes como mínimo <b>{min} {t}</b> (lo que viste al cotizar). Si el precio real cae por debajo, la operación se revierte. El gas se paga en ETH.</span>',
@@ -428,6 +433,7 @@ const LANG = {
     mkt_st_sub: 'USDT ⇄ USDC · Uniswap V3, before crossing the bridge',
     st_porque: 'On Kadena only kb-USDC has a market: a USDT bridged as-is cannot be swapped for KDA. Convert it here before crossing.',
     st_quote: 'You will get roughly {out} {sym} ({fee}% pool).',
+    st_quote_com: ' Koberlet fee ({p} %): {f} {sym}, taken from what you receive.',
     st_confirm: 'You are about to swap {a} {f} for about {out} {t} on Uniswap. If the price moves too much meanwhile, the operation cancels itself and you lose nothing.',
     st_ok: 'Swapped. You received about {out} {sym}.',
     st_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
@@ -632,6 +638,7 @@ const LANG = {
     mx_calculando: 'Working it out…',
     mx_recibiras: 'You would get about {s} {t}',
     mx_impacto: 'you would move the price by {i} %',
+    mx_comision: 'Koberlet fee ({p} %): {f} {s}',
     mx_via: 'routed through {c}',
     mx_frenado: 'stopped here: above {m} % impact the swap is blocked. Try a smaller amount.',
     mx_mismos: 'Those are the same token.',
@@ -639,6 +646,8 @@ const LANG = {
     mx_ruta_no: 'That swap is not wired up on Ethereum yet. For now only USDC ⇄ ETH and USDT ⇄ USDC; for anything else, go through USDC first.',
     mx_ledger: 'Not available with Ledger: the device cannot show you the market call, so it would be blind signing.',
     mx_conf: 'Swap {a} {f} for about {r} {t}.',
+    mx_conf_comision: ' Before the swap, {p} % of what you give goes to Koberlet: {f} {s}. It travels in the same transaction: if the swap fails, nothing is charged.',
+    mx_conf_comision_eth: ' Koberlet takes {p} % of what you receive: {f} {s}. It travels in the same transaction: if the swap fails, nothing is charged.',
     mx_hecho: 'Swap confirmed.',
     nft_env_saleonly: 'This piece was minted as «sale-only»: the contract does not allow gifting or '
         + 'transferring it, not even by its creator. It only changes hands through a sale.',
@@ -760,6 +769,7 @@ const LANG = {
     mk_sent: 'Swap sent. requestKey: ',
     es_quoting: 'Querying Uniswap…',
     es_quote_html: 'You receive ≈ <b>{out} {sym}</b> · minimum {min} (slippage {slip}%)',
+    es_fee_note: '<br>Koberlet fee ({p}%): {f} {sym} — taken from what you receive, in the same transaction.',
     es_gas_note: '<br>⛽ Estimated swap gas: ~{g} ETH — paid in ETH: don\'t wait until you hit zero.',
     es_wait_quote: 'Wait for the quote (or re-type the amount) before signing.',
     es_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b> on Uniswap (Ethereum)<br><span class="muted">Non-custodial; you receive at least <b>{min} {t}</b> (what you saw when quoting). If the real price drops below it, the operation reverts. Gas is paid in ETH.</span>',
@@ -1548,13 +1558,16 @@ async function mxCotizar() {
     if (MX.red === 'eth') {
       const q = await mxCotizarEth(cant);
       MX.q = q;
-      msg($('mx-cot'), tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) }));
+      // Lo que se ense\u00f1a ya lleva la comisi\u00f3n descontada; la cifra va detr\u00e1s, aparte.
+      msg($('mx-cot'), tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) })
+        + (q.comision > 0 ? ' \u00b7 ' + tr('mx_comision', { p: q.comisionPct, f: mxNum(q.comision), s: mxSim(MX.a) }) : ''));
       btn.disabled = false;
       return;
     }
     const q = await window.api.dexCotizar({ de: MX.de, a: MX.a, cantidad: String(cant), slippage: Number($('mx-slip').value) });
     MX.q = q;
     let txt = tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) })
+      + (q.comision > 0 ? ' \u00b7 ' + tr('mx_comision', { p: q.comisionPct, f: mxNum(q.comision), s: mxSim(MX.de) }) : '')
       + ' \u00b7 ' + tr('mx_impacto', { i: q.impacto.toFixed(2) })
       + (q.saltos > 1 ? ' \u00b7 ' + tr('mx_via', { c: q.camino.join(' \u2192 ') }) : '');
     if (q.frenado) {
@@ -1573,11 +1586,13 @@ async function mxCotizarEth(cant) {
   if (par === 'USDC>ETH' || par === 'ETH>USDC') {
     const dir = par === 'USDC>ETH' ? 'usdc2eth' : 'eth2usdc';
     const q = await window.api.ethswapQuote(dir, String(cant));
-    return { esperada: q.out, eth: true, dir, minOut: q.min };
+    // `esperada` es ya lo que le llega al usuario; `minOut` es el suelo que se firma,
+    // que va contra lo que da el pool, antes de la comisión.
+    return { esperada: q.out, eth: true, dir, minOut: q.min, comision: q.comision, comisionPct: q.comisionPct };
   }
   if ((MX.de === 'USDT' && MX.a === 'USDC') || (MX.de === 'USDC' && MX.a === 'USDT')) {
     const q = await window.api.evmSwapCotizar({ de: MX.de, a: MX.a, amount: String(cant) });
-    return { esperada: q.salida, eth: true, estable: true };
+    return { esperada: q.salida, eth: true, estable: true, comision: q.comision, comisionPct: q.comisionPct };
   }
   throw new Error(t('mx_ruta_no'));
 }
@@ -1589,7 +1604,13 @@ function mxCambiar() {
   if (MX.red === 'kda' && isLedgerW(wid)) return msg($('mx-msg'), t('mx_ledger'), 'err');
   if (!MX.q) return msg($('mx-msg'), t('mx_sin_cotizar'), 'err');
   if (MX.q.frenado) return msg($('mx-msg'), tr('mx_frenado', { m: MX.impactoMax }), 'err');
-  const resumen = tr('mx_conf', { a: esc(cant), f: mxSim(MX.de), t: mxSim(MX.a), r: mxNum(MX.q.esperada) });
+  // La comisión se dice otra vez aquí, que es el último sitio donde se puede decir que no.
+  // En Kadena sale de lo que das; en Ethereum, de lo que recibes: lo hace el propio router.
+  const resumen = tr('mx_conf', { a: esc(cant), f: mxSim(MX.de), t: mxSim(MX.a), r: mxNum(MX.q.esperada) })
+    + (MX.q.comision > 0
+      ? tr(MX.red === 'eth' ? 'mx_conf_comision_eth' : 'mx_conf_comision',
+        { p: MX.q.comisionPct, f: mxNum(MX.q.comision), s: mxSim(MX.red === 'eth' ? MX.a : MX.de) })
+      : '');
   askSend(resumen, async (pass) => {
     if (MX.red === 'eth') {
       if (MX.q.estable) {
@@ -1716,9 +1737,12 @@ async function esQuote() {
   try {
     msg($('es-quote'), t('es_quoting'));
     const q = await window.api.ethswapQuote(ESDIR, amt);
-    _esQuote = { dir: ESDIR, amt: String(amt), min: q.min };
+    _esQuote = { dir: ESDIR, amt: String(amt), min: q.min, recibes: q.minRecibes };
     const outSym = ESDIR === 'usdc2eth' ? 'ETH' : 'USDC';
-    $('es-quote').innerHTML = tr('es_quote_html', { out: q.out.toFixed(6), sym: outSym, min: q.min.toFixed(6), slip: q.slipPct }) +
+    // Lo que se enseña es lo que se recibe: la comisión ya está descontada y va
+    // aparte en su propia línea, con su cifra.
+    $('es-quote').innerHTML = tr('es_quote_html', { out: q.out.toFixed(6), sym: outSym, min: q.minRecibes.toFixed(6), slip: q.slipPct }) +
+      tr('es_fee_note', { p: q.comisionPct, f: q.comision.toFixed(6), sym: outSym }) +
       (q.gasEth != null ? tr('es_gas_note', { g: q.gasEth.toFixed(5) }) : '');
     $('es-quote').className = 'msg';
   } catch (e) { _esQuote = null; msg($('es-quote'), e.message, 'err'); }
@@ -1728,9 +1752,10 @@ $('es-swap').onclick = () => {
   if (!wid) return msg($('es-msg'), t('err_no_eth_wallet'), 'err');
   if (!amt || Number(amt) <= 0) return msg($('es-msg'), t('err_need_amt'), 'err');
   if (!_esQuote || _esQuote.dir !== ESDIR || _esQuote.amt !== String(amt)) return msg($('es-msg'), t('es_wait_quote'), 'err');
-  const minOut = _esQuote.min;
+  const minOut = _esQuote.min;                      // el suelo que se firma, antes de la comisión
   const u2e = ESDIR === 'usdc2eth';
-  askSend(tr('es_confirm', { a: esc(amt), f: u2e ? 'USDC' : 'ETH', t: u2e ? 'ETH' : 'USDC', min: esc(String(minOut)) }),
+  // En el diálogo va lo que le llega a él, no el suelo del pool: la comisión ya está fuera.
+  askSend(tr('es_confirm', { a: esc(amt), f: u2e ? 'USDC' : 'ETH', t: u2e ? 'ETH' : 'USDC', min: esc(String(_esQuote.recibes)) }),
     async (pass) => { const r = await window.api.ethswapExec(pass, wid, ESDIR, amt, minOut); return (r.ok ? t('es_ok') : t('es_check')) + ' tx: ' + (r.txHash || '').slice(0, 14) + '…'; });
 };
 
@@ -1760,7 +1785,9 @@ async function stQuote() {
     msg($('st-quote'), t('es_quoting'));
     const q = await window.api.evmSwapCotizar({ de: STDIR.de, a: STDIR.a, amount: amt });
     _stQuote = { de: STDIR.de, a: STDIR.a, amt: String(amt), salida: q.salida };
-    $('st-quote').textContent = tr('st_quote', { out: q.salida.toFixed(6), sym: STDIR.a, fee: String(q.fee / 10000) });
+    // Lo que sale ya lleva descontada la comisión; la cifra se dice aparte.
+    $('st-quote').textContent = tr('st_quote', { out: q.salida.toFixed(6), sym: STDIR.a, fee: String(q.fee / 10000) })
+      + (q.comision > 0 ? tr('st_quote_com', { p: q.comisionPct, f: q.comision.toFixed(6), sym: STDIR.a }) : '');
     $('st-quote').className = 'msg';
   } catch (e) { _stQuote = null; msg($('st-quote'), cleanErr(e), 'err'); }
 }
