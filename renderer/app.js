@@ -951,7 +951,7 @@ async function boot() {
 // Versión + auto-update vía descargas.dnns.es
 async function initUpdates() {
   try {
-    const info = await window.api.appInfo(); const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; });
+    const info = await window.api.appInfo(); window._sistema = info.sistema || null; const v = 'v' + info.version; document.title = 'Koberlet ' + v; ['app-ver', 'auth-ver', 'auth-ver-s'].forEach(id => { if ($(id)) $(id).textContent = v; });
     // Idea 13: si la versión cambió desde el último arranque, avisa de que se actualizó y verificó.
     const last = localStorage.getItem('koberlet-last-ver');
     if (last && last !== info.version) toast(t('updated_toast').replace('{v}', info.version));
@@ -1033,7 +1033,11 @@ async function doUpdate(u, statusEl) {
   if (u && u.canAuto) {
     if (statusEl) statusEl.textContent = t('upd_applying');
     try { await window.api.updateApply(); } catch (e) { if (statusEl) statusEl.textContent = t('upd_err') + e.message; }
-  } else if (u && u.url) { window.api.openExternal(u.url); }
+  } else if (u && (u.urlPagina || u.url)) {
+    // Sin auto-update (macOS): a la pagina de descargas, que ofrece el .dmg. El .url es el
+    // zip de Windows, y mandar a un Mac a bajarse un zip de Windows es peor que no decir nada.
+    window.api.openExternal(u.urlPagina || u.url);
+  }
 }
 $('btn-update-dl').onclick = () => { $('btn-update-dl').disabled = true; doUpdate(window._upd, $('update-text')); };
 $('btn-update-x').onclick = () => { $('update-banner').hidden = true; };
@@ -1244,6 +1248,13 @@ async function enter(v) {
   };
   syncKdaControls();
   // Ajustes: modo de actualización (manual por defecto / automática)
+  // Fuera de Windows la automática no existe: el cambio in-place es de Windows, así que se
+  // quita la opción en vez de dejarla puesta sin hacer nada.
+  if (window._sistema && window._sistema !== 'win32') {
+    const auto = $('set-upd-mode').querySelector('option[value="auto"]');
+    if (auto) auto.remove();
+    if (CFG.updateMode === 'auto') { CFG.updateMode = 'manual'; await window.api.setConfig(CFG); }
+  }
   $('set-upd-mode').value = CFG.updateMode || 'manual';
   $('set-upd-mode').onchange = async () => { CFG.updateMode = $('set-upd-mode').value; await window.api.setConfig(CFG); };
   $('set-lock-mode').value = String(CFG.lockMinutes ?? 10);
