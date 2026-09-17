@@ -1738,9 +1738,15 @@ const UPDATE_URL = 'https://descargas.dnns.es/kob7t2m9x4/koberlet';
 // El updater exige que el paquete descargado case con este sha256 Y que la firma sobre ese sha256 valide con esta clave.
 // Así, ni un servidor de descargas comprometido ni un MITM pueden colar código (no tienen la privada).
 const UPDATE_PUBKEY = '57e9f4fae9fcfa361e58b702cf83ff9b8b806d606a2e741b40b77ed2866bb4e4';
+// Pagina publica de descargas. Se usa SOLO donde el auto-update no se puede aplicar (macOS):
+// alli el boton lleva aqui, que siempre ofrece el .dmg mas nuevo. Es una constante del codigo,
+// no un campo de latest.json: asi un servidor que mienta no puede cambiar a donde lleva el boton.
+const PAGINA_DESCARGAS = 'https://koberlet.dnns.es/';
 const nacl = require('tweetnacl');
 const cmpVer = (a, b) => { const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; } return 0; };
-ipcMain.handle('app:info', () => ({ version: APP_VERSION }));
+// `sistema` sale de aqui y no de navigator: la pantalla lo necesita para no ofrecer la
+// actualizacion automatica donde no se puede aplicar (solo Windows).
+ipcMain.handle('app:info', () => ({ version: APP_VERSION, sistema: process.platform }));
 ipcMain.handle('update:check', async () => {
   try {
     const r = await fetch(UPDATE_URL + '/latest.json', { signal: AbortSignal.timeout(6000), cache: 'no-store' });
@@ -1769,17 +1775,31 @@ ipcMain.handle('update:check', async () => {
     // `Get-FileHash` antes de abrirlo (auditoría A-1). Formato validado en origen.
     const urlSha256 = (typeof j.urlSha256 === 'string' && /^[0-9a-f]{64}$/.test(j.urlSha256.toLowerCase()))
       ? j.urlSha256.toLowerCase() : null;
-    return { current: APP_VERSION, latest: ver, newer: !!newer, url, urlSha256, canAuto: !!j.appUrl, notes };
+    // El auto-update in-place es de Windows: cambia `resources/app` con PowerShell y un .bat,
+    // y en macOS ni la carpeta esta ahi ni existe PowerShell. Se avisa igual de la version
+    // nueva -eso vale en los tres sistemas-, pero el boton baja el instalador en vez de
+    // prometer una actualizacion que luego no se puede aplicar (visto 2026-09-17: un Mac en
+    // la 2.8.5 veia el cartel de la 2.9.0 y el boton no hacia nada bueno).
+    const puedeAuto = process.platform === 'win32' && !!j.appUrl;
+    return { current: APP_VERSION, latest: ver, newer: !!newer, url, urlSha256,
+      canAuto: puedeAuto, urlPagina: puedeAuto ? null : PAGINA_DESCARGAS, notes };
   } catch (_) { return { current: APP_VERSION, latest: null, newer: false }; }
 });
 // SEGURIDAD (revisión 2026-07-21 #1b): el único uso de open:external es el botón de descarga del update, que apunta
 // al origen oficial. Se restringe a ese origen para que un latest.json manipulado no pueda abrir un host arbitrario.
-ipcMain.handle('open:external', (_e, url) => { if (typeof url === 'string' && url.startsWith(UPDATE_URL + '/')) shell.openExternal(url); });
+// La pagina publica de descargas se admite tal cual (igualdad exacta, no prefijo) porque es
+// a donde lleva el boton cuando el auto-update no se puede aplicar.
+ipcMain.handle('open:external', (_e, url) => {
+  if (typeof url !== 'string') return;
+  if (url === PAGINA_DESCARGAS || url.startsWith(UPDATE_URL + '/')) shell.openExternal(url);
+});
 
 // Auto-update IN-PLACE: descarga SOLO el código nuevo (resources/app) y lo cambia con un .bat al cerrar,
 // preservando la bóveda (MonederoDNNS-datos vive junto al .exe, fuera de resources/app). No pierde nada.
 const { spawn } = require('child_process');
 ipcMain.handle('update:apply', async () => {
+  // Cinturon: la pantalla ya no ofrece el boton fuera de Windows, pero el canal sigue ahi.
+  if (process.platform !== 'win32') throw new Error('En este sistema la version nueva se baja a mano desde la pagina de descargas.');
   const r = await fetch(UPDATE_URL + '/latest.json', { signal: AbortSignal.timeout(8000), cache: 'no-store' });
   const j = await r.json();
   const appUrl = j.appUrl; // zip que contiene SOLO la carpeta app (el código)
