@@ -356,14 +356,18 @@
               <div class="dir-bal muted xs" id="mx-bal-a"></div>
             </div>
           </div>
-          <div class="row2">
-            <div><label data-i18n="mx_cantidad">Cantidad</label>
+          <div class="cambio-row">
+            <div class="cambio-col"><label data-i18n="mx_cantidad">Cantidad</label>
               <div class="amtrow"><input id="mx-cant" type="number" step="0.000001" placeholder="0.0"/>
                 <button type="button" class="tiny ghost" id="mx-max" data-i18n="lz_max">Máximo</button></div></div>
-            <div><label data-i18n="dca_slip">Deslizamiento máximo</label><select id="mx-slip"></select></div>
+            <div class="cambio-col"><label id="mx-lbl-out" data-i18n="mx_quiero">Quiero recibir</label>
+              <input id="mx-out" type="number" step="0.000001" placeholder="0.0"/></div>
           </div>
           <div id="mx-cot" class="msg"></div>
-          <button id="mx-cambiar" class="primary" data-i18n="mx_cambiar">Cambiar</button>
+          <div class="accion-row">
+            <button id="mx-cambiar" class="primary" data-i18n="mx_cambiar">Cambiar</button>
+            <div class="slip-inline"><label data-i18n="dca_slip">Deslizamiento máximo</label><select id="mx-slip"></select></div>
+          </div>
           <div id="mx-msg" class="msg"></div>
           <details class="lz-riesgos" id="mx-fondos">
             <summary data-i18n="mx_fondos">Cuánto fondo tiene cada pool</summary>
@@ -451,6 +455,16 @@
             <option value="fork" data-i18n="kda_mode_comm">Solo Kadena</option>
           </select>
           <p class="muted xs" data-i18n="kda_mode_hint">Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)</p>
+        </div>
+        <div class="card">
+          <label data-i18n="set_fiat">Moneda de referencia</label>
+          <select id="set-fiat">
+            <option value="eur">EUR (€) — Euro</option>
+            <option value="usd">USD ($) — Dólar</option>
+            <option value="gbp">GBP (£) — Libra</option>
+            <option value="chf">CHF (Fr.) — Franco suizo</option>
+          </select>
+          <p class="muted xs" data-i18n="fiat_hint">En qué moneda se te enseña lo que valen tus saldos: el total del panel, las tarjetas de red y el conversor. No cambia nada de lo que se mueve en cadena.</p>
         </div>
         <div class="card">
           <div class="row-between"><b>Koberlet <span id="app-ver">—</span></b><button id="btn-check-upd" class="tiny ghost" data-i18n="check_upd">Buscar actualizaciones</button></div>
@@ -691,8 +705,16 @@
                 <div class="dir-bal muted xs" id="mk-bal-to"></div>
               </div>
             </div>
-            <label id="mk-lbl-amt">Cantidad a entregar (kb-USDC)</label>
-            <input id="mk-amt" type="number" step="0.000001" placeholder="0.0" />
+            <div class="cambio-row">
+              <div class="cambio-col">
+                <label id="mk-lbl-amt">Cantidad a entregar (kb-USDC)</label>
+                <input id="mk-amt" type="number" step="0.000001" placeholder="0.0" />
+              </div>
+              <div class="cambio-col">
+                <label id="mk-lbl-out" data-i18n="mk_recibes">Recibes (aprox.)</label>
+                <input id="mk-out" type="number" step="0.000001" placeholder="0.0" />
+              </div>
+            </div>
             <div id="mk-quote" class="msg"></div>
             <button id="mk-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
             <div id="mk-msg" class="msg"></div>
@@ -713,8 +735,16 @@
                 <div class="dir-bal muted xs" id="st-bal-to"></div>
               </div>
             </div>
-            <label id="st-lbl-amt">Cantidad a entregar (USDT)</label>
-            <input id="st-amt" type="number" step="0.000001" placeholder="0.0" />
+            <div class="cambio-row">
+              <div class="cambio-col">
+                <label id="st-lbl-amt">Cantidad a entregar (USDT)</label>
+                <input id="st-amt" type="number" step="0.000001" placeholder="0.0" />
+              </div>
+              <div class="cambio-col">
+                <label id="st-lbl-out" data-i18n="mk_recibes">Recibes (aprox.)</label>
+                <input id="st-out" type="text" readonly tabindex="-1" placeholder="—" />
+              </div>
+            </div>
             <div id="st-quote" class="msg"></div>
             <button id="st-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
             <div id="st-msg" class="msg"></div>
@@ -734,8 +764,16 @@
                 <div class="dir-bal muted xs" id="es-bal-to"></div>
               </div>
             </div>
-            <label id="es-lbl-amt">Cantidad a entregar (USDC)</label>
-            <input id="es-amt" type="number" step="0.000001" placeholder="0.0" />
+            <div class="cambio-row">
+              <div class="cambio-col">
+                <label id="es-lbl-amt">Cantidad a entregar (USDC)</label>
+                <input id="es-amt" type="number" step="0.000001" placeholder="0.0" />
+              </div>
+              <div class="cambio-col">
+                <label id="es-lbl-out" data-i18n="mk_recibes">Recibes (aprox.)</label>
+                <input id="es-out" type="text" readonly tabindex="-1" placeholder="—" />
+              </div>
+            </div>
             <div id="es-quote" class="msg"></div>
             <button id="es-swap" class="primary" data-i18n="mk_swap">Cambiar</button>
             <div id="es-msg" class="msg"></div>
@@ -850,8 +888,8 @@
         <div class="addrbig" id="send-addr-big"></div>
         <label class="chk"><input type="checkbox" id="send-addr-ok"/> <span data-i18n="addr_confirm">He verificado que la dirección de destino es correcta</span></label>
       </div>
-      <label id="send-pass-lbl" data-i18n="lbl_vault_pass">Contraseña de la bóveda</label><input id="send-pass" type="password" />
-      <div class="btnrow2"><button id="btn-confirm-send" class="primary" data-i18n="btn_sign_send">Firmar y enviar</button><button class="ghost" data-close data-i18n="cancel">Cancelar</button></div>
+      <div id="send-pass-row"><label id="send-pass-lbl" data-i18n="lbl_vault_pass">Contraseña de la bóveda</label><input id="send-pass" type="password" /></div>
+      <div class="btnrow2" id="send-btns"><button id="btn-confirm-send" class="primary" data-i18n="btn_sign_send">Firmar y enviar</button><button class="ghost" data-close data-i18n="cancel">Cancelar</button></div>
       <div id="send-steps" class="steps"></div>
       <div id="send-msg" class="msg"></div>
     </div>

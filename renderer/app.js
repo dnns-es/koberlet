@@ -217,6 +217,7 @@ const LANG = {
     mx_refrescar: 'Refrescar',
     mx_red: 'Red',
     mx_entregas: 'Entregas',
+    mx_quiero: 'Quiero recibir',
     mx_recibes: 'Recibes',
     mx_cantidad: 'Cantidad',
     mx_cambiar: 'Cambiar',
@@ -275,6 +276,7 @@ const LANG = {
     h_seguridad: 'Seguridad', h_ajustes: 'Ajustes', h_info: 'Info y manuales',
     kda_nets: 'Redes Kadena — elige cuáles ver', evm_nets: 'Redes EVM — para wallets EVM', eth_rpc: 'RPC de Ethereum', save: 'Guardar',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Cantidad a entregar', mk_swap: 'Cambiar',
+    mk_recibes: 'Recibes aprox.',
     h_ethswap: 'Ethereum — cambiar USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
     set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
     set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
@@ -284,8 +286,6 @@ const LANG = {
     nodes_adv: 'Nodos (avanzado)', nodes_kda: 'Nodos Kadena (fijos por seguridad)',
     nodes_hint: 'Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.',
     node_save: 'Guardar', node_reset: 'Restablecer', node_saved: 'Nodo guardado.', node_bad: 'Debe ser una dirección https válida.',
-    test_mode: '🧪 Modo pruebas — saldos ficticios de la Devnet; las redes reales están ocultas.',
-    faucet_wait: 'Recargando desde el grifo… (unos segundos)', faucet_ok: 'Recarga recibida: +{n} KDA en la chain {c}.', faucet_err: 'La recarga falló:',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
     whats_new: 'Ver novedades', whats_new_title: 'Novedades de la v{v}',
     upd_applying: 'Actualizando… la app se reiniciará sola. Tus wallets y datos se conservan.',
@@ -352,7 +352,7 @@ const LANG = {
     evm_ctx_off: 'Estas redes se muestran cuando tienes alguna wallet EVM visible en el dashboard.',
     no_wallet_kda: '— sin wallet Kadena —', no_wallet_eth: '— sin wallet Ethereum —',
     mk_quoting: 'Calculando precio del pool…',
-    mk_quote_html: 'Recibes ≈ <b>{out} {tok}</b> · mínimo {min} (slippage {slip}%)<br>Precio {p} kb-USDC/KDA · impacto {imp}%<br>Comisión de Koberlet {fpc}%: {fee} {ftok} · al pool {neto} {ftok}',
+    mk_quote_html: 'Mínimo garantizado <b>{min} {tok}</b> (slippage {slip}%)<br>Precio {p} kb-USDC/KDA · impacto {imp}%<br>Comisión de Koberlet {fpc}%: {fee} {ftok} · al pool {neto} {ftok}',
     err_no_kda_wallet: 'No hay wallet Kadena.', err_no_eth_wallet: 'No hay wallet Ethereum.', err_need_amt: 'Indica la cantidad.',
     mk_confirm: 'Cambiar <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Pool de Kadena (kaddex.exchange, chain 2), no custodial. Precio fresco al firmar.<br>De esos {a} {f}, <b>{fee} {f}</b> son la comisión de Koberlet ({fpc}%) y el resto va al pool. Las dos cosas van en la misma transacción: si el cambio falla, no se cobra nada.</span>',
     mk_sent: 'Swap enviado. requestKey: ',
@@ -368,7 +368,7 @@ const LANG = {
     lbl_chain_from: 'Chain origen', lbl_chain_to: 'Chain destino', lbl_dest_k: 'Destino (k:…)', lbl_dest_0x: 'Destino (0x…)', lbl_amount: 'Cantidad', lbl_asset: 'Activo',
     ph_kda_dest: 'k:... o elige de la libreta', ph_evm_dest: '0x... o elige de la libreta',
     xchain_hint: '↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).',
-    send: 'Enviar', btn_recv: '📥 Recibir', btn_send: '📤 Enviar', btn_faucet: '🚰 +1.000 KDA', offline: 'sin conexión',
+    send: 'Enviar', btn_recv: '📥 Recibir', btn_send: '📤 Enviar', offline: 'sin conexión',
     btn_expand: 'Ampliar', btn_back: '← Volver al panel',
     loading_balances: 'Cargando saldos…',
     no_wallets_visible: 'No hay wallets visibles. Marca alguna en la sección Wallets.',
@@ -393,6 +393,13 @@ const LANG = {
     tag_cold: '❄️ Fría', tag_hot: '🔥 Caliente',
     kda_mode_both: 'Ambas (Kadena + Kadena Inc)', kda_mode_inc: 'Solo Kadena (Inc)', kda_mode_comm: 'Solo Kadena',
     kda_mode_hint: 'Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)',
+    set_fiat: 'Moneda de referencia',
+    recv_ask: 'Pedir una cantidad (opcional)',
+    recv_amt_ph: 'KDA a cobrar',
+    recv_any_chain: 'Cualquier chain',
+    recv_ask_hint: 'Deja esto vacío y el QR lleva solo tu dirección, que la entiende cualquier monedero.',
+    recv_ask_on: 'El QR lleva ya la cantidad y la chain: quién pague con Koberlet en el móvil se las encuentra puestas.',
+    fiat_hint: 'En qué moneda se te enseña lo que valen tus saldos: el total del panel, las tarjetas de red y el conversor. No cambia nada de lo que se mueve en cadena.',
     min_5: '5 minutos', min_10: '10 minutos', min_30: '30 minutos',
     sec_intro: 'Revela la clave privada de una de tus wallets. Requiere la contraseña de la bóveda. No la compartas con nadie.',
     sec_view_pk: '🔑 Ver clave privada',
@@ -628,6 +635,7 @@ const LANG = {
     mx_refrescar: 'Refresh',
     mx_red: 'Network',
     mx_entregas: 'You give',
+    mx_quiero: 'I want to receive',
     mx_recibes: 'You get',
     mx_cantidad: 'Amount',
     mx_cambiar: 'Swap',
@@ -686,6 +694,7 @@ const LANG = {
     h_seguridad: 'Security', h_ajustes: 'Settings', h_info: 'Info & manuals',
     kda_nets: 'Kadena networks — choose which to show', evm_nets: 'EVM networks — for EVM wallets', eth_rpc: 'Ethereum RPC', save: 'Save',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Amount to send', mk_swap: 'Swap',
+    mk_recibes: 'You receive approx.',
     h_ethswap: 'Ethereum — swap USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
     set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
     set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
@@ -695,8 +704,6 @@ const LANG = {
     nodes_adv: 'Nodes (advanced)', nodes_kda: 'Kadena nodes (fixed for security)',
     nodes_hint: 'Entry server for each network (RPC). Only touch it if the default node is slow or you want to use your own. Must be an https address. Reset returns to the default node.',
     node_save: 'Save', node_reset: 'Reset', node_saved: 'Node saved.', node_bad: 'Must be a valid https address.',
-    test_mode: '🧪 Test mode — fictitious Devnet balances; real networks are hidden.',
-    faucet_wait: 'Topping up from the faucet… (a few seconds)', faucet_ok: 'Top-up received: +{n} KDA on chain {c}.', faucet_err: 'Top-up failed:',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
     whats_new: "What's new", whats_new_title: "What's new in v{v}",
     upd_applying: 'Updating… the app will restart by itself. Your wallets and data are preserved.',
@@ -763,7 +770,7 @@ const LANG = {
     evm_ctx_off: 'These networks are shown when you have an EVM wallet visible on the dashboard.',
     no_wallet_kda: '— no Kadena wallet —', no_wallet_eth: '— no Ethereum wallet —',
     mk_quoting: 'Reading pool price…',
-    mk_quote_html: 'You receive ≈ <b>{out} {tok}</b> · minimum {min} (slippage {slip}%)<br>Price {p} kb-USDC/KDA · impact {imp}%<br>Koberlet fee {fpc}%: {fee} {ftok} · to the pool {neto} {ftok}',
+    mk_quote_html: 'Guaranteed minimum <b>{min} {tok}</b> (slippage {slip}%)<br>Price {p} kb-USDC/KDA · impact {imp}%<br>Koberlet fee {fpc}%: {fee} {ftok} · to the pool {neto} {ftok}',
     err_no_kda_wallet: 'No Kadena wallet.', err_no_eth_wallet: 'No Ethereum wallet.', err_need_amt: 'Enter the amount.',
     mk_confirm: 'Swap <b>{a} {f}</b> → <b>{t}</b><br><span class="muted">Kadena pool (kaddex.exchange, chain 2), non-custodial. Fresh price at signing.<br>Out of those {a} {f}, <b>{fee} {f}</b> is the Koberlet fee ({fpc}%) and the rest goes to the pool. Both go in the same transaction: if the swap fails, nothing is charged.</span>',
     mk_sent: 'Swap sent. requestKey: ',
@@ -779,7 +786,7 @@ const LANG = {
     lbl_chain_from: 'Source chain', lbl_chain_to: 'Destination chain', lbl_dest_k: 'Destination (k:…)', lbl_dest_0x: 'Destination (0x…)', lbl_amount: 'Amount', lbl_asset: 'Asset',
     ph_kda_dest: 'k:... or pick from the book', ph_evm_dest: '0x... or pick from the book',
     xchain_hint: '↔ Send between different chains (cross-chain): takes a bit longer (two steps + SPV proof).',
-    send: 'Send', btn_recv: '📥 Receive', btn_send: '📤 Send', btn_faucet: '🚰 +1,000 KDA', offline: 'offline',
+    send: 'Send', btn_recv: '📥 Receive', btn_send: '📤 Send', offline: 'offline',
     btn_expand: 'Expand', btn_back: '← Back to panel',
     loading_balances: 'Loading balances…',
     no_wallets_visible: 'No visible wallets. Tick one in the Wallets section.',
@@ -804,6 +811,13 @@ const LANG = {
     tag_cold: '❄️ Cold', tag_hot: '🔥 Hot',
     kda_mode_both: 'Both (Kadena + Kadena Inc)', kda_mode_inc: 'Only Kadena (Inc)', kda_mode_comm: 'Only Kadena',
     kda_mode_hint: 'Which Kadena cards are shown for each wallet. Use it to declutter the dashboard if you do not use one of the networks. (Same as the switches in the Network section.)',
+    set_fiat: 'Display currency',
+    recv_ask: 'Request an amount (optional)',
+    recv_amt_ph: 'KDA to receive',
+    recv_any_chain: 'Any chain',
+    recv_ask_hint: 'Leave this empty and the QR carries just your address, which any wallet understands.',
+    recv_ask_on: 'The QR now carries the amount and the chain: whoever pays with Koberlet on mobile finds them filled in.',
+    fiat_hint: 'The currency your balances are shown in: the dashboard total, the network cards and the converter. It changes nothing about what moves on chain.',
     min_5: '5 minutes', min_10: '10 minutes', min_30: '30 minutes',
     sec_intro: 'Reveals the private key of one of your wallets. Requires the vault password. Never share it with anyone.',
     sec_view_pk: '🔑 View private key',
@@ -894,7 +908,63 @@ function applyTheme() { document.documentElement.setAttribute('data-theme', THEM
 if ($('btn-theme')) $('btn-theme').onclick = () => { THEME = THEME === 'dark' ? 'light' : 'dark'; localStorage.setItem('koberlet-theme', THEME); applyTheme(); };
 applyTheme();
 
-// ===== Precios (idea 5/6): variación 24h + fiat. PRICES = { cgId:{usd,eur,chg} } =====
+// ===== Moneda de referencia =====
+//
+// La vara de medir de quien mira: el total del panel, las tarjetas de red y el
+// conversor. NO es la moneda en la que se mueve el dinero. Igual que en el móvil
+// (src/moneda.js), para que las dos apps digan lo mismo.
+//
+// Hasta la 2.9.1 el selector de aquí solo afectaba al conversor y el total salía
+// SIEMPRE en dólares, aunque pusieras euros. Eso es lo que se arregla.
+//
+// El código es el de CoinGecko (minúsculas) y el de ISO 4217 (mayúsculas), que
+// coinciden. Añadir una es una línea aquí y una palabra en FIATS de main.js.
+const MONEDAS = {
+  eur: { iso: 'EUR', simbolo: '€', nombre: 'Euro' },
+  usd: { iso: 'USD', simbolo: '$', nombre: 'Dólar' },
+  gbp: { iso: 'GBP', simbolo: '£', nombre: 'Libra' },
+  chf: { iso: 'CHF', simbolo: 'Fr.', nombre: 'Franco suizo' }
+};
+let FIAT = localStorage.getItem('koberlet-fiat');
+if (!MONEDAS[FIAT]) FIAT = 'eur';
+
+// Cuánto vale un dólar en la moneda elegida. Los saldos se calculan en dólares
+// en el proceso principal (y así siguen: ese cálculo está probado), y aquí solo
+// se cambia la vara de medir.
+//
+// El factor sale de un par que YA se ha pedido, no de otra fuente de cambio:
+// CoinGecko deriva todas las monedas del mismo tipo, así que la razón eur/usd de
+// cualquier moneda vale. Se prefiere ethereum por ser el mercado más hondo, y si
+// faltara se coge la primera que traiga las dos cifras. Si no hay ninguna -sin
+// red y con la caché vacía-, el factor es 1 y se enseña el dólar: más vale
+// enseñar la moneda equivocada que un número inventado.
+function fxDesdeUsd(fiat = FIAT) {
+  if (fiat === 'usd') return 1;
+  const cand = ['ethereum', 'usd-coin', 'kadena'].concat(Object.keys(PRICES));
+  for (const cg of cand) {
+    const p = PRICES[cg];
+    if (p && p.usd > 0 && p[fiat] > 0) return p[fiat] / p.usd;
+  }
+  return null;                                    // sin dato: quien llame decide
+}
+
+/** Un importe en dólares, escrito en la moneda elegida y con el formato del idioma. */
+function dinero(usd, dec = 2) {
+  const f = fxDesdeUsd();
+  const iso = f == null ? 'USD' : MONEDAS[FIAT].iso;
+  const v = (Number(usd) || 0) * (f == null ? 1 : f);
+  try { return v.toLocaleString(LNG === 'en' ? 'en-US' : 'es-ES', { style: 'currency', currency: iso, minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+  catch (_) { return (f == null ? '$' : MONEDAS[FIAT].simbolo) + fmt(v, dec); }
+}
+
+/** Como `dinero`, pero abreviando los miles (para la leyenda del gráfico). */
+function dineroCorto(usd, dec = 2) {
+  const f = fxDesdeUsd();
+  const sim = f == null ? '$' : MONEDAS[FIAT].simbolo;
+  return sim + fmtCorto((Number(usd) || 0) * (f == null ? 1 : f), dec);
+}
+
+// ===== Precios (idea 5/6): variación 24h + fiat. PRICES = { cgId:{usd,eur,gbp,chf,chg} } =====
 let PRICES = {};
 const CG_EXTRA = { KDA: 'kadena', 'kb-USDC': 'usd-coin', 'kb-USDT': 'tether', 'kb-DAI': 'dai', 'kb-WBTC': 'wrapped-bitcoin' };
 function cgFor(sym) {
@@ -913,6 +983,13 @@ let _convInit = false;
 function initConverter() {
   if (!$('conv-asset')) return;
   if (!$('conv-asset').options.length) $('conv-asset').innerHTML = ['KDA', 'ETH', 'BNB', 'POL'].map(s => `<option value="${s}">${s}</option>`).join('');
+  // Las monedas salen de MONEDAS, y arranca en la elegida: el conversor y el
+  // total del panel tienen que hablar de lo mismo. Cambiarla aquí es cosa de un
+  // rato -«¿cuánto es esto en libras?»- y no cambia el ajuste general.
+  if ($('conv-fiat').options.length !== Object.keys(MONEDAS).length) {
+    $('conv-fiat').innerHTML = Object.entries(MONEDAS).map(([c, m]) => `<option value="${c}">${m.iso} (${m.simbolo})</option>`).join('');
+    $('conv-fiat').value = FIAT;
+  }
   const recalc = (from) => {
     const cg = cgFor($('conv-asset').value), fiat = $('conv-fiat').value;
     const px = cg && PRICES[cg] && PRICES[cg][fiat];
@@ -1232,9 +1309,6 @@ async function enter(v) {
   $('kda-nets').innerHTML = CFG.kda.networks.map(n => `<label class="toggle"><input type="checkbox" data-knet="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
   $('kda-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => {
     CFG.kda.networks.find(x => x.key === cb.dataset.knet).enabled = cb.checked;
-    // Modo pruebas excluyente: activar la Devnet apaga las redes reales, y al revés
-    if (cb.checked && cb.dataset.knet === 'devnet') CFG.kda.networks.forEach(n => { if (n.key !== 'devnet') n.enabled = false; });
-    if (cb.checked && cb.dataset.knet !== 'devnet') CFG.kda.networks.forEach(n => { if (n.key === 'devnet') n.enabled = false; });
     await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
   });
   // Ajustes: modo de redes Kadena en el dashboard (Ambas / Solo oficial / Solo fork), sincronizado con los interruptores de Red
@@ -1242,10 +1316,21 @@ async function enter(v) {
     const v = $('set-kda-mode').value;
     CFG.kda.networks.find(n => n.key === 'mainnet').enabled = v !== 'fork';
     CFG.kda.networks.find(n => n.key === 'fork').enabled = v !== 'oficial';
-    // Elegir redes reales desde Ajustes también saca del modo pruebas
-    CFG.kda.networks.forEach(n => { if (n.key === 'devnet') n.enabled = false; });
     await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
   };
+  // Moneda de referencia. Vive en localStorage como el idioma y el tema: es
+  // preferencia de quien mira, no configuración de la cartera, y no tiene por
+  // qué viajar en las copias de seguridad.
+  if ($('set-fiat')) {
+    $('set-fiat').value = FIAT;
+    $('set-fiat').onchange = () => {
+      const v = $('set-fiat').value;
+      if (!MONEDAS[v]) return;
+      FIAT = v; localStorage.setItem('koberlet-fiat', v);
+      if ($('conv-fiat')) { $('conv-fiat').value = v; initConverter(); }
+      loadBalances();                                  // repinta total y tarjetas
+    };
+  }
   syncKdaControls();
   // Ajustes: modo de actualización (manual por defecto / automática)
   // Fuera de Windows la automática no existe: el cambio in-place es de Windows, así que se
@@ -1466,6 +1551,29 @@ function saldoDe(walletId, simbolo) {
 // Pinta "Disponible: X" justo bajo el botón de un token del par.
 // Cada lado pinta el símbolo que tenga en ese momento, así al invertir el sentido
 // el saldo viaja con su token (renderMercado/renderEthSwap repintan los dos lados).
+/**
+ * La casilla de la derecha de los atajos: lo que RECIBIRIAS.
+ *
+ * Es de solo lectura y va al lado de la cantidad, no debajo, porque la pregunta
+ * que se hace uno aqui es «si entrego esto, cuanto me llega» y hasta la 2.9.1
+ * habia que sacarlo de una frase larga o ir probando cifras hasta acertar.
+ *
+ * Dice «aprox.» y no miente: es lo ESPERADO, no lo garantizado. El minimo que de
+ * verdad se firma sigue en la linea de abajo con el resto del detalle -impacto,
+ * comision, precio-, que es donde tiene que estar para leerlo antes de firmar.
+ * Aqui no se decide nada; aqui se hace la cuenta que antes se hacia a mano.
+ */
+function pintarRecibes(pref, cantidad) {
+    const el = $(pref + '-out');
+    if (!el) return;
+    if (cantidad === null || cantidad === undefined || !isFinite(Number(cantidad))) { el.value = ''; return; }
+    // SOLO el numero, sin el simbolo del token. La casilla de Kadena es editable y
+    // por tanto `type=number`: un campo numerico rechaza «5.970275 KDA» entero y se
+    // queda VACIO, que fue justo lo que paso al hacerla editable. El token ya se ve
+    // en su ficha, encima de la casilla, asi que no hace falta repetirlo.
+    el.value = String(Number(Number(cantidad).toFixed(6)));
+}
+
 function pintarDisponible(idZona, walletId, simbolo) {
     const el = $(idZona);
     if (!el) return;
@@ -1514,7 +1622,7 @@ function mxPintarEth() {
   if (MX.de === MX.a) MX.a = MX.de === 'ETH' ? 'USDC' : 'ETH';
   $('mx-de').value = MX.de; $('mx-a').value = MX.a;
   $('mx-fondos').hidden = true;
-  mxSaldos(); mxCotizar();
+  mxSaldos(); mxSoloKda(); mxCotizar();
 }
 
 async function mxCargarKda() {
@@ -1529,8 +1637,18 @@ async function mxCargarKda() {
   MX.cargando = false;
   // KDA primero y el resto por fondo: lo primero que se ve es lo que se puede cambiar sin
   // destrozar el precio.
+  //
+  // En el desplegable va SOLO el simbolo. Hasta la 2.9.1 llevaba al lado el fondo del
+  // pool -«kb-USDC · 839.752 KDA»- y esa cifra, sin etiqueta y pegada al nombre, se lee
+  // como un precio o como un saldo. En la pantalla donde se decide cuanto cambiar, eso
+  // es lo ultimo que conviene confundir.
+  //
+  // No se pierde proteccion: los charcos ya no se listan (por debajo de FONDO_MIN no
+  // entran), el fondo sigue estando CON SU NOMBRE en la lista de abajo, y quien de
+  // verdad avisa es el freno del 10 % de impacto, que habla en el idioma que importa:
+  // «moverias el precio un 0,49 %».
   const op = [`<option value="coin">KDA</option>`].concat(MX.tokens.map(x =>
-    `<option value="${esc(x.modulo)}">${esc(x.simbolo)} \u00b7 ${fmtCorto(x.fondoKda, 0)} KDA</option>`)).join('');
+    `<option value="${esc(x.modulo)}">${esc(x.simbolo)}</option>`)).join('');
   $('mx-de').innerHTML = op; $('mx-a').innerHTML = op;
   if (!MX.tokens.some(x => x.modulo === MX.a)) MX.a = (MX.tokens[0] || {}).modulo || null;
   if (MX.de === MX.a) MX.de = 'coin';
@@ -1538,7 +1656,7 @@ async function mxCargarKda() {
   $('mx-lista').innerHTML = MX.tokens.map(x => `<div class="vf-linea"><span>${esc(x.simbolo)}</span>`
     + `<span class="cifra">${fmtCorto(x.fondoKda, 0)} KDA</span></div>`).join('');
   msg($('mx-cot'), '');
-  mxSaldos(); mxCotizar();
+  mxSaldos(); mxSoloKda(); mxCotizar();
 }
 
 async function mxSaldos() {
@@ -1558,11 +1676,61 @@ async function mxSaldos() {
 let MX_T = null;
 function mxCotizarPronto() { clearTimeout(MX_T); MX_T = setTimeout(mxCotizar, 450); }
 
+/**
+ * La casilla «Quiero recibir».
+ *
+ * Se rellena sola con lo que dice la cotizacion, y si se escribe en ella se hace
+ * la cuenta al reves y se rellena la de la izquierda. Escribir en una y leer la
+ * otra: eso es todo. Antes habia que ir probando cifras hasta acertar.
+ *
+ * `.value` puesto desde aqui NO dispara `oninput`, asi que las dos casillas no se
+ * persiguen la una a la otra.
+ */
+function mxPintaSalida(valor) {
+  const el = $('mx-out');
+  if (!el) return;
+  el.value = (valor === null || valor === undefined || !isFinite(Number(valor)))
+    ? '' : String(Number(Number(valor).toFixed(6)));
+}
+
+/**
+ * Solo esta en Kadena. En Ethereum las rutas son fijas y la cotizacion la da el
+ * Quoter de Uniswap, que no se invierte con una formula: ahi se esconde la casilla
+ * en vez de enseñar una que no responde.
+ */
+function mxSoloKda() {
+  const el = $('mx-out');
+  const col = el && el.closest('.cambio-col');
+  if (col) col.hidden = MX.red !== 'kda';
+}
+
+let MX_T_OUT = null;
+/**
+ * De lo que se quiere recibir a lo que hay que entregar.
+ *
+ * El numero que sale es ORIENTATIVO, y por eso acto seguido se lanza la cotizacion
+ * de siempre, que lo recalcula hacia delante y es la que manda. La operacion que se
+ * firma no cambia: sigue siendo entregar una cantidad exacta, que es la que
+ * garantiza un minimo de salida. Lo contrario -fijar la salida y dejar abierta la
+ * entrada- es justo lo que no conviene dejar abierto cuando el que paga eres tu.
+ */
+async function mxDesdeSalida() {
+  const quiero = Number($('mx-out').value);
+  if (!(quiero > 0)) { $('mx-cant').value = ''; mxCotizar(); return; }
+  if (MX.de === MX.a) { msg($('mx-cot'), t('mx_mismos'), 'err'); return; }
+  msg($('mx-cot'), t('mx_calculando'));
+  try {
+    const r = await window.api.dexCuantoEntrego({ de: MX.de, a: MX.a, salida: String(quiero) });
+    $('mx-cant').value = r.cantidadStr;
+    mxCotizar();
+  } catch (e) { msg($('mx-cot'), cleanErr(e), 'err'); }
+}
+
 async function mxCotizar() {
   MX.q = null;
   const cant = Number($('mx-cant').value);
   const btn = $('mx-cambiar');
-  if (!(cant > 0)) { msg($('mx-cot'), ''); btn.disabled = false; return; }
+  if (!(cant > 0)) { msg($('mx-cot'), ''); btn.disabled = false; mxPintaSalida(null); return; }
   if (MX.de === MX.a) { msg($('mx-cot'), t('mx_mismos'), 'err'); btn.disabled = true; return; }
   msg($('mx-cot'), t('mx_calculando'));
   try {
@@ -1573,6 +1741,7 @@ async function mxCotizar() {
       msg($('mx-cot'), tr('mx_recibiras', { s: mxNum(q.esperada), t: mxSim(MX.a) })
         + (q.comision > 0 ? ' \u00b7 ' + tr('mx_comision', { p: q.comisionPct, f: mxNum(q.comision), s: mxSim(MX.a) }) : ''));
       btn.disabled = false;
+      mxPintaSalida(q.esperada);
       return;
     }
     const q = await window.api.dexCotizar({ de: MX.de, a: MX.a, cantidad: String(cant), slippage: Number($('mx-slip').value) });
@@ -1581,6 +1750,7 @@ async function mxCotizar() {
       + (q.comision > 0 ? ' \u00b7 ' + tr('mx_comision', { p: q.comisionPct, f: mxNum(q.comision), s: mxSim(MX.de) }) : '')
       + ' \u00b7 ' + tr('mx_impacto', { i: q.impacto.toFixed(2) })
       + (q.saltos > 1 ? ' \u00b7 ' + tr('mx_via', { c: q.camino.join(' \u2192 ') }) : '');
+    mxPintaSalida(q.esperada);
     if (q.frenado) {
       msg($('mx-cot'), txt + ' \u2014 ' + tr('mx_frenado', { m: q.impactoMax }), 'err');
       btn.disabled = true;
@@ -1588,7 +1758,7 @@ async function mxCotizar() {
       msg($('mx-cot'), txt, q.impacto > 3 ? 'warn' : '');
       btn.disabled = false;
     }
-  } catch (e) { msg($('mx-cot'), cleanErr(e), 'err'); btn.disabled = true; }
+  } catch (e) { msg($('mx-cot'), cleanErr(e), 'err'); btn.disabled = true; mxPintaSalida(null); }
 }
 
 // En Ethereum solo estan cableadas las rutas probadas. Lo demas se dice, no se inventa.
@@ -1662,9 +1832,10 @@ if ($('mx-a')) $('mx-a').onchange = () => { MX.a = $('mx-a').value; mxSaldos(); 
 if ($('mx-invert')) $('mx-invert').onclick = () => {
   const d = MX.de; MX.de = MX.a; MX.a = d;
   $('mx-de').value = MX.de; $('mx-a').value = MX.a;
-  mxSaldos(); mxCotizar();
+  mxSaldos(); mxSoloKda(); mxCotizar();
 };
 if ($('mx-cant')) $('mx-cant').oninput = mxCotizarPronto;
+if ($('mx-out')) $('mx-out').oninput = () => { clearTimeout(MX_T_OUT); MX_T_OUT = setTimeout(mxDesdeSalida, 450); };
 if ($('mx-slip')) $('mx-slip').onchange = mxCotizar;
 if ($('mx-max')) $('mx-max').onclick = () => {
   const s = Number($('mx-bal-de').dataset.saldo || 0);
@@ -1688,6 +1859,7 @@ function renderMercado() {
   $('mk-from').textContent = compra ? 'kb-USDC' : 'KDA';
   $('mk-to').textContent = compra ? 'KDA' : 'kb-USDC';
   $('mk-lbl-amt').textContent = t('mk_amount') + ' (' + (compra ? 'kb-USDC' : 'KDA') + ')';
+  if ($('mk-lbl-out')) $('mk-lbl-out').textContent = t('mk_recibes') + ' (' + (compra ? 'KDA' : 'kb-USDC') + ')';
   pintarSaldosMercado();
   mkQuote();
 }
@@ -1703,18 +1875,38 @@ function pintarSaldosEthSwap() {
 if ($('mk-wallet')) $('mk-wallet').addEventListener('change', pintarSaldosMercado);
 if ($('es-wallet')) $('es-wallet').addEventListener('change', pintarSaldosEthSwap);
 $('mk-invert').onclick = () => { MKDIR = MKDIR === 'compra' ? 'venta' : 'compra'; renderMercado(); };
-let _mkT = null;
+let _mkT = null, _mkT_OUT = null;
+/**
+ * La casilla de la derecha del atajo, ahora en los dos sentidos: se escribe en
+ * una y la otra se rellena sola.
+ *
+ * Solo en Kadena. Los atajos de Ethereum (USDT/USDC y USDC/ETH) la dejan de solo
+ * lectura porque su precio lo da el Quoter de Uniswap, que no se invierte con una
+ * formula; ahi enseñarla editable seria prometer algo que no responde.
+ */
+if ($('mk-out')) $('mk-out').oninput = () => { clearTimeout(_mkT_OUT); _mkT_OUT = setTimeout(mkDesdeSalida, 450); };
+async function mkDesdeSalida() {
+  const quiero = Number($('mk-out').value);
+  if (!(quiero > 0)) { $('mk-amt').value = ''; $('mk-quote').textContent = ''; return; }
+  msg($('mk-quote'), t('mk_quoting'));
+  try {
+    const r = await window.api.swapCuantoEntrego(MKDIR, String(quiero));
+    $('mk-amt').value = r.cantidadStr;
+    mkQuote();
+  } catch (e) { msg($('mk-quote'), cleanErr(e), 'err'); }
+}
 $('mk-amt').oninput = () => { clearTimeout(_mkT); _mkT = setTimeout(mkQuote, 400); };
 async function mkQuote() {
   const amt = $('mk-amt').value;
-  if (!amt || Number(amt) <= 0) { $('mk-quote').textContent = ''; return; }
+  if (!amt || Number(amt) <= 0) { $('mk-quote').textContent = ''; pintarRecibes('mk', null); return; }
   try {
     msg($('mk-quote'), t('mk_quoting'));
     const q = await window.api.swapQuote(MKDIR, amt);
     MKQ = q;
     $('mk-quote').innerHTML = tr('mk_quote_html', { out: q.esperada.toFixed(6), tok: q.tokenOut, min: q.minimo.toFixed(6), slip: q.slippagePct, p: q.precio.toFixed(6), imp: q.impacto.toFixed(2), fpc: q.comisionPct, fee: q.comision, ftok: q.tokenIn, neto: q.alPool });
     $('mk-quote').className = 'msg';
-  } catch (e) { msg($('mk-quote'), e.message, 'err'); }
+    pintarRecibes('mk', q.esperada);
+  } catch (e) { pintarRecibes('mk', null); msg($('mk-quote'), e.message, 'err'); }
 }
 $('mk-swap').onclick = () => {
   const wid = $('mk-wallet').value, amt = $('mk-amt').value;
@@ -1735,6 +1927,7 @@ function renderEthSwap() {
   $('es-from').textContent = u2e ? 'USDC' : 'ETH';
   $('es-to').textContent = u2e ? 'ETH' : 'USDC';
   $('es-lbl-amt').textContent = t('mk_amount') + ' (' + (u2e ? 'USDC' : 'ETH') + ')';
+  if ($('es-lbl-out')) $('es-lbl-out').textContent = t('mk_recibes') + ' (' + (u2e ? 'ETH' : 'USDC') + ')';
   pintarSaldosEthSwap();
   esQuote();
 }
@@ -1744,7 +1937,7 @@ let _esQuote = null; // último quote confirmado (dir+amt+min) — se firma este
 $('es-amt').oninput = () => { clearTimeout(_esT); _esT = setTimeout(esQuote, 500); };
 async function esQuote() {
   const amt = $('es-amt').value;
-  if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; _esQuote = null; return; }
+  if (!amt || Number(amt) <= 0) { $('es-quote').textContent = ''; _esQuote = null; pintarRecibes('es', null); return; }
   try {
     msg($('es-quote'), t('es_quoting'));
     const q = await window.api.ethswapQuote(ESDIR, amt);
@@ -1756,7 +1949,8 @@ async function esQuote() {
       tr('es_fee_note', { p: q.comisionPct, f: q.comision.toFixed(6), sym: outSym }) +
       (q.gasEth != null ? tr('es_gas_note', { g: q.gasEth.toFixed(5) }) : '');
     $('es-quote').className = 'msg';
-  } catch (e) { _esQuote = null; msg($('es-quote'), e.message, 'err'); }
+    pintarRecibes('es', q.out);
+  } catch (e) { _esQuote = null; pintarRecibes('es', null); msg($('es-quote'), e.message, 'err'); }
 }
 $('es-swap').onclick = () => {
   const wid = $('es-wallet').value, amt = $('es-amt').value;
@@ -1781,8 +1975,19 @@ function renderStableSwap() {
   $('st-from').textContent = STDIR.de;
   $('st-to').textContent = STDIR.a;
   $('st-lbl-amt').textContent = t('mk_amount') + ' (' + STDIR.de + ')';
+  if ($('st-lbl-out')) $('st-lbl-out').textContent = t('mk_recibes') + ' (' + STDIR.a + ')';
+  pintarSaldosStableSwap();
   stQuote();
 }
+// Los huecos del saldo estaban en la maqueta desde el principio, pero nadie los
+// llenaba: el atajo de Kadena ensenaba el disponible y este no. Ver el saldo
+// donde se decide cuanto cambiar evita el viaje al panel a mirarlo.
+function pintarSaldosStableSwap() {
+  if (!$('st-bal-from')) return;
+  pintarDisponible('st-bal-from', $('st-wallet').value, STDIR.de);
+  pintarDisponible('st-bal-to', $('st-wallet').value, STDIR.a);
+}
+if ($('st-wallet')) $('st-wallet').addEventListener('change', pintarSaldosStableSwap);
 // Enganchados con guarda: si algun dia falta el elemento, un TypeError aqui arriba se
 // llevaria por delante TODO el script del renderer (la app entera se quedaria en blanco).
 if ($('st-invert')) $('st-invert').onclick = () => { STDIR = { de: STDIR.a, a: STDIR.de }; renderStableSwap(); };
@@ -1791,7 +1996,7 @@ if ($('st-amt')) $('st-amt').oninput = () => { clearTimeout(_stT); _stT = setTim
 async function stQuote() {
   if (!$('st-amt')) return;
   const amt = $('st-amt').value;
-  if (!amt || Number(amt) <= 0) { $('st-quote').textContent = ''; _stQuote = null; return; }
+  if (!amt || Number(amt) <= 0) { $('st-quote').textContent = ''; _stQuote = null; pintarRecibes('st', null); return; }
   try {
     msg($('st-quote'), t('es_quoting'));
     const q = await window.api.evmSwapCotizar({ de: STDIR.de, a: STDIR.a, amount: amt });
@@ -1800,7 +2005,8 @@ async function stQuote() {
     $('st-quote').textContent = tr('st_quote', { out: q.salida.toFixed(6), sym: STDIR.a, fee: String(q.fee / 10000) })
       + (q.comision > 0 ? tr('st_quote_com', { p: q.comisionPct, f: q.comision.toFixed(6), sym: STDIR.a }) : '');
     $('st-quote').className = 'msg';
-  } catch (e) { _stQuote = null; msg($('st-quote'), cleanErr(e), 'err'); }
+    pintarRecibes('st', q.salida);
+  } catch (e) { _stQuote = null; pintarRecibes('st', null); msg($('st-quote'), cleanErr(e), 'err'); }
 }
 if ($('st-swap')) $('st-swap').onclick = () => {
   const wid = $('st-wallet').value, amt = $('st-amt').value;
@@ -2473,7 +2679,7 @@ function visorCabecera(o, usd) {
     </div>
     <div class="vf-total">
       <div class="etiq">${t('visor_valor')}</div>
-      <div class="vf-usd">$${visorMiles(usd || 0, 2)}</div>
+      <div class="vf-usd">${dinero(usd || 0)}</div>
     </div>
     <div class="vf-btns">
       <button id="visor-copiar" class="tiny ghost">${t('visor_copiar')}</button>
@@ -2517,7 +2723,7 @@ function visorTarjeta(color, titulo, etiqueta, usd, filas, extra, direccion) {
   return `<div class="card netcard visor-tarj" style="border-top:3px solid ${color}">
     <div class="nc-head estatica"><span class="netdot" style="background:${color}"></span> ${esc(titulo)}
       <small class="muted">${esc(etiqueta || '')}</small>
-      <span class="nc-sub">$${fmt(usd || 0, 2)}</span></div>
+      <span class="nc-sub">${dinero(usd || 0)}</span></div>
     <div class="nc-body">
       <div class="assets">${filas}</div>
       ${extra || ''}
@@ -2657,7 +2863,7 @@ async function applyView(v) {
   loadBalances();
 }
 
-function assetRow(sym, amt, usd, dec) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${fmt(amt, dec == null ? 4 : dec)}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">$${fmt(usd || 0, 2)}</span></div>`; }
+function assetRow(sym, amt, usd, dec) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${fmt(amt, dec == null ? 4 : dec)}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">${dinero(usd || 0)}</span></div>`; }
 // Una tarjeta = una red de una wallet visible. Colapsada por defecto: solo red + total. Clic en el título despliega tokens/chains.
 function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
@@ -2689,7 +2895,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err" title="${esc(bl.errorMsg || '')}">${t('offline')}${bl.errorMsg ? ' ⓘ' : ''}</small>` : ''}<span class="nc-sub">${bl.knet === 'devnet' ? fmtCorto(bl.native || 0, 2) + ' KDA' : '$' + fmt(bl.usd || 0, 2)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err" title="${esc(bl.errorMsg || '')}">${t('offline')}${bl.errorMsg ? ' ⓘ' : ''}</small>` : ''}<span class="nc-sub">${dinero(bl.usd || 0)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
@@ -2697,13 +2903,20 @@ function cardBlock(bl, qr) {
     <div class="nc-actions">
       <button class="act-btn" data-panel="recv">${t('btn_recv')}</button>
       <button class="act-btn" data-panel="send">${t('btn_send')}</button>
-      <button class="act-btn nc-expand" title="${t('btn_expand')}">⛶ ${t('btn_expand')}</button>
-      ${bl.kind === 'kda' && bl.knet === 'devnet' ? `<button class="act-btn k-faucet" data-wid="${bl.walletId}">${t('btn_faucet')}</button>` : ''}
+      <button class="act-btn nc-expand" title="${t('btn_expand')}">🔍 ${t('btn_expand')}</button>
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
       <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : t('recv_note_evm').replace('{net}', esc(bl.name))}</div>
       <div class="addr"><span class="mono">${esc(bl.address)}</span><button class="copy" data-ct="${esc(bl.address)}">${t('copy')}</button></div>
       <img class="qr" src="${qr}"/>
+      ${bl.kind === 'kda' ? `<div class="cobro">
+        <label class="muted xs">${t('recv_ask')}</label>
+        <div class="amtrow">
+          <input class="r-amt" type="number" step="any" min="0" placeholder="${t('recv_amt_ph')}"/>
+          <select class="r-chain"><option value="">${t('recv_any_chain')}</option>${Array.from({ length: 20 }, (_, i) => `<option value="${i}">chain ${i}</option>`).join('')}</select>
+        </div>
+        <p class="muted xs recv-hint">${t('recv_ask_hint')}</p>
+      </div>` : ''}
     </div>
     <div class="nc-panel" data-pan="send" hidden>${sendForm}</div>
   </div>`;
@@ -2713,7 +2926,7 @@ function donut(segs, total) {
   if (!total) { el.style.background = '#e7eae6'; $('total-legend').innerHTML = ''; return; }
   let acc = 0; const parts = segs.filter(s => s.usd > 0).map(s => { const a = acc, b = acc + s.usd / total * 100; acc = b; return `${s.color} ${a}% ${b}%`; });
   el.style.background = `conic-gradient(${parts.join(',')})`;
-  $('total-legend').innerHTML = segs.filter(s => s.usd > 0).map(s => `<span class="lg"><i style="background:${s.color}"></i>${s.name} $${fmtCorto(s.usd, 0)}</span>`).join('');
+  $('total-legend').innerHTML = segs.filter(s => s.usd > 0).map(s => `<span class="lg"><i style="background:${s.color}"></i>${s.name} ${dineroCorto(s.usd, 0)}</span>`).join('');
 }
 
 async function loadBalances() {
@@ -2726,9 +2939,8 @@ async function loadBalances() {
     const blocks = b.blocks || [];
     const qrs = {};
     for (const bl of blocks) { if (!(bl.address in qrs)) qrs[bl.address] = await window.api.qr(bl.address); }
-    const aviso = b.modoPruebas ? '<p class="testmode">' + t('test_mode') + '</p>' : '';
-    $('net-cards').innerHTML = aviso + (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || `<p class="muted">${t('no_wallets_visible')}</p>`);
-    $('total-usd').textContent = '$' + fmt(b.total || 0, 2);
+    $('net-cards').innerHTML = (blocks.map(bl => cardBlock(bl, qrs[bl.address])).join('') || `<p class="muted">${t('no_wallets_visible')}</p>`);
+    $('total-usd').textContent = dinero(b.total || 0);
     const segMap = {};
     blocks.forEach(bl => { (segMap[bl.name] = segMap[bl.name] || { name: bl.name, color: bl.color, usd: 0 }).usd += bl.usd; });
     donut(Object.values(segMap), b.total || 0);
@@ -2777,7 +2989,40 @@ function exitFocus() {
     c.querySelectorAll('.act-btn[data-panel]').forEach(b => b.classList.remove('on'));
   });
 }
+/**
+ * El texto que se mete en el QR para cobrar. Mismo formato que el móvil
+ * (src/qr.js, `qrDeCobro`), para que su cámara rellene la cantidad y la chain
+ * sola: `kadena:<cuenta>?amount=1.5&chain=2`.
+ *
+ * Sin cantidad ni chain se devuelve la cuenta A SECAS, no `kadena:` vacío: así
+ * lo entiende cualquier monedero, incluidos los que no saben de este formato.
+ */
+function qrDeCobro(cuenta, cantidad, chain) {
+  const partes = [];
+  if (Number(cantidad) > 0) partes.push('amount=' + Number(cantidad));
+  if (chain !== null && chain !== undefined && chain !== '') partes.push('chain=' + chain);
+  return partes.length ? 'kadena:' + cuenta + '?' + partes.join('&') : cuenta;
+}
+
 function wireCards() {
+  // Cobro con importe: al escribir una cantidad o elegir chain, el QR se rehace.
+  // La dirección de debajo NO cambia: quien prefiera copiarla a mano sigue
+  // teniéndola limpia, y el importe es un extra, no un requisito.
+  document.querySelectorAll('.nc-panel[data-pan="recv"] .cobro').forEach(box => {
+    const panel = box.closest('.nc-panel');
+    const img = panel.querySelector('.qr');
+    const dir = panel.querySelector('.addr .mono').textContent;
+    const hint = box.querySelector('.recv-hint');
+    const rehacer = async () => {
+      const cant = box.querySelector('.r-amt').value;
+      const ch = box.querySelector('.r-chain').value;
+      const texto = qrDeCobro(dir, cant, ch);
+      try { img.src = await window.api.qr(texto); } catch (_) { /* se queda el anterior */ }
+      hint.textContent = texto === dir ? t('recv_ask_hint') : t('recv_ask_on');
+    };
+    box.querySelector('.r-amt').oninput = rehacer;
+    box.querySelector('.r-chain').onchange = rehacer;
+  });
   // Título → despliega tokens/chains
   document.querySelectorAll('.netcard .nc-head[data-toggle]').forEach(h => h.onclick = () => {
     const b = h.parentElement.querySelector('.nc-body'); if (!b) return;
@@ -2796,12 +3041,6 @@ function wireCards() {
   // Ampliar: la wallet ocupa todo el dashboard (vista de trabajo). Vuelve con "← Volver al panel".
   document.querySelectorAll('.netcard .nc-expand').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); enterFocus(btn.closest('.netcard')); });
   const back = $('focus-back'); if (back) back.onclick = exitFocus;
-  // Grifo devnet: pide 1.000 KDA de prueba a sender00 (sin contraseña: no toca claves propias)
-  document.querySelectorAll('.k-faucet').forEach(btn => btn.onclick = async () => {
-    btn.disabled = true; msg($('wallet-msg'), t('faucet_wait'));
-    try { const r = await window.api.devnetFaucet(btn.dataset.wid); msg($('wallet-msg'), t('faucet_ok').replace('{n}', r.amount).replace('{c}', r.chain), 'ok'); loadBalances(); }
-    catch (e) { msg($('wallet-msg'), t('faucet_err') + ' ' + e.message, 'err'); btn.disabled = false; }
-  });
   // MAX: rellena la cantidad con el máximo enviable, DESCONTANDO la reserva de gas.
   // KDA: saldo de la chain origen − 0,11 (colchón del gas). EVM nativo: saldo − GAS_MIN de esa red. Token: saldo entero (el gas va en el nativo).
   document.querySelectorAll('.k-max').forEach(btn => btn.onclick = () => {
@@ -2880,6 +3119,9 @@ function wireCards() {
 function fmtAddr(a) { const s = String(a || ''); if (s.length <= 16) return esc(s); return `<span class="ah">${esc(s.slice(0, 8))}</span>${esc(s.slice(8, -6))}<span class="ah">${esc(s.slice(-6))}</span>`; }
 function askSend(summary, fn, recipient, opts) {
   window._sendFn = fn; $('send-summary').innerHTML = summary; $('send-pass').value = ''; msg($('send-msg'), ''); $('send-steps').innerHTML = '';
+  // El diálogo se reutiliza, así que se abre siempre entero: si la vez anterior
+  // salió bien, los botones y la contraseña se quedaron escondidos al firmar.
+  $('send-btns').hidden = false; $('send-pass-row').hidden = false;
   // Wallet Ledger: sin contraseña de bóveda (la clave no está en ella; la confirmación es física, en el aparato)
   const isLedger = !!(opts && opts.ledger);
   const pw = $('send-pass'); const pwWrap = pw.closest('.pwdwrap') || pw;
@@ -2901,6 +3143,13 @@ $('btn-confirm-send').onclick = async () => {
   const b = $('btn-confirm-send');
   if (b.disabled) return;
   b.disabled = true;
+  // Una vez firmado, los dos botones DESAPARECEN mientras corre la operación.
+  // No es cosmética: «Cancelar» no cancela nada —la transacción ya va camino de
+  // la cadena—, solo cierra el diálogo y deja al usuario sin ver en qué paso va.
+  // En el Puente, que son cuatro pasos y varios minutos, eso es perder de vista
+  // dinero en movimiento. Y la contraseña también se va: ya se ha usado.
+  $('send-btns').hidden = true;
+  if ($('send-pass-row')) $('send-pass-row').hidden = true;
   try {
     msg($('send-msg'), t('signing'));
     const okmsg = await window._sendFn($('send-pass').value);
@@ -2910,7 +3159,10 @@ $('btn-confirm-send').onclick = async () => {
   } catch (e) {
     const m = cleanErr(e);
     msg($('send-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err');
-    // Se devuelve el boton como estaba, respetando la casilla de comprobar el destinatario:
+    // Si ha fallado, vuelven: hay que poder reintentar o salir.
+    $('send-btns').hidden = false;
+    if ($('send-pass-row')) $('send-pass-row').hidden = false;
+    // El boton se devuelve como estaba, respetando la casilla de comprobar el destinatario:
     // si esta sin marcar tiene que seguir bloqueado, como al abrir el dialogo.
     b.disabled = !$('send-addr-check').hidden && !$('send-addr-ok').checked;
   }

@@ -22,7 +22,6 @@ const dex = require('./lib/dex');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const ktime = require('./lib/kdatime');
-const devnetPub = require('./lib/devnet-publico');
 const QRCode = require('qrcode');
 // Ledger: carga PEREZOSA (node-hid es un módulo nativo; si fallara en algún equipo, la app debe arrancar igual).
 let _ledger = null;
@@ -74,10 +73,6 @@ const DEFAULT_CONFIG = {
       // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
       // El panel privado `/api/mis-piezas` ya no sirve: desde 08/2026 exige sesión
       // firmada en el navegador (se cerró un IDOR) y contestaba 401 a la wallet.
-      { key: 'devnet', name: 'Devnet DNNS', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false,
-        nft: { ledger: 'n_84b9f9aa6a2665fd8c8ca80cc9b252d818fdfbac.ledger', chain: '0',
-               descubridor: 'https://nft.dnns.es/api/galeria',
-               pasarela: 'https://nft.dnns.es/ipfs/' } }
     ],
     chains: Array.from({ length: 20 }, (_, i) => i)
   },
@@ -339,15 +334,26 @@ const shownWallets = () => shownIds().map(id => unlocked.data.wallets.find(w => 
 const evmNetName = (key) => { const n = loadConfig().evm.find(x => x.key === key); return n ? n.name : 'EVM'; };
 function enableEvmNet(key) { if (!key) return; const c = loadConfig(); const n = c.evm.find(x => x.key === key); if (n && !n.enabled) { n.enabled = true; saveConfig(c); } }
 
-// Precios (CoinGecko, caché 60s): usd + eur + variación 24h. `full` = { cgId:{usd,eur,chg} }.
+// Precios (CoinGecko, caché 60s): las cuatro monedas + variación 24h.
+// `full` = { cgId:{usd,eur,gbp,chf,chg} }.
+//
+// Las cuatro van en la MISMA peticion: CoinGecko las devuelve juntas y no cuesta
+// ni una llamada mas. Por eso anadir una moneda es una palabra aqui y una linea
+// en MONEDAS del renderer, y no una fuente de cambio nueva.
+const FIATS = ['usd', 'eur', 'gbp', 'chf'];
 let _priceCache = { at: 0, full: {} };
 async function refreshPrices() {
   if (Date.now() - _priceCache.at < 60000 && Object.keys(_priceCache.full).length) return;
   const ids = 'kadena,ethereum,binancecoin,polygon-ecosystem-token,usd-coin,tether,dai,wrapped-bitcoin';
   try {
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=usd,eur&include_24hr_change=true');
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=' + FIATS.join(',') + '&include_24hr_change=true');
     const j = await r.json();
-    const m = {}; for (const k of Object.keys(j)) m[k] = { usd: j[k].usd, eur: j[k].eur, chg: j[k].usd_24h_change };
+    const m = {};
+    for (const k of Object.keys(j)) {
+      const e = { chg: j[k].usd_24h_change };
+      for (const f of FIATS) e[f] = j[k][f];
+      m[k] = e;
+    }
     if (Object.keys(m).length) _priceCache = { at: Date.now(), full: m };
   } catch (_) { /* sin red: mantiene la última */ }
 }
@@ -783,12 +789,10 @@ ipcMain.handle('balances', async () => {
   const c = loadConfig();
   const prices = await getPrices();
   const px = (id) => prices[id] || 0;
-  // Modo pruebas: con la Devnet activada solo se ven sus saldos ficticios (nada de redes reales ni EVM)
-  const modoPruebas = c.kda.networks.some(n => n.key === 'devnet' && n.enabled);
   const blocks = []; let total = 0;
   for (const w of shownWallets()) {
     if (w.kind === 'kda' && w.kda) {
-      for (const net of c.kda.networks.filter(n => n.enabled && (!modoPruebas || n.key === 'devnet'))) {
+      for (const net of c.kda.networks.filter(n => n.enabled)) {
         try {
           const k = await kda.getBalance(w.kda.account, { node: net.node, networkId: net.networkId, chains: c.kda.chains });
           let tokens = [];
@@ -802,13 +806,13 @@ ipcMain.handle('balances', async () => {
             const kt = await kda.getTokenBalances(w.kda.account, { node: net.node, networkId: net.networkId, tokens: net.tokens });
             for (const t of kt) tokens.push({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 });
           }
-          const usd = net.key === 'devnet' ? 0 : k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
+          const usd = k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
           total += usd;
         } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: 0, perChain: {}, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
       }
     } else if (w.kind === 'evm' && w.eth) {
-      for (const n of c.evm.filter(x => x.enabled && !modoPruebas)) {
+      for (const n of c.evm.filter(x => x.enabled)) {
         try {
           const b = await eth.getBalances(w.eth.address, { rpc: await rpcDe(n), tokens: n.tokens });
           const tokens = b.tokens.map(t => ({ ...t, usd: t.amount * px((n.tokens.find(x => x.symbol === t.symbol) || {}).cg) }));
@@ -820,24 +824,7 @@ ipcMain.handle('balances', async () => {
       }
     }
   }
-  return { blocks, total, modoPruebas };
-});
-
-// Grifo de la Devnet: sender00 regala KDA de prueba. Sus claves son PÚBLICAS y de
-// desarrollo (ver lib/devnet-publico.js); solo sirven en la devnet.
-const GRIFO_DEVNET = devnetPub.GRIFO;
-ipcMain.handle('devnet:faucet', async (_e, { walletId }) => {
-  if (!unlocked) throw new Error('bloqueado');
-  const c = loadConfig();
-  const net = c.kda.networks.find(n => n.key === 'devnet');
-  if (!net || !net.enabled) throw new Error('La Devnet no está activada.');
-  const w = unlocked.data.wallets.find(x => x.id === walletId);
-  if (!w || w.kind !== 'kda' || !w.kda) throw new Error('Wallet no válida.');
-  const r = await kda.transferCreate({ node: net.node, networkId: net.networkId, chain: GRIFO_DEVNET.chain, from: GRIFO_DEVNET.from, to: w.kda.account, amount: GRIFO_DEVNET.cantidad, secretHex: GRIFO_DEVNET.sec, publicHex: GRIFO_DEVNET.pub });
-  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain: GRIFO_DEVNET.chain, requestKey: r.requestKey });
-  if (!res || !res.result || res.result.status !== 'success') throw new Error('La recarga no se minó: ' + JSON.stringify((res && res.result && res.result.error && res.result.error.message) || 'sin respuesta'));
-  logHistory({ desc: `Grifo devnet: +${GRIFO_DEVNET.cantidad} KDA (chain ${GRIFO_DEVNET.chain}) → ${w.label}`, walletId: w.id });
-  return { amount: GRIFO_DEVNET.cantidad, chain: GRIFO_DEVNET.chain, requestKey: r.requestKey };
+  return { blocks, total };
 });
 
 ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to, amount }) => {
@@ -865,7 +852,7 @@ ipcMain.handle('send:kda', async (_e, { passphrase, walletId, kdaNet, chain, to,
     r = await fn({ node: net.node, networkId: net.networkId, chain, from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public });
   }
   // Esperamos al minado para poder avisar si la tx falla en cadena (antes el fallo era silencioso)
-  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain, requestKey: r.requestKey, tries: net.key === 'devnet' ? 8 : 20 });
+  const res = await kda.pollResult({ node: net.node, networkId: net.networkId, chain, requestKey: r.requestKey, tries: 20 });
   if (res && res.result && res.result.status === 'failure') {
     throw new Error('La transacción falló en cadena: ' + ((res.result.error && res.result.error.message) || 'error desconocido'));
   }
@@ -1068,7 +1055,9 @@ function cfgDex() {
   const c = loadConfig();
   const net = c.kda.networks.find(n => n.enabled && n.fork);
   if (!net) throw new Error('La red del fork no esta activa.');
-  return { node: net.node, networkId: net.networkId, chain: '2' };
+  // La gasolinera sale de la MISMA config que usan el DCA y las ordenes limite:
+  // un solo sitio donde cambiarla si algun dia cambia el modulo.
+  return { node: net.node, networkId: net.networkId, chain: '2', gasolinera: (c.dca || {}).gasolinera };
 }
 async function mercadoDex(forzar) {
   const cfg = cfgDex();
@@ -1097,6 +1086,12 @@ ipcMain.handle('dex:cotizar', async (_e, { de, a, cantidad, slippage } = {}) => 
     precioEfectivo: q.precioEfectivo, precioSpot: q.precioSpot, slippagePct: q.slippagePct,
     fondoEntrada: q.fondoEntrada
   };
+});
+// La cuenta al reves: «quiero recibir tanto, cuanto entrego». Solo rellena la
+// casilla de la cantidad; lo que se firma sigue saliendo de `dex:cotizar`.
+ipcMain.handle('dex:cuanto-entrego', async (_e, { de, a, salida } = {}) => {
+  const { m, cfg } = await mercadoDex(false);
+  return dex.cantidadPara(cfg, m, de, a, salida);
 });
 ipcMain.handle('dex:saldo', async (_e, { walletId, modulo } = {}) => {
   if (!unlocked) throw new Error('bloqueado');
@@ -1286,9 +1281,6 @@ ipcMain.handle('bridge:comprobar', async (_e, { id }) => {
   throw new Error('No se ha podido preguntar al nodo de destino. Prueba en un momento.');
 });
 
-// Cuentas de desarrollo con claves PÚBLICAS (ver lib/devnet-publico.js): en la devnet
-// hacen de pagador de gas cuando la wallet aún no tiene saldo en la chain de destino.
-const DEV_SENDERS = { sender00: devnetPub.SENDER00 };
 ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   const c = loadConfig(); const w = unlocked.data.wallets.find(x => x.id === walletId) || active();
@@ -1296,13 +1288,10 @@ ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sou
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  // Gas de la redención en destino: lo paga el propio remitente si tiene saldo allí; si no
-  // y estamos en la devnet, lo paga sender00 (clave pública de desarrollo).
-  let gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
-  try {
-    const bal = await kda.getBalance(w.kda.account, { node: net.node, networkId: net.networkId, chains: [Number(targetChain)] });
-    if (!(bal.perChain[targetChain] > 0.001) && net.key === 'devnet') gasPayer = DEV_SENDERS.sender00;
-  } catch (_) {}
+  // Gas de la redención en destino: lo paga el propio remitente. Hasta la 2.10.0 había
+  // una excepción para la devnet, donde lo pagaba una cuenta de desarrollo; al quitar la
+  // devnet ya no queda más pagador que el usuario, en todas las redes.
+  const gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
   const r = await kda.transferCrossChain({
     node: net.node, networkId: net.networkId, sourceChain, targetChain,
     from: w.kda.account, to, amount, secretHex: w.kda.secret, publicHex: w.kda.public, gasPayer,
@@ -1320,8 +1309,8 @@ ipcMain.handle('send:kda-smart', async (_e, { passphrase, walletId, kdaNet, targ
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
   const net = c.kda.networks.find(n => n.key === kdaNet) || c.kda.networks.find(n => n.enabled) || c.kda.networks[0];
   if (!w.kda) throw new Error('Esta wallet no tiene cuenta KDA.');
-  // El gas de las redenciones cross-chain lo paga sender00 en la devnet; en otras redes, el propio remitente.
-  const gasPayer = net.key === 'devnet' ? DEV_SENDERS.sender00 : { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
+  // El gas de las redenciones cross-chain lo paga el propio remitente (ver send:kda-xchain).
+  const gasPayer = { account: w.kda.account, secretHex: w.kda.secret, publicHex: w.kda.public };
   const r = await kda.sendSmart({
     node: net.node, networkId: net.networkId, targetChain, from: w.kda.account, to, amount,
     secretHex: w.kda.secret, publicHex: w.kda.public, gasPayer,
@@ -1455,6 +1444,8 @@ async function esperarEntrega({ entrada, onStep, step, notas, porSaldo }) {
 
 // Mercado: swap KDA <-> kb-USDC en el pool del fork (kaddex.exchange, chain 2). No custodial: firma el main con la clave de la wallet.
 ipcMain.handle('swap:quote', async (_e, { dir, amount }) => swap.quote(dir, amount));
+// La cuenta al reves del atajo: solo rellena la casilla de la cantidad.
+ipcMain.handle('swap:cuanto-entrego', async (_e, { dir, salida }) => swap.cantidadPara(dir, salida));
 // Swap USDC <-> ETH en Uniswap (Ethereum mainnet), para reponer ETH de gas con USDC
 ipcMain.handle('ethswap:quote', async (_e, { dir, amount }) => ethswap.quote({ rpc: loadConfig().evm.find(n => n.key === 'eth').rpc, dir, amount }));
 ipcMain.handle('ethswap:exec', async (_e, { passphrase, walletId, dir, amount, minOut }) => {
@@ -1514,7 +1505,7 @@ ipcMain.handle('tx:info', async (_e, { requestKey, chain, redKey } = {}) => {
     if (!/^([0-9]|1[0-9])$/.test(ch)) throw new Error('chain no valida (0-19).');
     const c = loadConfig();
     // Se busca en TODAS las redes definidas, no solo en la activa: se trabaja a
-    // ratos en devnet y a ratos en el fork, y el usuario no tiene por que saber
+    // ratos en una red y a ratos en otra, y el usuario no tiene por que saber
     // de cual era una transaccion para poder mirarla. Orden: la pedida, luego
     // las habilitadas, luego el resto. Se para en la primera que la tenga.
     const todas = c.kda.networks || [];
