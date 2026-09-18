@@ -310,8 +310,6 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 .wnum{flex:none;width:26px;height:26px;border-radius:50%;background:var(--kda);color:#08210a;font-weight:800;display:grid;place-items:center;font-size:14px}
 .wstep p{margin:3px 0 0;line-height:1.5}
 
-/* Modo pruebas (Devnet activada): aviso en el dashboard */
-.testmode{grid-column:1/-1;background:#fff7ed;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;color:#92400e;font-size:14px;margin:0}
 
 /* ===== Fix modo oscuro (bug 01dCod3r): componentes con fondo claro fijo que quedaban ilegibles ===== */
 :root[data-theme="dark"] .wrow,
@@ -344,7 +342,6 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 :root[data-theme="dark"] .warn{background:#2a2410;border-color:#5a4a1a;color:#e6c37a}
 :root[data-theme="dark"] .info{background:#12233a;border-color:#274a72;color:#8fc1f2}
 :root[data-theme="dark"] .info code{background:#0e1b2c}
-:root[data-theme="dark"] .testmode{background:#2a2410;border-color:#8a6100;color:#e6c37a}
 :root[data-theme="dark"] .addrcheck{background:rgba(224,86,79,.12);border-color:var(--line)}
 :root[data-theme="dark"] .updnotes{background:rgba(99,224,56,.06)}
 
@@ -353,6 +350,43 @@ hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
 .row2>div{flex:1}
 /* Cantidad + botón MAX en línea */
 .amtrow{display:flex;gap:8px;align-items:center}
+/* Cobro con importe: cantidad y chain debajo del QR de Recibir.
+   El panel de Recibir es estrecho y el desplegable de la chain pide mucho ancho
+   (lo marca su opcion mas larga). Sin frenarlo se comia la fila entera y dejaba
+   el campo de la cantidad en un cuadradito. Por eso: la cantidad manda y no baja
+   de 110px, el desplegable cede, y si aun asi no caben se ponen uno debajo del
+   otro en vez de apretarse. */
+/* Atajos: la cantidad que se entrega a la izquierda y lo que se recibe a la
+   derecha, en columnas del mismo ancho para que queden bajo sus dos fichas de
+   token. Si no caben -ventana estrecha- se ponen una debajo de otra en vez de
+   apretarse. La de la derecha es de solo lectura y se ve apagada, para que no
+   invite a escribir en ella. */
+.cambio-row{display:flex;gap:10px;align-items:flex-end}
+.cambio-col{flex:1 1 0;min-width:0}
+.cambio-col label{display:block}
+.cambio-col input{width:100%}
+.cambio-col input[readonly]{background:var(--bg);opacity:.75;cursor:default}
+@media (max-width:520px){.cambio-row{flex-wrap:wrap}.cambio-col{flex:1 1 100%}}
+
+/* Mercado: el boton de cambiar y el deslizamiento en la misma linea. El
+   deslizamiento es un ajuste, no un dato que se rellene, asi que ocupaba media
+   fila para nada y dejaba sin sitio a la cantidad que se quiere recibir. */
+/* Los tres botones de la tarjeta (Recibir / Enviar / Ampliar) en una linea cada
+   uno: sin esto, el icono se iba a un renglon y el texto al siguiente en cuanto
+   la tarjeta se estrechaba, y quedaban de dos alturas distintas. */
+.act-btn{white-space:nowrap}
+
+.accion-row{display:flex;gap:12px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.accion-row .primary{flex:0 0 auto}
+.slip-inline{display:flex;align-items:center;gap:8px}
+.slip-inline label{margin:0;white-space:nowrap}
+.slip-inline select{width:auto}
+
+.cobro{margin-top:10px}
+.cobro .amtrow{margin-top:4px;flex-wrap:wrap}
+.cobro .r-amt{flex:1 1 120px;min-width:110px}
+.cobro .r-chain{flex:0 1 auto;max-width:150px;min-width:0}
+.cobro .recv-hint{margin:6px 0 0}
 .amtrow input{flex:1}
 .amtrow .tiny{flex:none;padding:8px 10px}
 
@@ -490,7 +524,12 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 .kpi-total .kpi-n{font-size:25px}
 /* Solo las tres que navegan se pintan como pulsables. */
 .kpi-ir{cursor:pointer;position:relative;transition:border-color .15s,transform .05s}
-.kpi-ir::after{content:"a";position:absolute;right:13px;top:11px;font-size:17px;opacity:.3}
+/* Flecha de «lleva a su sección» en las tarjetas del panel. Va escrita como
+   escape CSS (\2197 = flecha arriba-derecha) y NO como el carácter suelto:
+   desde la 2.7.16 aquí había un byte 0x83 huérfano -un icono que se destrozó
+   al guardar el fichero con otra codificación- y se veía un cuadradito con
+   una «a» al lado. Así no puede volver a pasar. */
+.kpi-ir::after{content:"\2197";position:absolute;right:13px;top:11px;font-size:17px;opacity:.3}
 .kpi-ir:hover{border-color:var(--kda)}
 .kpi-ir:active{transform:scale(.995)}
 .kpi-ir:focus-visible{outline:2px solid var(--kda);outline-offset:2px}

@@ -75,6 +75,15 @@ npm test             # 78 casos sin red: cuentas Kadena, direcciones EVM y orden
 bash build-portable.sh   # genera el portable (Windows)
 ```
 
+**Antes de tocar nada, lee `PARIDAD.md`** (vive en el repo del movil,
+`koberlet-android`, porque ese aloja dos de los tres codigos: Android e iOS).
+Koberlet es un producto en dos codigos (este y el del movil) repartido en cuatro
+sistemas publicados: Windows, Mac, Android e iPhone. Cualquier cambio que se haga
+aqui hay que apuntarlo alli para nivelarlo en los otros. Hoy la misma operacion no
+se comporta igual en todos —un cambio en el Mercado de 5 USDC o mas sale gratis de
+gas en Android y lo paga el usuario aqui—, y la numeracion unificada (3.0.0)
+promete que si.
+
 ## Publicar una version
 
 Esto es para quien publica las compilaciones oficiales; si has hecho un fork, tendras que
