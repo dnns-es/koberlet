@@ -4,6 +4,34 @@
 
 Monedero de escritorio **no custodial** multi-cadena (Kadena + EVM) hecho con Electron. Portable: se copia la carpeta y se ejecuta, sin instalar nada.
 
+Es la misma app que [Koberlet para Android y iPhone](https://github.com/dnns-es/koberlet-android),
+con el mismo formato de bóveda: una copia de seguridad hecha en el móvil se restaura en el
+ordenador y al revés.
+
+## Por qué este repositorio está abierto
+
+Un monedero le pide a alguien que meta dentro la frase que da acceso a su dinero. Pedir eso y
+no dejar mirar el código es pedir un acto de fe. Aquí está todo lo que se ejecuta en la
+máquina: cómo se deriva la semilla, cómo se cifra la bóveda, qué se firma y qué se envía por
+la red. Cualquiera puede comprobar que la frase no sale de ahí.
+
+Lo que se publica es **el código**, no la infraestructura. En DNNS.es lo normal es lo
+contrario —los repositorios son privados—, y los dos monederos son la excepción, a propósito.
+
+## Lo que NO está aquí, y no va a estar
+
+- La clave que firma las actualizaciones (`koberlet-update.sec`). Sin ella, nadie puede hacer
+  un paquete que el actualizador de Koberlet acepte como nuestro.
+- El servidor y las rutas de publicación: van en `.publicar.conf`, que no se sube. Lo que sí
+  está es la plantilla `.publicar.conf.ejemplo`, para que el proceso de publicación se pueda
+  auditar sin enseñar la infraestructura de nadie.
+- Los certificados de Apple y la clave que firma los APK, que son del repositorio de móvil y
+  tampoco están allí.
+- Datos de ninguna cartera: ni bóvedas, ni direcciones, ni saldos.
+
+Todo eso vive fuera del repositorio (ver [`.gitignore`](.gitignore)) y existe en un solo
+sitio. Poder leer este código no permite firmar nada en nombre de DNNS.es.
+
 ## Qué hace
 
 - **Multi-wallet, una red por wallet**: Kadena (oficial y fork comunitario) o EVM (Ethereum, Arbitrum, Base, BNB Chain, Polygon). Varias wallets visibles a la vez en el dashboard, con precios de CoinGecko.
