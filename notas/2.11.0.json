@@ -1,0 +1,7 @@
+{
+  "notes": "Koberlet elige solo el mejor nodo de Kadena, midiendo velocidad y si va al día / Koberlet now picks the best Kadena node on its own, measuring speed and freshness",
+  "notes_i18n": {
+    "es": "Koberlet ya no depende de un único nodo. Ahora conoce varios, los mide cada diez minutos y usa el mejor, sin que tengas que hacer nada.\n\nY no mira solo quién va más rápido: mira también quién va al día. Un nodo rápido que sirve datos atrasados te enseña saldos que ya no son, sin dar ningún error; ese se aparta aunque sea el más veloz.\n\nEn Red → Nodos (avanzado) los ves con su latencia medida, puedes añadir el tuyo, fijar uno a mano o pedir que los mida en ese momento.\n\nTambién se ha quitado la red «Kadena (Inc)»: su servidor ya no existe, así que solo podía dar errores a quien la encendiera.",
+    "en": "Koberlet no longer depends on a single node. It now knows several, measures them every ten minutes and uses the best one, with nothing for you to do.\n\nAnd it does not just look at which is fastest: it also looks at which is up to date. A fast node serving stale data shows you balances that are no longer real, without raising a single error; that one is set aside even if it is the quickest.\n\nUnder Network → Nodes (advanced) you can see them with their measured latency, add your own, pin one by hand, or ask for a fresh measurement.\n\nThe \"Kadena (Inc)\" network has also been removed: its server no longer exists, so it could only produce errors for anyone who turned it on."
+  }
+}

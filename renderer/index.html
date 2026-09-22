@@ -200,9 +200,9 @@
       <!-- RED -->
       <section id="view-red" class="view" hidden>
         <h3 data-i18n="h_red">Redes</h3>
-        <div class="net-card"><div class="net-h" data-i18n="kda_nets">Redes Kadena — elige cuáles ver</div>
-          <p class="muted xs lang-es"><b>Kadena</b> es la red de la comunidad: la que usa el Mercado, el puente (tokens kb-*) y donde están tus fondos. <b>Kadena (Inc)</b> es la rama de Kadena Inc, apagada por defecto: actívala solo si tienes saldo ahí.</p>
-          <p class="muted xs lang-en" hidden><b>Kadena</b> is the community network: the one used by the Market, the bridge (kb-* tokens) and where your funds live. <b>Kadena (Inc)</b> is Kadena Inc's branch, off by default: enable it only if you hold balance there.</p>
+        <div class="net-card"><div class="net-h" data-i18n="kda_nets">Red Kadena</div>
+          <p class="muted xs lang-es"><b>Kadena</b> es la red de la comunidad: la que usa el Mercado, el puente (tokens kb-*) y donde están tus fondos.</p>
+          <p class="muted xs lang-en" hidden><b>Kadena</b> is the community network: the one used by the Market, the bridge (kb-* tokens) and where your funds live.</p>
           <div id="kda-nets"></div></div>
         <div class="net-card"><div class="net-h" data-i18n="evm_nets">Redes EVM — para wallets EVM</div>
           <p id="evm-ctx" class="muted xs"></p>
@@ -214,8 +214,16 @@
             <p class="muted xs" data-i18n="nodes_hint">Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.</p>
             <div id="evm-nodes"></div>
             <div class="nodes-kda">
-              <div class="net-h" data-i18n="nodes_kda">Nodos Kadena (fijos por seguridad)</div>
+              <div class="net-h" data-i18n="nodes_kda">Nodos Kadena</div>
+              <p class="muted xs lang-es">Koberlet mide todos cada diez minutos y usa el mejor. No mira solo quién va más rápido: también <b>quién va al día</b>, porque un nodo rápido con datos atrasados te enseña saldos que ya no son. El que se quede atrás se aparta aunque sea el más veloz.</p>
+              <p class="muted xs lang-en" hidden>Koberlet measures them all every ten minutes and uses the best one. Not just which is fastest: also <b>which is up to date</b>, because a fast node serving stale data shows you balances that are no longer real. A node that falls behind is set aside even if it is the quickest.</p>
               <div id="kda-nodes"></div>
+              <div class="row" style="gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:10px">
+                <input id="kda-nodo-nuevo" type="text" placeholder="https://…" style="flex:1;min-width:220px"/>
+                <button class="ghost" id="kda-nodo-anadir" data-i18n="nodes_add">Añadir</button>
+                <button class="ghost" id="kda-nodo-sondear" data-i18n="nodes_probe">Medir ahora</button>
+              </div>
+              <div id="kda-nodo-err" class="muted xs"></div>
             </div>
           </details>
         </div>
@@ -447,15 +455,6 @@
       <!-- AJUSTES -->
       <section id="view-ajustes" class="view" hidden>
         <h3 data-i18n="h_ajustes">Ajustes</h3>
-        <div class="card">
-          <label data-i18n="set_kda_mode">Redes Kadena en el dashboard</label>
-          <select id="set-kda-mode">
-            <option value="ambas" data-i18n="kda_mode_both">Ambas (Kadena + Kadena Inc)</option>
-            <option value="oficial" data-i18n="kda_mode_inc">Solo Kadena (Inc)</option>
-            <option value="fork" data-i18n="kda_mode_comm">Solo Kadena</option>
-          </select>
-          <p class="muted xs" data-i18n="kda_mode_hint">Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)</p>
-        </div>
         <div class="card">
           <label data-i18n="set_fiat">Moneda de referencia</label>
           <select id="set-fiat">

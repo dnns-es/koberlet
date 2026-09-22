@@ -91,6 +91,11 @@ contextBridge.exposeInMainWorld('api', {
   backupImport: (password) => ipcRenderer.invoke('backup:import', { password }),
   getConfig: () => ipcRenderer.invoke('config:get'),
   setConfig: (c) => ipcRenderer.invoke('config:set', c),
+  // Nodos de Kadena (lista, medidas y cuál se está usando)
+  nodosEstado: () => ipcRenderer.invoke('nodos:estado'),
+  nodosSondear: () => ipcRenderer.invoke('nodos:sondear'),
+  nodosGuardar: (nodos, fijo) => ipcRenderer.invoke('nodos:guardar', { nodos, fijo }),
+  onNodosCambio: (cb) => { const h = (_e, d) => cb(d); ipcRenderer.on('nodos:cambio', h); return () => ipcRenderer.removeListener('nodos:cambio', h); },
   appInfo: () => ipcRenderer.invoke('app:info'),
   updateCheck: () => ipcRenderer.invoke('update:check'),
   updateApply: () => ipcRenderer.invoke('update:apply'),

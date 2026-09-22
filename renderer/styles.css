@@ -242,6 +242,13 @@ button.danger{color:#fff;background:var(--err)} button.danger:hover{background:#
 .noderow.ro{color:var(--muted)}
 .nodero{flex:1;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;overflow-x:auto;white-space:nowrap}
 .nodes-kda{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+/* Nodos de Kadena medidos por la sonda (2.11.0) */
+.noderow.node-activo .nodename{color:var(--kda-d)}
+.nodeok{color:var(--ok)}
+.nodebad{color:var(--err)}
+.noderow .badge{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;
+  background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:1px 7px;color:var(--muted)}
+button.ghost.xs{font-size:12px;padding:4px 10px}
 
 /* ===== Aviso de gas bajo (idea 2) ===== */
 .gaswarn{margin:10px 0}

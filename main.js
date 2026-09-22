@@ -11,6 +11,7 @@ const backup = require('./lib/backup');
 const kda = require('./lib/kda');
 const eth = require('./lib/eth');
 const nodo = require('./lib/evmnodo');
+const kdanodo = require('./lib/kdanodo');   // elige el nodo de Kadena midiendo latencia y frescura
 const wallets = require('./lib/wallets');
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
@@ -50,18 +51,21 @@ function updateHistory(id, patch) {
 }
 
 const DEFAULT_CONFIG = {
-  // Redes Kadena: la OFICIAL (donde están los fondos reales de la mayoría) y el FORK comunitario. Se activan como las EVM.
+  // Red Kadena. Hubo dos hasta la 2.11.0: esta y la de Kadena Inc (api.chainweb.com).
+  // La de Inc se quitó el 22-09-2026 porque su dominio YA NO EXISTE: `nslookup
+  // api.chainweb.com` responde "Non-existent domain" desde cualquier sitio. Estaba
+  // apagada de fábrica desde 07/2026, así que lo único que podía hacer era dar
+  // errores a quien la encendiera por curiosidad.
+  // `node` NO se elige aquí: lo pone lib/kdanodo.js midiendo (ver loadConfig).
   kda: {
     networks: [
       // `nft`: dónde vive el ledger de NFT de esa red, quién sabe qué tiene una
       // cuenta (descubridor, opcional) y por dónde se leen los ipfs://. Igual que
       // `tokens`, va en el código y no en la config del usuario (modelo Alex #4).
-      { key: 'mainnet', name: 'Kadena (Inc)', node: 'https://api.chainweb.com', networkId: 'mainnet01', color: '#a855f7', enabled: false, fork: false,
-        nft: { ledger: 'marmalade-v2.ledger', chain: '0', descubridor: null, pasarela: 'https://ipfs.io/ipfs/' } },
       // `tokens`: fungibles KDA a mostrar además del kb-* del puente. Lista FIJA del código (no de la
       // config del usuario) — modelo Alex #4: el renderer no puede inyectar contratos de token.
       // Cada uno: {module (namespace.contrato fungible-v2), symbol, precision, chain, cg (id CoinGecko o null si sin precio)}.
-      { key: 'fork', name: 'Kadena', node: 'https://api.chainweb-community.org', networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true,
+      { key: 'fork', name: 'Kadena', node: kdanodo.DE_FABRICA[0], networkId: 'mainnet01', color: '#63e038', enabled: true, fork: true,
         nft: { ledger: 'marmalade-v2.ledger', chain: '0', descubridor: null, pasarela: 'https://ipfs.io/ipfs/' },
         tokens: [
           { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null },
@@ -156,7 +160,9 @@ const DEFAULT_CONFIG = {
   },
   // Puente Kinesis (fork). Solo simulación por ahora. Dos orillas: Kadena (dominio 626) y Ethereum (1).
   bridge: {
-    kda: { node: 'https://api.chainweb-community.org', networkId: 'mainnet01', chain: 2, domain: 626 },
+    // `node`: lo pone kdanodo en loadConfig, igual que el de la red. Antes estaba
+    // escrito aquí y era el tercero de los tres sitios con el nodo a fuego.
+    kda: { node: kdanodo.DE_FABRICA[0], networkId: 'mainnet01', chain: 2, domain: 626 },
     // mailbox: el buzon Hyperlane del fork en Ethereum (NO el de Hyperlane oficial). Se le pregunta
     // `delivered(messageId)` para saber si el rele ya entrego un envio Kadena→Ethereum.
     evm: { rpc: 'https://eth-mainnet.public.blastapi.io', name: 'Ethereum', domain: 1, mailbox: '0x82A729A4c7B2aeBDdbFCCF533e7B75c61c45c23c' },   // mismo nodo que la red `evm`; loadConfig lo reemplaza por el que tengas en Ajustes
@@ -224,21 +230,24 @@ const rpcEvmPuente = async (c) => {
 const loadConfig = () => {
   let c;
   try { c = { ...DEFAULT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG(), 'utf8')) }; } catch (_) { c = { ...DEFAULT_CONFIG }; }
-  // Normaliza las redes Kadena al formato lista (Oficial + Fork), preservando qué tenía activado el usuario.
+  // Normaliza las redes Kadena, preservando qué tenía activado el usuario. Desde la
+  // 2.11.0 solo hay una red, así que una config vieja con la de Inc dentro se queda
+  // sin ella sola: la lista se reconstruye siempre desde DEFAULT_CONFIG.
   const savedNets = (c.kda && Array.isArray(c.kda.networks)) ? c.kda.networks : null;
   c.kda = {
     chains: (c.kda && c.kda.chains) || DEFAULT_CONFIG.kda.chains,
+    // Nodos añadidos por el usuario y el que haya fijado a mano. Es lo ÚNICO de los
+    // nodos que se guarda: los de fábrica salen del código (modelo Alex #4).
+    nodos: (c.kda && Array.isArray(c.kda.nodos)) ? c.kda.nodos.filter(kdanodo.urlValida) : [],
+    nodoFijo: (c.kda && typeof c.kda.nodoFijo === 'string') ? c.kda.nodoFijo : null,
     networks: DEFAULT_CONFIG.kda.networks.map(n => { const s = savedNets ? savedNets.find(x => x.key === n.key) : null; return { ...n, enabled: s ? !!s.enabled : n.enabled }; })
   };
-  // Simplificación de nombres (2026-07): la Community pasa a llamarse simplemente "Kadena" (es la red real
-  // de la comunidad y donde vive todo el ecosistema) y la rama de Kadena Inc queda apagada por defecto,
-  // disponible en Red por si hiciera falta. Se aplica UNA sola vez sobre configuraciones ya existentes.
-  if (!c.kdaSimple) {
-    const _inc = c.kda.networks.find(n => n.key === 'mainnet');
-    if (_inc) _inc.enabled = false;
-    c.kdaSimple = true;
-    try { saveConfig(c); } catch (_) { /* si aún no se puede escribir, se persistirá al siguiente guardado */ }
-  }
+  // El nodo no se guarda ni se elige a mano (salvo que el usuario lo fije): lo pone
+  // la sonda de kdanodo, que mide latencia Y frescura. Se escribe aquí, en el único
+  // sitio por el que pasa toda la configuración, para que los 54 puntos que leen
+  // `red.node` sigan viendo un texto y no se enteren de nada.
+  const _elegido = kdanodo.mejor();
+  for (const n of c.kda.networks) if (n.fork) n.node = _elegido;
   c.launch = DEFAULT_CONFIG.launch;     // el catalogo de ventas es fijo del codigo
   c.dca = DEFAULT_CONFIG.dca;           // modulo y tokens del DCA: fijos del codigo
   c.evmSwap = DEFAULT_CONFIG.evmSwap;   // el catalogo de cambios es fijo del codigo, como el puente
@@ -271,7 +280,10 @@ const loadConfig = () => {
   // El valor sale del MISMO campo ya saneado de `c.evm` (https validado, auditoria Alex #4): no abre via nueva para
   // repuntar la firma a un nodo hostil, es exactamente el nodo que el usuario ya eligio para Ethereum.
   const redEth = c.evm.find(n => n.key === 'eth');
-  c.bridge = { ...DEFAULT_CONFIG.bridge, evm: { ...DEFAULT_CONFIG.bridge.evm, rpc: (redEth && redEth.rpc) || DEFAULT_CONFIG.bridge.evm.rpc } };
+  c.bridge = { ...DEFAULT_CONFIG.bridge,
+    // La orilla Kadena del puente usa el MISMO nodo que la red, elegido por la sonda.
+    kda: { ...DEFAULT_CONFIG.bridge.kda, node: _elegido },
+    evm: { ...DEFAULT_CONFIG.bridge.evm, rpc: (redEth && redEth.rpc) || DEFAULT_CONFIG.bridge.evm.rpc } };
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   c.lockMinutes = (c.lockMinutes === undefined || c.lockMinutes === null) ? 10 : Math.max(0, Number(c.lockMinutes) || 0); // M-2: auto-bloqueo, 10 min por defecto (0=nunca)
   // Libreta de direcciones (idea 1): lista {alias, address, kind:'kda'|'evm'} saneada. No es secreto.
@@ -370,6 +382,26 @@ function view() {
   };
 }
 
+// La sonda de nodos de Kadena. Se arranca una vez al abrir y se repite sola.
+// `swap.C` se toca a mano porque lib/swap.js se escribió con su propia copia de
+// la configuración del fork: exporta `C`, así que cambiarle el nodo ahí es todo
+// lo que hace falta y no hay que tocar sus cuatro funciones.
+function arrancarSondaNodos() {
+  const c = loadConfig();
+  kdanodo.configurar({
+    networkId: (c.kda.networks.find(n => n.fork) || {}).networkId || 'mainnet01',
+    lista: c.kda.nodos,
+    fijo: c.kda.nodoFijo
+  });
+  const aplicar = (url) => { try { swap.C.node = url; } catch (_) {} };
+  aplicar(kdanodo.mejor());
+  kdanodo.arrancar((nuevo) => {
+    aplicar(nuevo);
+    // Avisar a la ventana para que repinte la pantalla de Red si la tiene abierta.
+    try { for (const w of BrowserWindow.getAllWindows()) w.webContents.send('nodos:cambio', kdanodo.verEstado()); } catch (_) {}
+  }).then(() => aplicar(kdanodo.mejor()));
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000, height: 760, minWidth: 860,
@@ -395,6 +427,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
   app.whenReady().then(() => {
     createWindow(); ensureDesktopShortcut();
+    arrancarSondaNodos();
     // puentes que quedaron en camino al cerrar la ultima vez: se retoma la vigilancia sin esperar a nada
     setTimeout(() => { migrarPuentesViejos().catch(() => {}).then(armarVigilantePuente); }, 5000);
     // limpiar restos de actualizaciones anteriores (_update y _update-<ts>; el bat no siempre puede borrar su propia carpeta)
@@ -1720,6 +1753,29 @@ ipcMain.handle('config:set', (_e, c) => {
   // Se guarda tal cual, pero loadConfig() reconstruye kda/evm/bridge desde DEFAULT y solo respeta
   // enabled/rpc(https)/updateMode — los campos sensibles de firma nunca los fija el renderer (Alex #4).
   saveConfig(c); return { ok: true };
+});
+
+// ---- Nodos de Kadena: verlos, medirlos y elegirlos ----
+// El renderer NO puede poner un nodo cualquiera y ya: pasa por kdanodo.configurar,
+// que tira lo que no sea https, y los de fábrica van siempre en la lista. Es la
+// misma norma que con los RPC de EVM (auditoría Alex #4).
+ipcMain.handle('nodos:estado', () => kdanodo.verEstado());
+
+ipcMain.handle('nodos:sondear', async () => { await kdanodo.sondear(); return kdanodo.verEstado(); });
+
+ipcMain.handle('nodos:guardar', async (_e, { nodos, fijo } = {}) => {
+  const c = loadConfig();
+  const propios = (Array.isArray(nodos) ? nodos : [])
+    .filter(kdanodo.urlValida)
+    .filter(u => !kdanodo.DE_FABRICA.includes(u))     // los de fábrica no se guardan: salen del código
+    .slice(0, 10);                                    // una lista larga solo sirve para tardar más en sondear
+  c.kda.nodos = propios;
+  c.kda.nodoFijo = (typeof fijo === 'string' && kdanodo.urlValida(fijo)) ? fijo : null;
+  saveConfig(c);
+  kdanodo.configurar({ lista: c.kda.nodos, fijo: c.kda.nodoFijo });
+  await kdanodo.sondear();
+  try { swap.C.node = kdanodo.mejor(); } catch (_) {}
+  return kdanodo.verEstado();
 });
 
 // ---- Versión + auto-update vía descargas.dnns.es (latest.json {version,url,appUrl,sha256,sig,notes}) ----

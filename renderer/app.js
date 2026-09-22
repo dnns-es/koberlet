@@ -274,16 +274,16 @@ const LANG = {
     mercado_sub: 'Cambios no custodial: firmas tú con tu contraseña y el precio se lee fresco del pool justo antes de firmar.',
     mkt_kda_sub: 'kb-USDC ⇄ KDA · pool kaddex, chain 2', mkt_eth_sub: 'USDC ⇄ ETH · Uniswap, para reponer gas',
     h_seguridad: 'Seguridad', h_ajustes: 'Ajustes', h_info: 'Info y manuales',
-    kda_nets: 'Redes Kadena — elige cuáles ver', evm_nets: 'Redes EVM — para wallets EVM', eth_rpc: 'RPC de Ethereum', save: 'Guardar',
+    kda_nets: 'Red Kadena', evm_nets: 'Redes EVM — para wallets EVM', eth_rpc: 'RPC de Ethereum', save: 'Guardar',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Cantidad a entregar', mk_swap: 'Cambiar',
     mk_recibes: 'Recibes aprox.',
-    h_ethswap: 'Ethereum — cambiar USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
-    set_kda_mode: 'Redes Kadena en el dashboard', check_upd: 'Buscar actualizaciones', download: 'Descargar',
+    h_ethswap: 'Ethereum — cambiar USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)', check_upd: 'Buscar actualizaciones', download: 'Descargar',
     set_upd_mode: 'Actualizaciones', upd_manual: 'Manual — avisarme y actualizo yo', upd_auto: 'Automática — instalar al detectarla',
     upd_mode_hint: 'En manual, la app solo muestra un aviso cuando hay versión nueva y tú decides cuándo aplicarla. En automática, se instala y reinicia sola al arrancar. Tus wallets y datos nunca se tocan.',
     set_lock: 'Bloqueo automático por inactividad', lock_never: 'Nunca',
     lock_hint: 'Tras ese tiempo sin usar la app, se bloquea sola y hay que volver a introducir la contraseña. Protege tus claves si dejas el equipo desatendido.',
-    nodes_adv: 'Nodos (avanzado)', nodes_kda: 'Nodos Kadena (fijos por seguridad)',
+    nodes_adv: 'Nodos (avanzado)', nodes_kda: 'Nodos Kadena',
+    nodes_add: 'Añadir', nodes_probe: 'Medir ahora',
     nodes_hint: 'Servidor de entrada a cada red (RPC). Solo tócalo si el nodo por defecto va lento o quieres usar el tuyo. Debe ser una dirección https. Restablecer vuelve al nodo por defecto.',
     node_save: 'Guardar', node_reset: 'Restablecer', node_saved: 'Nodo guardado.', node_bad: 'Debe ser una dirección https válida.',
     upd_available: 'Koberlet v{v} disponible.', update: 'Actualizar',
@@ -391,8 +391,6 @@ const LANG = {
     exp_revealed: 'Revelada. Cópiala y cierra.', wallet_deleted: 'Wallet borrada.',
     ttl_eye: 'Ver / ocultar', ttl_copy_id: 'copiar id',
     tag_cold: '❄️ Fría', tag_hot: '🔥 Caliente',
-    kda_mode_both: 'Ambas (Kadena + Kadena Inc)', kda_mode_inc: 'Solo Kadena (Inc)', kda_mode_comm: 'Solo Kadena',
-    kda_mode_hint: 'Qué tarjetas Kadena se muestran para cada wallet. Úsalo para limpiar el dashboard si no usas una de las redes. (Equivale a los interruptores de la sección Red.)',
     set_fiat: 'Moneda de referencia',
     recv_ask: 'Pedir una cantidad (opcional)',
     recv_amt_ph: 'KDA a cobrar',
@@ -692,16 +690,16 @@ const LANG = {
     mercado_sub: 'Non-custodial swaps: you sign with your password and the price is read fresh from the pool right before signing.',
     mkt_kda_sub: 'kb-USDC ⇄ KDA · kaddex pool, chain 2', mkt_eth_sub: 'USDC ⇄ ETH · Uniswap, to top up gas',
     h_seguridad: 'Security', h_ajustes: 'Settings', h_info: 'Info & manuals',
-    kda_nets: 'Kadena networks — choose which to show', evm_nets: 'EVM networks — for EVM wallets', eth_rpc: 'Ethereum RPC', save: 'Save',
+    kda_nets: 'Kadena network', evm_nets: 'EVM networks — for EVM wallets', eth_rpc: 'Ethereum RPC', save: 'Save',
     mk_wallet: 'Wallet (Kadena)', mk_amount: 'Amount to send', mk_swap: 'Swap',
     mk_recibes: 'You receive approx.',
-    h_ethswap: 'Ethereum — swap USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)',
-    set_kda_mode: 'Kadena networks on the dashboard', check_upd: 'Check for updates', download: 'Download',
+    h_ethswap: 'Ethereum — swap USDC ⇄ ETH (Uniswap)', es_wallet: 'Wallet (Ethereum)', check_upd: 'Check for updates', download: 'Download',
     set_upd_mode: 'Updates', upd_manual: 'Manual — notify me and I update', upd_auto: 'Automatic — install when detected',
     upd_mode_hint: 'In manual mode the app only shows a notice when a new version is available and you decide when to apply it. In automatic mode it installs and restarts by itself on startup. Your wallets and data are never touched.',
     set_lock: 'Auto-lock on inactivity', lock_never: 'Never',
     lock_hint: 'After that idle time the app locks itself and you must re-enter your password. Protects your keys if you leave the computer unattended.',
-    nodes_adv: 'Nodes (advanced)', nodes_kda: 'Kadena nodes (fixed for security)',
+    nodes_adv: 'Nodes (advanced)', nodes_kda: 'Kadena nodes',
+    nodes_add: 'Add', nodes_probe: 'Measure now',
     nodes_hint: 'Entry server for each network (RPC). Only touch it if the default node is slow or you want to use your own. Must be an https address. Reset returns to the default node.',
     node_save: 'Save', node_reset: 'Reset', node_saved: 'Node saved.', node_bad: 'Must be a valid https address.',
     upd_available: 'Koberlet v{v} available.', update: 'Update',
@@ -809,8 +807,6 @@ const LANG = {
     exp_revealed: 'Revealed. Copy it and close.', wallet_deleted: 'Wallet deleted.',
     ttl_eye: 'Show / hide', ttl_copy_id: 'copy id',
     tag_cold: '❄️ Cold', tag_hot: '🔥 Hot',
-    kda_mode_both: 'Both (Kadena + Kadena Inc)', kda_mode_inc: 'Only Kadena (Inc)', kda_mode_comm: 'Only Kadena',
-    kda_mode_hint: 'Which Kadena cards are shown for each wallet. Use it to declutter the dashboard if you do not use one of the networks. (Same as the switches in the Network section.)',
     set_fiat: 'Display currency',
     recv_ask: 'Request an amount (optional)',
     recv_amt_ph: 'KDA to receive',
@@ -1311,13 +1307,31 @@ async function enter(v) {
     CFG.kda.networks.find(x => x.key === cb.dataset.knet).enabled = cb.checked;
     await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
   });
-  // Ajustes: modo de redes Kadena en el dashboard (Ambas / Solo oficial / Solo fork), sincronizado con los interruptores de Red
-  $('set-kda-mode').onchange = async () => {
-    const v = $('set-kda-mode').value;
-    CFG.kda.networks.find(n => n.key === 'mainnet').enabled = v !== 'fork';
-    CFG.kda.networks.find(n => n.key === 'fork').enabled = v !== 'oficial';
-    await window.api.setConfig(CFG); syncKdaControls(); updateNetContext(); loadBalances();
+  // El selector "Ambas / Solo Kadena (Inc) / Solo Kadena" se quitó en la 2.11.0 al
+  // quedar una sola red Kadena. Ojo si se recupera algo de aquí: hacía
+  // .find(n => n.key === 'mainnet').enabled y eso ahora revienta, porque esa red
+  // ya no existe.
+
+  // Nodos de Kadena: añadir uno propio y medir a petición.
+  if ($('kda-nodo-anadir')) $('kda-nodo-anadir').onclick = async () => {
+    const campo = $('kda-nodo-nuevo'), err = $('kda-nodo-err');
+    const u = (campo.value || '').trim();
+    if (err) err.textContent = '';
+    if (!/^https:\/\/.+/i.test(u)) { if (err) err.textContent = 'Tiene que ser una dirección https.'; return; }
+    if (!NODOS) await cargarNodosKda();
+    if ((NODOS.lista || []).includes(u)) { if (err) err.textContent = 'Ese nodo ya está en la lista.'; return; }
+    await guardarNodos(propiosDe(NODOS).concat([u]), NODOS.fijo);
+    campo.value = '';
   };
+  if ($('kda-nodo-sondear')) $('kda-nodo-sondear').onclick = async () => {
+    const b = $('kda-nodo-sondear'); const antes = b.textContent;
+    b.disabled = true; b.textContent = 'Midiendo…';
+    try { NODOS = await window.api.nodosSondear(); pintarNodosKda(); } catch (_) {}
+    b.disabled = false; b.textContent = antes;
+  };
+  // Si la sonda cambia de nodo por su cuenta, repintar sin que el usuario haga nada.
+  if (window.api.onNodosCambio) window.api.onNodosCambio((e) => { NODOS = e; pintarNodosKda(); });
+  cargarNodosKda();
   // Moneda de referencia. Vive en localStorage como el idioma y el tema: es
   // preferencia de quien mira, no configuración de la cartera, y no tiene por
   // qué viajar en las copias de seguridad.
@@ -1476,8 +1490,6 @@ $('btn-bridge-send').onclick = () => {
 function syncKdaControls() {
   if (!CFG || !CFG.kda) return;
   const on = (k) => { const n = CFG.kda.networks.find(x => x.key === k); return n && n.enabled; };
-  const mode = on('mainnet') && on('fork') ? 'ambas' : (on('mainnet') ? 'oficial' : 'fork');
-  if ($('set-kda-mode')) $('set-kda-mode').value = mode;
   if ($('kda-nets')) $('kda-nets').querySelectorAll('input').forEach(cb => { cb.checked = on(cb.dataset.knet); });
 }
 
@@ -1518,8 +1530,53 @@ function renderNodes() {
     msg($('wallet-msg'), t('node_saved'), 'ok');
   });
   // Nodos Kadena: solo lectura (no repuntables por seguridad — auditoría #4)
-  if ($('kda-nodes')) $('kda-nodes').innerHTML = CFG.kda.networks.map(n => `
-    <div class="noderow ro"><div class="nodename"><span class="tdot" style="background:${n.color}"></span>${n.name}</div><code class="nodero">${esc(n.node)}</code></div>`).join('');
+  pintarNodosKda();
+}
+
+// ---- Nodos de Kadena: lo que midió la sonda, y qué puedes tocar ----
+// La lista la manda el proceso principal (lib/kdanodo.js). Aquí solo se pinta:
+// el renderer no decide el nodo ni puede colar uno que no sea https.
+let NODOS = null;
+
+function pintarNodosKda() {
+  const caja = $('kda-nodes'); if (!caja || !NODOS) return;
+  const esFabrica = (u) => (NODOS.deFabrica || []).includes(u);
+  caja.innerHTML = (NODOS.medidas && NODOS.medidas.length ? NODOS.medidas : (NODOS.lista || []).map(u => ({ url: u })))
+    .map(m => {
+      const activo = m.url === NODOS.elegido;
+      const fijado = m.url === NODOS.fijo;
+      let estado;
+      if (m.ok === false) estado = `<span class="nodebad">${esc(m.error || 'no contesta')}</span>`;
+      else if (m.atrasado) estado = `<span class="nodebad">${m.ms} ms · ${m.retraso} bloques atrás</span>`;
+      else if (m.ok) estado = `<span class="nodeok">${m.ms} ms · al día</span>`;
+      else estado = '<span class="muted">sin medir</span>';
+      return `<div class="noderow${activo ? ' node-activo' : ''}">
+        <div class="nodename">${activo ? '● ' : ''}${esc(m.url.replace(/^https:\/\//, ''))}
+          ${fijado ? ' <span class="badge">fijado</span>' : ''}${esFabrica(m.url) ? '' : ' <span class="badge">tuyo</span>'}</div>
+        <code class="nodero">${estado}</code>
+        <button class="ghost xs" data-nodo-fijar="${esc(m.url)}">${fijado ? 'soltar' : 'fijar'}</button>
+        ${esFabrica(m.url) ? '' : `<button class="ghost xs" data-nodo-quitar="${esc(m.url)}">quitar</button>`}
+      </div>`;
+    }).join('');
+  caja.querySelectorAll('[data-nodo-fijar]').forEach(b => b.onclick = async () => {
+    const u = b.dataset.nodoFijar;
+    await guardarNodos(propiosDe(NODOS), NODOS.fijo === u ? null : u);
+  });
+  caja.querySelectorAll('[data-nodo-quitar]').forEach(b => b.onclick = async () => {
+    const u = b.dataset.nodoQuitar;
+    await guardarNodos(propiosDe(NODOS).filter(x => x !== u), NODOS.fijo === u ? null : NODOS.fijo);
+  });
+}
+
+function propiosDe(e) { return (e.lista || []).filter(u => !(e.deFabrica || []).includes(u)); }
+
+async function guardarNodos(nodos, fijo) {
+  try { NODOS = await window.api.nodosGuardar(nodos, fijo); pintarNodosKda(); }
+  catch (e) { const el = $('kda-nodo-err'); if (el) el.textContent = String(e.message || e); }
+}
+
+async function cargarNodosKda() {
+  try { NODOS = await window.api.nodosEstado(); pintarNodosKda(); } catch (_) {}
 }
 
 // MERCADO (swap KDA <-> kb-USDC en el pool del fork)
