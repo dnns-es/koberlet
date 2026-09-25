@@ -432,6 +432,7 @@ const LANG = {
     wc_sin_sesiones: 'No hay ninguna web conectada.', wc_falta_uri: 'Pega antes el enlace de conexión.',
     wc_uri_mala: 'Eso no parece un enlace de conexión. Tiene que empezar por «wc:» y lo da la propia web junto al código QR.',
     wc_metodo_raro: 'Esa web exige una forma de firmar que Koberlet todavía no sabe: {m}. No se ha conectado.',
+    wc_web_bloqueada: 'Koberlet no se conecta con esta web. Para cambiar tokens usa el Mercado de Koberlet: mismos pools y lo firmas aquí.',
     wc_avisos_raros: 'Esa web pide avisos con un nombre que no se entiende: {m}. No se ha conectado.',
     wc_conectando: 'Conectando…', wc_esperando: 'Enlace aceptado. Esperando a que la web pida la conexión…',
     wc_conectado: 'Conectado.',
@@ -881,6 +882,7 @@ const LANG = {
     wc_sin_sesiones: 'No website is connected.', wc_falta_uri: 'Paste the connection link first.',
     wc_uri_mala: 'That does not look like a connection link. It must start with "wc:" and the website gives it to you next to the QR code.',
     wc_metodo_raro: 'That website requires a signing method Koberlet does not support yet: {m}. It has not been connected.',
+    wc_web_bloqueada: 'Koberlet does not connect to this website. To swap tokens use the Koberlet Market: same pools, signed right here.',
     wc_avisos_raros: 'That website asks for events with a name that makes no sense: {m}. It has not been connected.',
     wc_conectando: 'Connecting…', wc_esperando: 'Link accepted. Waiting for the website to request the connection…',
     wc_conectado: 'Connected.',
@@ -3794,7 +3796,8 @@ if ($('wc-s-ok')) $('wc-s-ok').onclick = async () => {
     // La web exige algo que el monedero no sabe hacer: se dice qué, en cristiano.
     const m = String(e.message || e);
     const cola = (s) => (s.split(/WC_(?:METODO|AVISOS)_RAROS?:\s*/)[1] || '').trim();
-    const txt = /WC_METODO_RARO/.test(m) ? tr('wc_metodo_raro', { m: esc(cola(m)) })
+    const txt = /WC_WEB_BLOQUEADA/.test(m) ? t('wc_web_bloqueada')
+      : /WC_METODO_RARO/.test(m) ? tr('wc_metodo_raro', { m: esc(cola(m)) })
       : /WC_AVISOS_RAROS/.test(m) ? tr('wc_avisos_raros', { m: esc(cola(m)) }) : cleanErr(e);
     msg($('wc-s-msg'), txt, 'err');
   }

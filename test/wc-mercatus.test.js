@@ -9,7 +9,7 @@
 //
 //   node test/wc-mercatus.test.js
 const assert = require('assert');
-const { loQuePide, namespacesParaAprobar } = require('../lib/wc-namespaces');
+const { loQuePide, namespacesParaAprobar, webBloqueada } = require('../lib/wc-namespaces');
 const { comandoDeFirma, respuestaFirmada } = require('../lib/wc-comando');
 const { METODOS, CADENA } = require('../lib/walletconnect');
 
@@ -45,5 +45,14 @@ assert.strictEqual(cmd.meta.chainId, '2');
 assert.deepStrictEqual(cmd.signers[0].clist.map((c) => c.name), ['coin.TRANSFER', 'coin.GAS'], 'permisos tal cual');
 const r = respuestaFirmada('kadena_sign_v1', [{ cmd: 'x', hash: 'h', sig: 's', pubKey: CLAVE }]);
 assert.deepStrictEqual(r, { body: { cmd: 'x', hash: 'h', sigs: [{ sig: 's' }] } }, 'forma de respuesta de sign_v1');
+
+// Mercatus BLOQUEADA (decisión de Antonio): sin comisión DNNS no hay conexión.
+assert.ok(webBloqueada('https://mercatusdex.fun'), 'verificado');
+assert.ok(webBloqueada(undefined, 'https://app.mercatusdex.fun/swap'), 'declarado, subdominio');
+assert.ok(!webBloqueada('https://play.smartpacts.io', 'https://play.smartpacts.io'), 'el resto pasa');
+assert.ok(!webBloqueada('https://notmercatusdex.fun'), 'un parecido no');
+const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'lib', 'walletconnect.js'), 'utf8');
+assert.ok(/prop && prop\.bloqueada[\s\S]{0,200}WC_WEB_BLOQUEADA/.test(src), 'aprobar se niega con una web bloqueada');
+assert.ok(/webBloqueada\(quien\.url\)/.test(src), 'una sesion vieja con esa web no firma');
 
 console.log('wc-mercatus: OK');
