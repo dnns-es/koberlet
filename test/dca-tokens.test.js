@@ -22,6 +22,9 @@ kda.local = async (_n, _net, _ch, code) => {
   if (/\.paused\)/.test(code)) return { status: 'success', data: false };
   if (/custody-account/.test(code)) return { status: 'success', data: 'u:custodia' };
   if (/coin\.get-balance/.test(code)) return { status: 'success', data: 5000 };
+  if (/\.get-plan /.test(code)) return { status: 'success', data: { owner: OWNER, status: 'active', 'token-in': 'coin' } };
+  if (/gasolinera\.cuenta\)/.test(code)) return { status: 'success', data: 'k:gasolinera' };
+  if (/gasolinera\.saldo\)/.test(code)) return { status: 'success', data: 10 };
   return { status: 'failure', error: { message: 'no esperado: ' + code } };
 };
 ktime.creationTime = async () => 1790000000;
@@ -56,6 +59,16 @@ const cfg = { node: 'http://x', networkId: 'mainnet01', chain: '2', modulo: 'fre
   await assert.rejects(dca.crearPlan(cfg, { owner: OWNER, publicHex: PUBHEX, secretHex: SEC, tokenIn: ETH, tokenOut: 'coin',
     precIn: 18, minCuota: 0.0004, simIn: 'kb-ETH', deposito: 0.004, cuota: 0.0003, periodo: 3600, slippage: 0.05 }),
     /minima por compra es 0.0004 kb-ETH/);
+
+  // 5: cerrar/pausar van SIN ACOTAR. Acotada a coin.GAS, el enforce-guard del dueño
+  //    falla ("Keyset failure") y el plan no se puede cerrar: paso el 25/09/2026.
+  //    Con gasolinera disponible (dca2), a proposito: ni aun asi se puede acotar.
+  const cfgGaso = { ...cfg, modulo: 'free.ksw-dca2', gasolinera: 'free.ksw-gasolinera' };
+  for (const que of ['cerrar', 'pausar', 'reanudar']) {
+    await dca.accion(cfgGaso, { id: 'k:d0439ab3-1', que, owner: OWNER, publicHex: PUBHEX, secretHex: SEC });
+    assert.deepStrictEqual(enviado.signers, [{ pubKey: PUBHEX }], que + ': firma sin acotar');
+    assert.strictEqual(enviado.meta.sender, OWNER, que + ': gas del dueño');
+  }
 
   // 4: config de main.js contra MIN-IN del contrato
   const main = fs.readFileSync(path.join(__dirname, '..', 'main.js'), 'utf8');
