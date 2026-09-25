@@ -3122,8 +3122,15 @@ async function loadBalances() {
     renderGasWarnings(blocks);
     initConverter();
     msg($('wallet-msg'), '');
+    renderOrdenesActivas();                // las compras del vigilante tambien cambian esto
   } catch (e) { msg($('wallet-msg'), 'Error: ' + e.message, 'err'); }
 }
+// «En marcha ahora mismo» cambia sin que el usuario haga nada: cada compra la dispara el
+// vigilante. Solo se relee si hay algo en marcha y la ventana se esta mirando.
+setInterval(() => {
+  const zona = $('ordenes-activas');
+  if (zona && !zona.hidden && document.visibilityState === 'visible') renderOrdenesActivas();
+}, 60000);
 // Idea 2: aviso de gas bajo. Umbral por símbolo del token nativo de cada red.
 const GAS_MIN = { ETH: 0.0015, BNB: 0.005, POL: 1, MATIC: 1, KDA: 0.5 };
 function renderGasWarnings(blocks) {
