@@ -52,6 +52,17 @@ contextBridge.exposeInMainWorld('api', {
   sendKdaXchain: (passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount) => ipcRenderer.invoke('send:kda-xchain', { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }),
   sendKdaSmart: (passphrase, walletId, kdaNet, targetChain, to, amount) => ipcRenderer.invoke('send:kda-smart', { passphrase, walletId, kdaNet, targetChain, to, amount }),
   onXchainProgress: (cb) => ipcRenderer.on('xchain:progress', (_e, m) => cb(m)),
+  // WalletConnect: conectar Koberlet a paginas de fuera para firmar en ellas.
+  wcEstado: () => ipcRenderer.invoke('wc:estado'),
+  wcEmparejar: (uri) => ipcRenderer.invoke('wc:emparejar', { uri }),
+  wcAprobarSesion: (id, walletId) => ipcRenderer.invoke('wc:aprobar-sesion', { id, walletId }),
+  wcRechazarSesion: (id) => ipcRenderer.invoke('wc:rechazar-sesion', { id }),
+  wcDesconectar: (topic) => ipcRenderer.invoke('wc:desconectar', { topic }),
+  wcFirmar: (id, passphrase) => ipcRenderer.invoke('wc:firmar', { id, passphrase }),
+  wcRechazarFirma: (id) => ipcRenderer.invoke('wc:rechazar-firma', { id }),
+  onWcPropuesta: (cb) => ipcRenderer.on('wc:propuesta', (_e, p) => cb(p)),
+  onWcFirma: (cb) => ipcRenderer.on('wc:firma', (_e, f) => cb(f)),
+  onWcCerrada: (cb) => ipcRenderer.on('wc:cerrada', (_e, d) => cb(d)),
   // multi-wallet
   walletList: () => ipcRenderer.invoke('wallet:list'),
   walletShown: (id, shown) => ipcRenderer.invoke('wallet:shown', { id, shown }),

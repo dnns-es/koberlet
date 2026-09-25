@@ -6,9 +6,42 @@ function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textCont
 // L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // Limpia el prefijo técnico de Electron ("Error invoking remote method 'x': Error: …") de los errores IPC.
-const cleanErr = (e) => String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '');
+const cleanErr = (e) => textoXchain(String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, ''));
+// El cross-chain (lib/kda.js) manda CODIGO|dato|dato en vez de una frase hecha: la lib no
+// sabe en qué idioma está la ventana y estos avisos salían en español a todo el mundo.
+// Aquí se arman con el idioma puesto. Lo que no sea un código conocido pasa tal cual.
+const XC_TEXTOS = {
+  XC_ESPERA_SALIDA: ['xc_espera_salida', ['id']],
+  XC_FALLO_SALIDA:  ['xc_fallo_salida',  ['m', 'id']],
+  XC_ESPERA_SPV:    ['xc_espera_spv',    ['c', 'id']],
+  XC_ESPERA_ACUNAR: ['xc_espera_acunar', ['c', 'id']],
+  XC_FALLO_ACUNAR:  ['xc_fallo_acunar',  ['m', 'id']],
+  XC_P_SALIENDO:    ['xc_p_saliendo',    ['c']],
+  XC_P_SALIDA_OK:   ['xc_p_salida_ok',   ['id']],
+  XC_P_SPV:         ['xc_p_spv',         []],
+  XC_P_ACUNANDO:    ['xc_p_acunando',    ['c']],
+  XC_P_JUNTANDO:    ['xc_p_juntando',    ['a', 'c']],
+  XC_P_ENVIANDO:    ['xc_p_enviando',    ['a', 'c']],
+  XC_ERR_DESTINO_K:   ['xc_err_destino_k',   []],
+  XC_ERR_MISMA_CHAIN: ['xc_err_misma_chain', []],
+  XC_ERR_CANTIDAD:    ['xc_err_cantidad',    []],
+  XC_ERR_SIN_SALDO:   ['xc_err_sin_saldo',   ['b']],
+  XC_ERR_NO_JUNTA:    ['xc_err_no_junta',    ['b']],
+  XC_ERR_ENVIO_FINAL: ['xc_err_envio_final', ['m']]
+};
+function textoXchain(m) {
+  const partes = String(m).split('|');
+  const def = XC_TEXTOS[partes[0]];
+  if (!def) return m;
+  const datos = {};
+  def[1].forEach((nombre, i) => { datos[nombre] = partes[i + 1] || ''; });
+  return tr(def[0], datos);
+}
 // Estados del Ledger que NO son fallos sino situaciones reintenables (PIN, sin conectar, app cerrada).
 const isLedgerWait = (m) => /Ledger está bloqueado|introduce el PIN|No veo ningún Ledger|Abre la app correcta|Blind signing/i.test(m);
+// Cross-chain que sigue su curso y todavía no consta. Lo marca lib/kda.js con ⏳ al principio.
+// Pintarlo de rojo como un error era lo que hacía que la gente reenviara el dinero.
+const esEnCamino = (m) => /^⏳/.test(m);
 let CFG = null, WALLETS = [], SHOWN = [];
 
 // ===== i18n ES/EN =====
@@ -367,7 +400,7 @@ const LANG = {
     spread: 'Repartido: ', no_bal_yet: 'Sin saldo aún.',
     lbl_chain_from: 'Chain origen', lbl_chain_to: 'Chain destino', lbl_dest_k: 'Destino (k:…)', lbl_dest_0x: 'Destino (0x…)', lbl_amount: 'Cantidad', lbl_asset: 'Activo',
     ph_kda_dest: 'k:... o elige de la libreta', ph_evm_dest: '0x... o elige de la libreta',
-    xchain_hint: '↔ Envío entre chains distintas (cross-chain): tarda algo más (dos pasos + prueba SPV).',
+    xchain_hint: '↔ Envío entre chains distintas (cross-chain): son dos pasos + prueba SPV y puede tardar varios minutos. No lo reenvíes mientras tanto.',
     send: 'Enviar', btn_recv: '📥 Recibir', btn_send: '📤 Enviar', offline: 'sin conexión',
     btn_expand: 'Ampliar', btn_back: '← Volver al panel',
     loading_balances: 'Cargando saldos…',
@@ -380,6 +413,37 @@ const LANG = {
     cf_send_kda_sweep: 'Enviar <b>{a} KDA</b> recibidos en la <b>chain {c}</b>.<br>Se juntará de varias chains (~{n}) mediante cross-chain — <b>tarda unos minutos</b>.<br>a <span class="mono">{to}</span>',
     cf_send_evm: 'Enviar <b>{a} {s}</b> en {net}<br>a <span class="mono">{to}</span>',
     sent_rk: 'Enviado. requestKey: ', xchain_done: 'Cross-chain completado. pactId: ', sweep_done: 'Barrido completado. requestKey: ', sent_tx: 'Enviado. tx: ',
+    // Cross-chain: avisos de espera (⏳, salen en naranja) y fallos de verdad (rojo).
+    xc_espera_salida: '⏳ La salida está enviada pero todavía sin confirmar. NO la vuelvas a enviar: el dinero va en camino y el envío se remata solo o con este identificador (pactId) {id}',
+    xc_fallo_salida: 'La cadena ha rechazado la salida: {m} (pactId {id})',
+    xc_espera_spv: '⏳ La salida está hecha y falta acuñarla en la chain {c}. La prueba todavía no está lista; NO lo vuelvas a enviar: se remata solo o más tarde con este identificador (pactId) {id}',
+    xc_espera_acunar: '⏳ La acuñación en la chain {c} va en camino y aún no consta. NO lo vuelvas a enviar: el dinero está a salvo en el pacto y se remata con este identificador (pactId) {id}',
+    xc_fallo_acunar: 'La acuñación en destino falló: {m}. El dinero NO se pierde: sigue en el pacto y se remata con el identificador (pactId) {id}',
+    xc_p_saliendo: 'Enviando desde la chain {c}…', xc_p_salida_ok: 'Salida enviada. Identificador (pactId): {id}',
+    xc_p_spv: 'Obteniendo prueba SPV…', xc_p_acunando: 'Acuñando en la chain {c}…',
+    xc_p_juntando: 'Juntando {a} KDA de la chain {c}…', xc_p_enviando: 'Enviando {a} KDA desde la chain {c}…',
+    wc_titulo: 'Conectar con una web (WalletConnect)', wc_conectar: 'Conectar', wc_desconectar: 'Desconectar',
+    ph_bk_pass: 'mínimo 10 caracteres, cuanto más larga mejor', ph_bk_pass2: 'repite la contraseña',
+    wc_ayuda: 'Pega aquí el enlace de conexión que te da la web (el botón que suele poner «Copy link» junto al código QR). Koberlet no firmará nada sin enseñártelo antes.',
+    wc_s_titulo: 'Una web quiere conectarse', wc_s_ok: 'Conectar', wc_s_no: 'Rechazar',
+    wc_s_cuenta: 'Conectar con esta cuenta',
+    wc_s_aviso: 'El nombre y la dirección los dice la propia web, así que no son una prueba de quién es. Conecta solo si acabas de pedirlo tú en esa página. Conectar NO firma nada ni mueve dinero: solo le enseña tus cuentas.',
+    wc_f_titulo: 'Te piden firmar', wc_f_ok: 'Firmar', wc_f_no: 'Rechazar',
+    wc_sin_sesiones: 'No hay ninguna web conectada.', wc_falta_uri: 'Pega antes el enlace de conexión.',
+    wc_uri_mala: 'Eso no parece un enlace de conexión. Tiene que empezar por «wc:» y lo da la propia web junto al código QR.',
+    wc_conectando: 'Conectando…', wc_esperando: 'Enlace aceptado. Esperando a que la web pida la conexión…',
+    wc_conectado: 'Conectado.',
+    wc_s_pide: 'La web pide poder usar:',
+    wc_f_ilegible: 'No entiendo lo que te piden firmar. No lo firmes.',
+    wc_f_mueve: 'Autorizas mover', wc_f_de: 'de', wc_f_a: 'a',
+    wc_f_hace: 'Lo que se ejecuta:', wc_f_red: 'Red:', wc_f_gas: 'Gas, como mucho:', wc_f_otros: 'Otros permisos:',
+    wc_f_firmado: 'Firmado y devuelto a la web.',
+    xc_err_destino_k: 'Para enviar entre chains el destino tiene que ser una cuenta k:.',
+    xc_err_misma_chain: 'El origen y el destino son la misma chain.',
+    xc_err_cantidad: 'Cantidad no válida.',
+    xc_err_sin_saldo: 'No hay saldo suficiente ni sumando todas las chains (disponible ~{b} KDA, dejando lo del gas).',
+    xc_err_no_junta: 'No se pudo juntar lo suficiente: faltan ~{b} KDA.',
+    xc_err_envio_final: 'El envío final falló: {m}',
     err_sweep_bal: 'No hay saldo suficiente ni sumando todas las chains (disponible ~{b} KDA dejando gas).',
     signing: 'Firmando y enviando… (puede tardar)',
     generating: 'Generando…', importing: 'Importando…',
@@ -783,7 +847,7 @@ const LANG = {
     spread: 'Spread: ', no_bal_yet: 'No balance yet.',
     lbl_chain_from: 'Source chain', lbl_chain_to: 'Destination chain', lbl_dest_k: 'Destination (k:…)', lbl_dest_0x: 'Destination (0x…)', lbl_amount: 'Amount', lbl_asset: 'Asset',
     ph_kda_dest: 'k:... or pick from the book', ph_evm_dest: '0x... or pick from the book',
-    xchain_hint: '↔ Send between different chains (cross-chain): takes a bit longer (two steps + SPV proof).',
+    xchain_hint: '↔ Send between different chains (cross-chain): two steps + SPV proof, and it can take several minutes. Do not send it again meanwhile.',
     send: 'Send', btn_recv: '📥 Receive', btn_send: '📤 Send', offline: 'offline',
     btn_expand: 'Expand', btn_back: '← Back to panel',
     loading_balances: 'Loading balances…',
@@ -796,6 +860,37 @@ const LANG = {
     cf_send_kda_sweep: 'Send <b>{a} KDA</b> received on <b>chain {c}</b>.<br>It will be gathered from several chains (~{n}) via cross-chain — <b>takes a few minutes</b>.<br>to <span class="mono">{to}</span>',
     cf_send_evm: 'Send <b>{a} {s}</b> on {net}<br>to <span class="mono">{to}</span>',
     sent_rk: 'Sent. requestKey: ', xchain_done: 'Cross-chain completed. pactId: ', sweep_done: 'Sweep completed. requestKey: ', sent_tx: 'Sent. tx: ',
+    // Cross-chain: waiting notices (⏳, shown in orange) and real failures (red).
+    xc_espera_salida: '⏳ The outgoing step has been sent but is not confirmed yet. Do NOT send it again: the money is on its way and the transfer completes on its own or with this identifier (pactId) {id}',
+    xc_fallo_salida: 'The chain rejected the outgoing step: {m} (pactId {id})',
+    xc_espera_spv: '⏳ The outgoing step is done and it still has to be minted on chain {c}. The proof is not ready yet; do NOT send it again: it completes on its own or later with this identifier (pactId) {id}',
+    xc_espera_acunar: '⏳ Minting on chain {c} is on its way and does not show up yet. Do NOT send it again: the money is safe in the pact and completes with this identifier (pactId) {id}',
+    xc_fallo_acunar: 'Minting on the target chain failed: {m}. The money is NOT lost: it stays in the pact and completes with the identifier (pactId) {id}',
+    xc_p_saliendo: 'Sending from chain {c}…', xc_p_salida_ok: 'Outgoing step sent. Identifier (pactId): {id}',
+    xc_p_spv: 'Getting the SPV proof…', xc_p_acunando: 'Minting on chain {c}…',
+    xc_p_juntando: 'Gathering {a} KDA from chain {c}…', xc_p_enviando: 'Sending {a} KDA from chain {c}…',
+    wc_titulo: 'Connect to a website (WalletConnect)', wc_conectar: 'Connect', wc_desconectar: 'Disconnect',
+    ph_bk_pass: 'at least 10 characters, the longer the better', ph_bk_pass2: 'repeat the password',
+    wc_ayuda: 'Paste here the connection link the website gives you (the button usually labelled "Copy link" next to the QR code). Koberlet will not sign anything without showing it to you first.',
+    wc_s_titulo: 'A website wants to connect', wc_s_ok: 'Connect', wc_s_no: 'Reject',
+    wc_s_cuenta: 'Connect with this account',
+    wc_s_aviso: 'The name and the address are declared by the website itself, so they are not proof of who it is. Connect only if you just asked for it on that page. Connecting does NOT sign anything and does not move money: it only shows it your accounts.',
+    wc_f_titulo: 'You are asked to sign', wc_f_ok: 'Sign', wc_f_no: 'Reject',
+    wc_sin_sesiones: 'No website is connected.', wc_falta_uri: 'Paste the connection link first.',
+    wc_uri_mala: 'That does not look like a connection link. It must start with "wc:" and the website gives it to you next to the QR code.',
+    wc_conectando: 'Connecting…', wc_esperando: 'Link accepted. Waiting for the website to request the connection…',
+    wc_conectado: 'Connected.',
+    wc_s_pide: 'The website asks to use:',
+    wc_f_ilegible: 'I cannot understand what you are being asked to sign. Do not sign it.',
+    wc_f_mueve: 'You authorise moving', wc_f_de: 'from', wc_f_a: 'to',
+    wc_f_hace: 'What it runs:', wc_f_red: 'Network:', wc_f_gas: 'Gas, at most:', wc_f_otros: 'Other permissions:',
+    wc_f_firmado: 'Signed and returned to the website.',
+    xc_err_destino_k: 'To send between chains the destination must be a k: account.',
+    xc_err_misma_chain: 'Source and destination are the same chain.',
+    xc_err_cantidad: 'Invalid amount.',
+    xc_err_sin_saldo: 'Not enough balance even adding up every chain (about {b} KDA available, leaving gas aside).',
+    xc_err_no_junta: 'Could not gather enough: about {b} KDA short.',
+    xc_err_envio_final: 'The final transfer failed: {m}',
     err_sweep_bal: 'Not enough balance even adding up all chains (about {b} KDA available leaving gas).',
     signing: 'Signing and sending… (may take a while)',
     generating: 'Generating…', importing: 'Importing…',
@@ -1292,7 +1387,12 @@ function initNft() {
     };
 }
 
-document.querySelectorAll('.nav').forEach(a => a.onclick = () => nav(a.dataset.nav));
+document.querySelectorAll('.nav').forEach(a => a.onclick = () => {
+  nav(a.dataset.nav);
+  // Las webs conectadas se repasan al entrar en Ajustes: si una se cayo o la cerraron
+  // desde el otro lado, mejor verlo al mirar que creerse una lista vieja.
+  if (a.dataset.nav === 'ajustes' && typeof wcRefrescar === 'function') wcRefrescar();
+});
 document.querySelectorAll('.nav[data-nav="nft"]').forEach(a => a.addEventListener('click', () => {
   nftRellenarSelectores();
   if (!NFT_CACHE.length) nftCargar();
@@ -3215,8 +3315,20 @@ $('btn-confirm-send').onclick = async () => {
     setTimeout(() => { $('modal-send').hidden = true; }, 2500);
   } catch (e) {
     const m = cleanErr(e);
+    // Un envio EN CAMINO no ha fallado, asi que el dialogo se cierra solo igual que cuando
+    // sale bien. Dejarlo abierto con la contrasena y «Firmar y enviar» delante es poner el
+    // boton que manda el dinero POR SEGUNDA VEZ justo debajo de un aviso que la gente lee
+    // como un error. El aviso se repite detras, en la pantalla de wallets, para que el
+    // identificador del pacto siga a la vista cuando el dialogo ya no este.
+    if (esEnCamino(m)) {
+      msg($('send-msg'), m, 'warn');
+      msg($('wallet-msg'), m, 'warn');
+      loadBalances();
+      setTimeout(() => { $('modal-send').hidden = true; }, 6000);
+      return;
+    }
     msg($('send-msg'), isLedgerWait(m) ? '⏸ ' + m : m, isLedgerWait(m) ? 'warn' : 'err');
-    // Si ha fallado, vuelven: hay que poder reintentar o salir.
+    // Si ha fallado de verdad, vuelven: hay que poder reintentar o salir.
     $('send-btns').hidden = false;
     if ($('send-pass-row')) $('send-pass-row').hidden = false;
     // El boton se devuelve como estaba, respetando la casilla de comprobar el destinatario:
@@ -3573,7 +3685,157 @@ function pingActivity() { const now = Date.now(); if (now - _lastPing > 15000) {
 ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(ev => window.addEventListener(ev, pingActivity, { passive: true }));
 window.api.onLocked(() => { location.reload(); });
 // Progreso del envío cross-chain (dos pasos + SPV): se muestra en la barra de estado
-if (window.api.onXchainProgress) window.api.onXchainProgress((m) => msg($('wallet-msg'), m));
+// El progreso del cross-chain se pintaba siempre en la pantalla de wallets, que durante el
+// envío está TAPADA por el diálogo: el usuario no veía en qué paso iba ni el identificador
+// del pacto. Con el diálogo abierto se pinta dentro de él, que es donde está mirando.
+
+// ===================== WALLETCONNECT =====================
+// Conectar Koberlet a una web de fuera para firmar en ella. Lo importante de esta parte
+// NO es conectar: es la pantalla de firma. Una firma que se acepta sin entenderla es la
+// forma mas facil de perder dinero con un monedero que por lo demas funciona bien.
+
+let wcFirmaActual = null, wcSesionActual = null;
+
+function wcPintarSesiones(lista) {
+  const c = $('wc-sesiones');
+  if (!c) return;
+  if (!lista || !lista.length) { c.innerHTML = '<p class="muted xs">' + esc(t('wc_sin_sesiones')) + '</p>'; return; }
+  c.innerHTML = lista.map((s) => `
+    <div class="row-between" style="margin-top:8px">
+      <div><b>${esc(s.nombre)}</b><div class="muted xs mono">${esc(s.url)}</div></div>
+      <button class="tiny ghost" data-wc-cerrar="${esc(s.topic)}">${esc(t('wc_desconectar'))}</button>
+    </div>`).join('');
+  c.querySelectorAll('[data-wc-cerrar]').forEach((b) => {
+    b.onclick = async () => {
+      try { const r = await window.api.wcDesconectar(b.dataset.wcCerrar); wcPintarSesiones(r.sesiones); }
+      catch (e) { msg($('wc-msg'), cleanErr(e), 'err'); }
+    };
+  });
+}
+
+async function wcRefrescar() {
+  try { const r = await window.api.wcEstado(); wcPintarSesiones(r.sesiones); }
+  catch (_) { /* bóveda cerrada: no hay nada que enseñar */ }
+}
+
+if ($('wc-conectar')) {
+  $('wc-conectar').onclick = async () => {
+    const uri = ($('wc-uri').value || '').trim();
+    if (!uri) return msg($('wc-msg'), t('wc_falta_uri'), 'err');
+    msg($('wc-msg'), t('wc_conectando'));
+    try {
+      await window.api.wcEmparejar(uri);
+      $('wc-uri').value = '';
+      msg($('wc-msg'), t('wc_esperando'), 'warn');
+    } catch (e) {
+      // WC_URI_MALA es lo que se lleva casi todas las veces: se pega otra cosa.
+      msg($('wc-msg'), /WC_URI_MALA/.test(String(e.message || e)) ? t('wc_uri_mala') : cleanErr(e), 'err');
+    }
+  };
+}
+
+// Una web pide conectarse.
+if (window.api.onWcPropuesta) window.api.onWcPropuesta(async (p) => {
+  wcSesionActual = p;
+  $('wc-s-quien').innerHTML = `<b>${esc(p.nombre)}</b><div class="mono xs">${esc(p.url)}</div>`;
+  $('wc-s-pide').textContent = t('wc_s_pide') + ' ' + (p.metodos || []).join(', ');
+  // Con que cuenta se conecta lo eliges TU. Las webs se quedan con la primera que les
+  // mandamos, asi que sin esto te conectaban con la que hubiera caido primero en la
+  // lista -y te decian que tu cuenta no existe porque miraban otra distinta-.
+  try {
+    const v = await window.api.walletList();
+    const kda = (v.wallets || []).filter((w) => w.hasKda && w.shown);
+    $('wc-s-wallet').innerHTML = kda.map((w) =>
+      `<option value="${esc(w.id)}">${esc(w.label)} — ${esc(String(w.kdaAccount || '').slice(0, 18))}…</option>`).join('');
+  } catch (_) { $('wc-s-wallet').innerHTML = ''; }
+  msg($('wc-s-msg'), '');
+  $('modal-wc-sesion').hidden = false;
+});
+
+if ($('wc-s-ok')) $('wc-s-ok').onclick = async () => {
+  if (!wcSesionActual) return;
+  try {
+    const r = await window.api.wcAprobarSesion(wcSesionActual.id, $('wc-s-wallet').value || null);
+    $('modal-wc-sesion').hidden = true; wcSesionActual = null;
+    wcPintarSesiones(r.sesiones);
+    msg($('wc-msg'), t('wc_conectado'), 'ok');
+  } catch (e) { msg($('wc-s-msg'), cleanErr(e), 'err'); }
+};
+if ($('wc-s-no')) $('wc-s-no').onclick = async () => {
+  if (!wcSesionActual) return;
+  try { await window.api.wcRechazarSesion(wcSesionActual.id); } catch (_) {}
+  $('modal-wc-sesion').hidden = true; wcSesionActual = null;
+};
+
+// Lo que se enseña de un comando. Se pinta TODO lo que se va a firmar; si el comando no
+// se entiende se dice a las claras y se enseña en crudo, porque «no lo entiendo» es
+// informacion valiosa para quien tiene que decidir, y adornarlo seria mentir.
+function wcDetalle(c) {
+  if (!c.legible) {
+    return `<div class="card" style="border-color:var(--mal)">
+      <b>${esc(t('wc_f_ilegible'))}</b>
+      <pre class="mono xs" style="white-space:pre-wrap">${esc(c.crudo || '')}</pre></div>`;
+  }
+  const permisos = [];
+  for (const f of (c.firmantes || [])) {
+    for (const p of (f.permisos || [])) {
+      // coin.TRANSFER es el permiso que mueve dinero: se saca aparte y en grande, con
+      // cuanto y a quien, porque es el unico numero que de verdad hay que mirar.
+      const args = (p.args || []).map((a) => (a && typeof a === 'object' && a.decimal !== undefined) ? a.decimal : a);
+      permisos.push({ nombre: p.nombre, args, mueveDinero: /\.TRANSFER/i.test(p.nombre) });
+    }
+  }
+  const dinero = permisos.filter((p) => p.mueveDinero);
+  const resto = permisos.filter((p) => !p.mueveDinero);
+  return `
+    ${dinero.map((p) => `<div class="card" style="border-color:var(--aviso)">
+        <b>${esc(t('wc_f_mueve'))} ${esc(String(p.args[2] !== undefined ? p.args[2] : '?'))} KDA</b>
+        <div class="xs">${esc(t('wc_f_de'))} <span class="mono">${esc(String(p.args[0] || ''))}</span></div>
+        <div class="xs">${esc(t('wc_f_a'))} <span class="mono">${esc(String(p.args[1] || ''))}</span></div>
+      </div>`).join('')}
+    <div class="card">
+      <div class="xs"><b>${esc(t('wc_f_hace'))}</b></div>
+      <pre class="mono xs" style="white-space:pre-wrap">${esc(c.codigo || '')}</pre>
+      <div class="xs">${esc(t('wc_f_red'))} ${esc(c.red)} · chain ${esc(c.chain)}</div>
+      <div class="xs">${esc(t('wc_f_gas'))} ${esc(String(c.gasMax))} KDA</div>
+      ${resto.length ? `<div class="xs muted">${esc(t('wc_f_otros'))} ${esc(resto.map((p) => p.nombre).join(', '))}</div>` : ''}
+    </div>`;
+}
+
+if (window.api.onWcFirma) window.api.onWcFirma((f) => {
+  wcFirmaActual = f;
+  $('wc-f-quien').innerHTML = `<b>${esc(f.nombre)}</b><div class="mono xs">${esc(f.url)}</div>`;
+  $('wc-f-detalle').innerHTML = (f.comandos || []).map(wcDetalle).join('');
+  $('wc-f-pass').value = ''; msg($('wc-f-msg'), '');
+  $('wc-f-btns').hidden = false; $('wc-f-pass-row').hidden = false;
+  $('modal-wc-firma').hidden = false;
+});
+
+if ($('wc-f-ok')) $('wc-f-ok').onclick = async () => {
+  if (!wcFirmaActual) return;
+  const b = $('wc-f-ok'); b.disabled = true;
+  msg($('wc-f-msg'), t('signing'));
+  try {
+    await window.api.wcFirmar(wcFirmaActual.id, $('wc-f-pass').value);
+    msg($('wc-f-msg'), '✅ ' + t('wc_f_firmado'), 'ok');
+    wcFirmaActual = null;
+    setTimeout(() => { $('modal-wc-firma').hidden = true; }, 1800);
+  } catch (e) { msg($('wc-f-msg'), cleanErr(e), 'err'); }
+  finally { b.disabled = false; }
+};
+if ($('wc-f-no')) $('wc-f-no').onclick = async () => {
+  if (!wcFirmaActual) return;
+  try { await window.api.wcRechazarFirma(wcFirmaActual.id); } catch (_) {}
+  wcFirmaActual = null;
+  $('modal-wc-firma').hidden = true;
+};
+
+if (window.api.onWcCerrada) window.api.onWcCerrada(() => wcRefrescar());
+
+if (window.api.onXchainProgress) window.api.onXchainProgress((m) => {
+  const dlg = $('modal-send');
+  msg(dlg && !dlg.hidden ? $('send-msg') : $('wallet-msg'), textoXchain(m));
+});
 
 boot();
 

@@ -13,6 +13,10 @@ const eth = require('./lib/eth');
 const nodo = require('./lib/evmnodo');
 const kdanodo = require('./lib/kdanodo');   // elige el nodo de Kadena midiendo latencia y frescura
 const wallets = require('./lib/wallets');
+// WalletConnect se carga cuando se usa, no al arrancar: si un dia el paquete viajara sin
+// esa dependencia, lo que se queda sin funcionar es WalletConnect y no el monedero entero.
+let _wc = null;
+const walletconnect = new Proxy({}, { get: (_t, k) => { if (!_wc) _wc = require('./lib/walletconnect'); return _wc[k]; } });
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
 const dca = require('./lib/dca');
@@ -1312,6 +1316,174 @@ ipcMain.handle('bridge:comprobar', async (_e, { id }) => {
   if (r === true) { marcarEntregado(h); return { estado: 'entregado' }; }
   if (r === false) return { estado: 'pendiente' };
   throw new Error('No se ha podido preguntar al nodo de destino. Prueba en un momento.');
+});
+
+
+// ===================== WALLETCONNECT (dApps de fuera) =====================
+//
+// Koberlet como firmador de paginas web: la dApp manda un comando y aqui se decide.
+// Tres reglas que NO se tocan:
+//   1. de aqui no sale una firma que el usuario no haya visto desglosada;
+//   2. solo se firma con claves de ESTA boveda, y hay que reescribir la contrasena,
+//      como en cualquier otro envio;
+//   3. el nombre y la direccion que enseña la dApp los declara ella misma: son una
+//      pista, no una prueba. Por eso existe la lista de sitios de confianza, y por eso
+//      lo que manda es el desglose del comando, no quien dice ser quien lo pide.
+//
+// El `projectId` va en el codigo y no en la config del usuario (modelo Alex #4): no es
+// un secreto -viaja en el cliente de todos los monederos- pero tampoco es algo que el
+// renderer deba poder cambiar para mandar el trafico a otro sitio.
+const WC_PROJECT_ID = 'b0e3e11cc9ca4e31921e2ff7228a0f44';
+
+// Peticiones de firma a la espera de que una persona diga que si. id -> peticion.
+const wcPendientes = new Map();
+
+function wcAvisar(canal, datos) {
+  for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send(canal, datos); } catch (_) {} }
+}
+
+// Desmenuza el comando para que la ventana pueda enseñarlo. Si algo no se entiende se
+// dice que no se entiende: NUNCA se adorna un comando ilegible con un resumen bonito,
+// que es justo como se cuela una firma que nadie ha leido de verdad.
+function wcExplicar(cmdStr) {
+  try {
+    const j = JSON.parse(cmdStr);
+    const exec = (j.payload && j.payload.exec) || {};
+    const cont = (j.payload && j.payload.cont) || null;
+    const firmantes = (j.signers || []).map((s) => ({
+      pubKey: String(s.pubKey || ''),
+      permisos: (s.clist || []).map((c) => ({ nombre: String(c.name || ''), args: c.args || [] }))
+    }));
+    return {
+      legible: true,
+      red: String(j.networkId || ''),
+      chain: String((j.meta && j.meta.chainId) || ''),
+      pagaGas: String((j.meta && j.meta.sender) || ''),
+      gasLimite: (j.meta && j.meta.gasLimit) || 0,
+      gasPrecio: (j.meta && j.meta.gasPrice) || 0,
+      // Coste maximo del gas, en KDA, ya calculado: que cada uno multiplique en su
+      // cabeza dos numeros raros es como no decirselo.
+      gasMax: Number(((j.meta && j.meta.gasLimit) || 0) * ((j.meta && j.meta.gasPrice) || 0)),
+      codigo: String(exec.code || (cont ? 'continuación de un pacto (' + cont.pactId + ')' : '')),
+      datos: exec.data || (cont && cont.data) || {},
+      firmantes
+    };
+  } catch (e) {
+    return { legible: false, error: String(e.message || e), crudo: String(cmdStr).slice(0, 2000) };
+  }
+}
+
+// Arranca el transporte. Se llama solo al desbloquear la boveda: sin boveda abierta no
+// hay nada que firmar, y tener el socket abierto de mas es superficie para nada.
+let wcArrancado = false;
+async function wcArrancar() {
+  if (wcArrancado) return;
+  await walletconnect.arrancar({
+    projectId: WC_PROJECT_ID,
+    alProponer: (p) => wcAvisar('wc:propuesta', p),
+    alPedirFirma: (f) => {
+      // Se guarda entera aqui; a la ventana va lo explicado, no el comando crudo.
+      wcPendientes.set(String(f.id), f);
+      wcAvisar('wc:firma', {
+        id: f.id, topic: f.topic, nombre: f.nombre, url: f.url,
+        comandos: f.comandos.map((c) => wcExplicar(c.cmd))
+      });
+    },
+    alCerrar: (topic) => wcAvisar('wc:cerrada', { topic })
+  });
+  wcArrancado = true;
+}
+
+ipcMain.handle('wc:estado', async () => {
+  if (!unlocked) throw new Error('bloqueado');
+  await wcArrancar();
+  return { arrancado: wcArrancado, sesiones: walletconnect.sesiones() };
+});
+
+ipcMain.handle('wc:emparejar', async (_e, { uri }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  await wcArrancar();
+  await walletconnect.emparejar(uri);
+  return { ok: true };
+});
+
+// Aprobar una sesion NO firma nada: solo enseña que cuentas hay. Aun asi se limita a
+// las wallets visibles con cuenta KDA, para no regalar de golpe las que el usuario
+// tiene escondidas de la lista.
+ipcMain.handle('wc:aprobar-sesion', async (_e, { id, walletId }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const conKda = shownWallets().filter((w) => w.kda && w.kda.public);
+  if (!conKda.length) throw new Error('No hay ninguna cuenta KDA que ofrecer.');
+  // EL ORDEN IMPORTA, y no es un detalle: las webs se quedan con la PRIMERA cuenta de
+  // la lista (medido en play.smartpacts.io, que hace `accounts[0]`). Mandarlas sin
+  // orden hacía que te conectara con una cartera vacía y la página dijera que tu
+  // cuenta no existe. La elegida va delante; las demás siguen ofreciéndose por si la
+  // web sabe elegir.
+  const elegida = conKda.find((w) => w.id === walletId) || conKda[0];
+  const claves = [elegida, ...conKda.filter((w) => w.id !== elegida.id)].map((w) => w.kda.public);
+  await walletconnect.aprobarSesion(id, claves);
+  return { sesiones: walletconnect.sesiones() };
+});
+
+ipcMain.handle('wc:rechazar-sesion', async (_e, { id }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  await walletconnect.rechazarSesion(id);
+  return { ok: true };
+});
+
+ipcMain.handle('wc:desconectar', async (_e, { topic }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  await walletconnect.desconectar(topic);
+  return { sesiones: walletconnect.sesiones() };
+});
+
+ipcMain.handle('wc:rechazar-firma', async (_e, { id }) => {
+  const f = wcPendientes.get(String(id));
+  if (!f) throw new Error('Esa petición ya no está.');
+  wcPendientes.delete(String(id));
+  await walletconnect.fallar(f.topic, f.id, 'rechazado en el monedero');
+  return { ok: true };
+});
+
+// FIRMAR. Aqui es donde se gana o se pierde la partida, asi que va despacio:
+//   - contrasena de la boveda otra vez, como en cualquier envio;
+//   - cada comando se firma con la clave que la dApp pide, y esa clave tiene que ser
+//     de una wallet de esta boveda; si pide una que no tenemos, se dice y no se firma;
+//   - una wallet de Ledger no puede firmar por aqui: su clave no esta en la boveda.
+ipcMain.handle('wc:firmar', async (_e, { id, passphrase }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const f = wcPendientes.get(String(id));
+  if (!f) throw new Error('Esa petición ya no está.');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+
+  const respuestas = [];
+  for (const c of f.comandos) {
+    const cmdStr = String(c.cmd || '');
+    let j;
+    try { j = JSON.parse(cmdStr); } catch (_) { throw new Error('La página manda un comando que no se entiende; no se firma.'); }
+    // A quien hay que firmarle: lo dice el propio comando en sus `signers`.
+    const pedidas = (j.signers || []).map((s) => String(s.pubKey || '').toLowerCase()).filter(Boolean);
+    if (!pedidas.length) throw new Error('La página no dice con qué clave hay que firmar; no se firma.');
+    const sigs = [];
+    let hash = null;
+    for (const pub of pedidas) {
+      const w = unlocked.data.wallets.find((x) => x.kda && String(x.kda.public).toLowerCase() === pub);
+      if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
+      if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
+      const r = kda.firmarCmd(cmdStr, w.kda.secret);
+      sigs.push({ pubKey: pub, sig: r.sig });
+      hash = r.hash;
+    }
+    respuestas.push({
+      commandSigData: { cmd: cmdStr, sigs },
+      outcome: { result: 'success', hash }
+    });
+  }
+
+  wcPendientes.delete(String(id));
+  await walletconnect.responder(f.topic, f.id, { responses: respuestas });
+  logHistory({ type: 'wc-firma', wallet: '-', desc: 'Firma para ' + f.nombre + ' (' + f.url + ')', to: f.url, id: String(f.id) });
+  return { ok: true };
 });
 
 ipcMain.handle('send:kda-xchain', async (_e, { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }) => {

@@ -60,6 +60,13 @@ async function main() {
   try { require(path.join(raiz, 'node_modules', 'ethers')); ok('ethers'); }
   catch (e) { mal('ethers', e); }
 
+  // WalletConnect. Se comprueba aparte y a proposito: `main.js` lo pide al arrancar, asi
+  // que un paquete sin esta dependencia NO ABRE LA APP -no es que falle WalletConnect,
+  // es que no arranca nada-. Es justo el tipo de fallo que el sha256 no ve: el zip llega
+  // entero y firmado, pero sin una carpeta dentro.
+  try { require(path.join(raiz, 'node_modules', '@reown', 'walletkit')); ok('@reown/walletkit (WalletConnect)'); }
+  catch (e) { mal('@reown/walletkit (WalletConnect)', e); }
+
   // 3. Los binarios nativos del Ledger, que un empaquetado descuidado se deja fuera.
   const hid = path.join(raiz, 'node_modules', 'node-hid', 'build', 'Release', 'HID.node');
   fs.existsSync(hid) ? ok('binario nativo del Ledger (HID.node)') : mal('binario nativo del Ledger', 'falta HID.node');

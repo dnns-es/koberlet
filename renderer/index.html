@@ -456,6 +456,14 @@
       <section id="view-ajustes" class="view" hidden>
         <h3 data-i18n="h_ajustes">Ajustes</h3>
         <div class="card">
+          <div class="row-between"><b data-i18n="wc_titulo">Conectar con una web (WalletConnect)</b></div>
+          <p class="muted xs" data-i18n="wc_ayuda">Pega aquí el enlace de conexión que te da la web (el botón que suele poner «Copy link» junto al código QR). Koberlet no firmará nada sin enseñártelo antes.</p>
+          <input id="wc-uri" type="text" placeholder="wc:..." spellcheck="false" />
+          <div class="btnrow2"><button id="wc-conectar" class="primary" data-i18n="wc_conectar">Conectar</button></div>
+          <div id="wc-msg" class="msg"></div>
+          <div id="wc-sesiones"></div>
+        </div>
+        <div class="card">
           <label data-i18n="set_fiat">Moneda de referencia</label>
           <select id="set-fiat">
             <option value="eur">EUR (€) — Euro</option>
@@ -875,6 +883,32 @@
       <div id="exp-out" hidden><label data-i18n="tab_pk">Clave privada</label>
         <div class="addr"><span id="exp-secret" class="mono"></span><button class="copy" data-copy="exp-secret" data-i18n="copy">copiar</button></div></div>
       <div id="exp-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: una web pide conectarse -->
+  <div id="modal-wc-sesion" class="modal" hidden>
+    <div class="card narrow">
+      <h2 data-i18n="wc_s_titulo">Una web quiere conectarse</h2>
+      <div class="sendsum" id="wc-s-quien"></div>
+      <p class="muted xs" data-i18n="wc_s_aviso">El nombre y la dirección los dice la propia web, así que no son una prueba de quién es. Conecta solo si acabas de pedirlo tú en esa página. Conectar NO firma nada ni mueve dinero: solo le enseña tus cuentas.</p>
+      <label data-i18n="wc_s_cuenta">Conectar con esta cuenta</label>
+      <select id="wc-s-wallet"></select>
+      <div id="wc-s-pide" class="muted xs"></div>
+      <div class="btnrow2"><button id="wc-s-ok" class="primary" data-i18n="wc_s_ok">Conectar</button><button id="wc-s-no" class="ghost" data-i18n="wc_s_no">Rechazar</button></div>
+      <div id="wc-s-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: una web pide una firma -->
+  <div id="modal-wc-firma" class="modal" hidden>
+    <div class="card narrow">
+      <h2 data-i18n="wc_f_titulo">Te piden firmar</h2>
+      <div class="sendsum" id="wc-f-quien"></div>
+      <div id="wc-f-detalle"></div>
+      <div id="wc-f-pass-row"><label data-i18n="lbl_vault_pass">Contraseña de la bóveda</label><input id="wc-f-pass" type="password" /></div>
+      <div class="btnrow2" id="wc-f-btns"><button id="wc-f-ok" class="primary" data-i18n="wc_f_ok">Firmar</button><button id="wc-f-no" class="ghost" data-i18n="wc_f_no">Rechazar</button></div>
+      <div id="wc-f-msg" class="msg"></div>
     </div>
   </div>
 
