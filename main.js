@@ -75,12 +75,9 @@ const DEFAULT_CONFIG = {
           { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null },
           // SPT (Smart Pacts, de Alex): fungible-v2 + fungible-xchain-v1, sin mint, 100.000 emitidos
           // de una vez. La venta directa (SPT-launch) vive en la chain 0, así que el saldo se mira ahí.
-          { module: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT', symbol: 'SPT', precision: 12, chain: 0, cg: null },
-          // Lo que compra el DCA (ksw-dca3). Solo viven en la chain 2 y solo se enseñan con
-          // saldo: la mayoria de cuentas no los tendra nunca y serian tres filas de ceros.
-          { module: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-ETH', symbol: 'kb-ETH', precision: 18, chain: 2, chains: [2], cg: 'ethereum', soloConSaldo: true },
-          { module: 'runonflux.flux', symbol: 'FLUX', precision: 8, chain: 2, chains: [2], cg: 'zelcash', soloConSaldo: true },
-          { module: 'n_582fed11af00dc626812cd7890bb88e72067f28c.bro', symbol: 'bro', precision: 12, chain: 2, chains: [2], cg: null, soloConSaldo: true }
+          { module: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT', symbol: 'SPT', precision: 12, chain: 0, cg: null }
+          // Ademas de estos, la tarjeta enseña cualquier token del Mercado (pools de la
+          // chain 2) en el que la cuenta tenga saldo: ver `saldosMercado` en el balance.
         ] },
       // El descubridor es el CATÁLOGO PÚBLICO de piezas de la tienda (sin `?cuenta=`):
       // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
@@ -859,6 +856,21 @@ ipcMain.handle('balances', async () => {
               if (def.soloConSaldo && !(t.amount > 0)) continue;
               tokens.push({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 });
             }
+          }
+          // Cualquier token que soporte el Mercado, solo si hay saldo (lo que compra el DCA,
+          // lo que se cambia en el Mercado...). Valorado al precio de su pool contra KDA.
+          // Si el mercado no se puede leer, la tarjeta sale igual sin estas filas.
+          if (net.fork) {
+            try {
+              const { m, cfg: dcfg } = await mercadoDex();
+              const ya = new Set(tokens.map(t => String(t.symbol).toLowerCase()));
+              const s = await dex.saldosMercado(dcfg, w.kda.account, m.tokens.map(t => t.modulo));
+              for (const t of m.tokens) {
+                const v = s[t.modulo];
+                if (!(v > 0) || ya.has(String(t.simbolo).toLowerCase())) continue;
+                tokens.push({ symbol: t.simbolo, amount: v, usd: v * t.precioKda * px('kadena') });
+              }
+            } catch (_) { /* sin mercado: solo las filas de siempre */ }
           }
           const usd = k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
