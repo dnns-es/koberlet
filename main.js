@@ -75,7 +75,12 @@ const DEFAULT_CONFIG = {
           { module: 'n_57fcd6f7b72e8949af51a8d6f17fe12cc7719d10.pco', symbol: 'PCO', precision: 12, chain: 0, cg: null },
           // SPT (Smart Pacts, de Alex): fungible-v2 + fungible-xchain-v1, sin mint, 100.000 emitidos
           // de una vez. La venta directa (SPT-launch) vive en la chain 0, así que el saldo se mira ahí.
-          { module: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT', symbol: 'SPT', precision: 12, chain: 0, cg: null }
+          { module: 'n_48867b242317a0216a67f8c7ca26696b5878e0e3.SPT', symbol: 'SPT', precision: 12, chain: 0, cg: null },
+          // Lo que compra el DCA (ksw-dca3). Solo viven en la chain 2 y solo se enseñan con
+          // saldo: la mayoria de cuentas no los tendra nunca y serian tres filas de ceros.
+          { module: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-ETH', symbol: 'kb-ETH', precision: 18, chain: 2, chains: [2], cg: 'ethereum', soloConSaldo: true },
+          { module: 'runonflux.flux', symbol: 'FLUX', precision: 8, chain: 2, chains: [2], cg: 'zelcash', soloConSaldo: true },
+          { module: 'n_582fed11af00dc626812cd7890bb88e72067f28c.bro', symbol: 'bro', precision: 12, chain: 2, chains: [2], cg: null, soloConSaldo: true }
         ] },
       // El descubridor es el CATÁLOGO PÚBLICO de piezas de la tienda (sin `?cuenta=`):
       // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
@@ -849,7 +854,11 @@ ipcMain.handle('balances', async () => {
           // (aunque 0) porque son una lista curada: así el usuario ve que están soportados.
           if (Array.isArray(net.tokens) && net.tokens.length) {
             const kt = await kda.getTokenBalances(w.kda.account, { node: net.node, networkId: net.networkId, tokens: net.tokens });
-            for (const t of kt) tokens.push({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 });
+            for (const t of kt) {
+              const def = net.tokens.find(x => x.symbol === t.symbol) || {};
+              if (def.soloConSaldo && !(t.amount > 0)) continue;
+              tokens.push({ symbol: t.symbol, amount: t.amount, usd: t.cg ? t.amount * px(t.cg) : 0 });
+            }
           }
           const usd = k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
