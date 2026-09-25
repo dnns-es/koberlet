@@ -16,6 +16,7 @@ const wallets = require('./lib/wallets');
 // WalletConnect se carga cuando se usa, no al arrancar: si un dia el paquete viajara sin
 // esa dependencia, lo que se queda sin funcionar es WalletConnect y no el monedero entero.
 let _wc = null;
+const { respuestaFirmada } = require('./lib/wc-comando');
 const walletconnect = new Proxy({}, { get: (_t, k) => { if (!_wc) _wc = require('./lib/walletconnect'); return _wc[k]; } });
 const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
@@ -1503,6 +1504,23 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase }) => {
   const f = wcPendientes.get(String(id));
   if (!f) throw new Error('Esa petición ya no está.');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+
+  // kadena_sign_v1: el comando lo monto el monedero (lib/wc-comando.js) y su PRIMER
+  // firmante es la cuenta de la sesion; los demas son `extraSigners` que firman en otra
+  // parte. Se firma solo el nuestro y se contesta con la forma de sign_v1 (`body`).
+  if (f.metodo === 'kadena_sign_v1') {
+    const cmdStr = String((f.comandos[0] || {}).cmd || '');
+    const j = JSON.parse(cmdStr);
+    const pub = String(((j.signers || [])[0] || {}).pubKey || '').toLowerCase();
+    const w = unlocked.data.wallets.find((x) => x.kda && String(x.kda.public).toLowerCase() === pub);
+    if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
+    if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
+    const r = kda.firmarCmd(cmdStr, w.kda.secret);
+    wcPendientes.delete(String(id));
+    await walletconnect.responder(f.topic, f.id, respuestaFirmada('kadena_sign_v1', [{ cmd: cmdStr, hash: r.hash, sig: r.sig, pubKey: pub }]));
+    logHistory({ type: 'wc-firma', wallet: w.label, desc: 'Firma para ' + f.nombre + ' (' + f.url + ')', to: f.url, id: String(f.id) });
+    return { ok: true };
+  }
 
   const respuestas = [];
   for (const c of f.comandos) {
