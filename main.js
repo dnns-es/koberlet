@@ -120,11 +120,17 @@ const DEFAULT_CONFIG = {
   dca: {
     red: 'fork',
     modulo: 'free.ksw-dca2',
+    // Los tokens `nuevo` (kb-ETH, FLUX, bro) solo existen en ksw-dca3, y siempre contra
+    // KDA. KDA <-> kb-USDC sigue en dca2, que es el que ya esta probado con dinero.
+    moduloNuevo: 'free.ksw-dca3',
     moduloOrdenes: 'free.ksw2',   // ordenes limite, para el resumen del Panel
-    gasolinera: 'free.ksw-gasolinera',   // paga el gas de las operaciones del DCA
+    gasolinera: 'free.ksw-gasolinera',   // paga el gas del DCA (solo dca2: dca3 no lo admite)
     tokens: {
       KDA: { modulo: 'coin', precision: 12, minCuota: 100 },
-      'kb-USDC': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-USDC', precision: 6, minCuota: 1 }
+      'kb-USDC': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-USDC', precision: 6, minCuota: 1 },
+      'kb-ETH': { modulo: 'n_e595727b657fbbb3b8e362a05a7bb8d12865c1ff.kb-ETH', precision: 18, minCuota: 0.0004, nuevo: true },
+      FLUX: { modulo: 'runonflux.flux', precision: 8, minCuota: 15, nuevo: true },
+      bro: { modulo: 'n_582fed11af00dc626812cd7890bb88e72067f28c.bro', precision: 12, minCuota: 0.0002, nuevo: true }
     },
     comision: 0.005,        // 0,5% del contrato por compra, ademas del 0,3% del pool
     web: 'https://koberlusw.dnns.es'   // para consultarlo desde el movil
@@ -519,12 +525,14 @@ ipcMain.handle('visor:cuenta', async (_e, { red, direccion } = {}) => {
   if (!net) throw new Error('No hay ninguna red de Kadena activa.');
   const cfgDcaVisor = { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain),
                         modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes };
-  const [saldo, tokens, planes, ordenes] = await Promise.all([
+  const [saldo, tokens, planes, planesNuevo, ordenes] = await Promise.all([
     kda.getBalance(direccion, { node: net.node, networkId: net.networkId, chains: c.kda.chains }).catch(() => ({ total: 0, perChain: {} })),
     kda.getTokenBalances(direccion, { node: net.node, networkId: net.networkId, tokens: net.tokens }).catch(() => []),
     dca.planesDe(cfgDcaVisor, direccion).catch(() => []),
+    dca.planesDe({ ...cfgDcaVisor, modulo: c.dca.moduloNuevo }, direccion).catch(() => []),
     dca.ordenesDe(cfgDcaVisor, direccion).catch(() => [])
   ]);
+  planes.push(...(planesNuevo || []));
   // Ultimos movimientos del indexador propio. Va aparte y con su catch: si kdaindex
   // esta caido o va detras del bloque, el resto de la ficha se ensena igual.
   let movs = [], crudos = [];
@@ -935,11 +943,27 @@ ipcMain.handle('send:kdatoken', async (_e, { passphrase, walletId, symbol, to, a
 
 // ---- DCA de KoberluSW ----
 // La red y el modulo salen del DEFAULT; el renderer solo elige wallet e importes.
-function cfgDca() {
+// Hay DOS contratos: dca2 (KDA <-> kb-USDC, con gasolinera) y dca3 (kb-ETH, FLUX y bro,
+// siempre contra KDA, y el gas lo paga el usuario porque la gasolinera solo admite dca2).
+// El renderer puede decir en cual esta un plan, pero solo se acepta uno de esos dos.
+function cfgDca(modulo) {
   const c = loadConfig();
   const net = c.kda.networks.find(n => n.key === c.dca.red) || c.kda.networks.find(n => n.fork);
   if (!net) throw new Error('La red del DCA no esta configurada.');
-  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: c.dca.modulo, moduloOrdenes: c.dca.moduloOrdenes, gasolinera: c.dca.gasolinera }, c, net };
+  const m = modulo || c.dca.modulo;
+  if (m !== c.dca.modulo && m !== c.dca.moduloNuevo) throw new Error('Contrato DCA desconocido.');
+  const nuevo = m === c.dca.moduloNuevo;
+  return { cfg: { node: net.node, networkId: net.networkId, chain: String(c.bridge.kda.chain), modulo: m,
+                  moduloOrdenes: c.dca.moduloOrdenes, gasolinera: nuevo ? null : c.dca.gasolinera }, c, net };
+}
+// Los planes de los dos contratos, cada uno marcado con el suyo.
+async function planesDcaDe(c, cfg, cuenta) {
+  const [viejos, nuevos] = await Promise.all([
+    dca.planesDe(cfg, cuenta).catch(() => []),
+    dca.planesDe({ ...cfg, modulo: c.dca.moduloNuevo, gasolinera: null }, cuenta).catch(() => [])
+  ]);
+  return (viejos || []).map(p => ({ ...p, modulo: c.dca.modulo }))
+    .concat((nuevos || []).map(p => ({ ...p, modulo: c.dca.moduloNuevo })));
 }
 // Precisiones por modulo, para el decimal canonico del topup.
 function precisionesDca(c) {
@@ -960,7 +984,7 @@ ipcMain.handle('dca:estado', async (_e, { walletId } = {}) => {
   const w = (unlocked && (unlocked.data.wallets.find(x => x.id === walletId) || active())) || null;
   const cuenta = w && w.kda ? w.kda.account : null;
   const [planes, ordenes, pausado] = await Promise.all([
-    cuenta ? dca.planesDe(cfg, cuenta).catch(() => []) : Promise.resolve([]),
+    cuenta ? planesDcaDe(c, cfg, cuenta) : Promise.resolve([]),
     cuenta ? dca.ordenesDe(cfg, cuenta).catch(() => []) : Promise.resolve([]),
     dca.pausado(cfg).catch(() => null)
   ]);
@@ -972,7 +996,7 @@ ipcMain.handle('dca:estado', async (_e, { walletId } = {}) => {
 // reparte aqui: asi no se pregunta a la cadena una vez por wallet.
 ipcMain.handle('dca:panel', async () => {
   if (!unlocked) return { filas: [] };
-  const { cfg } = cfgDca();
+  const { cfg, c } = cfgDca();
   const vistas = unlocked.data.wallets.filter(w => w.kda && (unlocked.data.shown || []).includes(w.id));
   const wallets = vistas.length ? vistas : unlocked.data.wallets.filter(w => w.kda);
   if (!wallets.length) return { filas: [] };
@@ -981,8 +1005,7 @@ ipcMain.handle('dca:panel', async () => {
   try { abiertas = await dca.todasLasOrdenes(cfg); } catch (_) {}
   const filas = [];
   for (const w of wallets) {
-    let planes = [];
-    try { planes = await dca.planesDe(cfg, w.kda.account); } catch (_) {}
+    const planes = await planesDcaDe(c, cfg, w.kda.account);
     const ords = abiertas.filter(o => String(o.owner) === String(w.kda.account));
     const vivos = (planes || []).filter(p => p.status !== 'closed');
     if (!vivos.length && !ords.length) continue;
@@ -999,26 +1022,30 @@ ipcMain.handle('dca:panel', async () => {
 ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, cuota, periodo, slippage } = {}) => {
   const w = walletDca(walletId);
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
-  const { cfg, c } = cfgDca();
-  const tIn = c.dca.tokens[de], tOut = c.dca.tokens[a];
+  const c0 = loadConfig();
+  const tIn = c0.dca.tokens[de], tOut = c0.dca.tokens[a];
   if (!tIn || !tOut) throw new Error('Ese par no esta soportado por el DCA.');
+  // El contrato lo decide el par, nunca el renderer.
+  const nuevo = !!(tIn.nuevo || tOut.nuevo);
+  if (nuevo && tIn.modulo !== 'coin' && tOut.modulo !== 'coin') throw new Error('Con kb-ETH, FLUX o bro, el otro lado tiene que ser KDA.');
+  const { cfg } = cfgDca(nuevo ? c0.dca.moduloNuevo : c0.dca.modulo);
   const rc = await dca.crearPlan(cfg, { owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret,
-    tokenIn: tIn.modulo, tokenOut: tOut.modulo, precIn: tIn.precision,
+    tokenIn: tIn.modulo, tokenOut: tOut.modulo, precIn: tIn.precision, minCuota: tIn.minCuota, simIn: de,
     deposito, cuota, periodo, slippage });
   return { ...rc, chain: cfg.chain };   // el renderer necesita la chain para sondear
 });
-ipcMain.handle('dca:recargar', async (_e, { passphrase, walletId, id, cantidad } = {}) => {
+ipcMain.handle('dca:recargar', async (_e, { passphrase, walletId, id, cantidad, modulo } = {}) => {
   const w = walletDca(walletId);
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
-  const { cfg, c } = cfgDca();
+  const { cfg, c } = cfgDca(modulo);
   const rr = await dca.recargar(cfg, { id, cantidad, owner: w.kda.account, publicHex: w.kda.public,
     secretHex: w.kda.secret, precisiones: precisionesDca(c) });
   return { ...rr, chain: cfg.chain };
 });
-ipcMain.handle('dca:accion', async (_e, { passphrase, walletId, id, que } = {}) => {
+ipcMain.handle('dca:accion', async (_e, { passphrase, walletId, id, que, modulo } = {}) => {
   const w = walletDca(walletId);
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
-  const { cfg } = cfgDca();
+  const { cfg } = cfgDca(modulo);
   const ra = await dca.accion(cfg, { id, que, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
   return { ...ra, chain: cfg.chain };
 });

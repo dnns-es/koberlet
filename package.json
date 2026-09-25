@@ -1,14 +1,14 @@
 {
   "name": "koberlet",
   "productName": "Koberlet",
-  "version": "2.12.0",
+  "version": "2.13.0",
   "description": "Koberlet — monedero de escritorio multi-cadena (Kadena + EVM) de DNNS",
   "main": "main.js",
   "author": "DNNS",
   "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
-    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js && node test/nodo-evm.test.js && node test/nodo-kda.test.js && node test/config-nodo.test.js && node test/puente-seguimiento.test.js && node test/ambito-main.test.js && node test/comision-mercado.test.js && node test/cobro-qr.test.js && node test/moneda.test.js && node test/gasolinera-dex.test.js && node test/inverso-dex.test.js && node test/xchain-idiomas.test.js && node test/textos-pantalla.test.js",
+    "test": "node test/cuentas.test.js && node test/direcciones.test.js && node test/ordenes.test.js && node test/nodo-evm.test.js && node test/nodo-kda.test.js && node test/config-nodo.test.js && node test/puente-seguimiento.test.js && node test/ambito-main.test.js && node test/comision-mercado.test.js && node test/cobro-qr.test.js && node test/moneda.test.js && node test/gasolinera-dex.test.js && node test/inverso-dex.test.js && node test/xchain-idiomas.test.js && node test/textos-pantalla.test.js && node test/dca-tokens.test.js",
     "build:mac": "./build-mac.sh",
     "dmg:mac": "./package-dmg.sh",
     "dist:mac": "./build-mac.sh && ./package-dmg.sh",

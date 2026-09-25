@@ -196,6 +196,7 @@ summary{cursor:pointer;font-weight:600;color:var(--kda-d)}
 .dir-bal b{color:var(--fg)}
 .dir-row .invert{margin-top:2px}
 .dir-chip{flex:1;text-align:center;background:#f1f5ee;border:1px solid var(--line);border-radius:10px;padding:10px;font-weight:700}
+.dir-chip .dca-tok{width:100%;margin:0;padding:0 4px;border:0;background:transparent;color:inherit;font:inherit;font-weight:700;text-align:center;text-align-last:center;cursor:pointer}
 .invert{background:var(--kda);color:#08210a;border-radius:50%;width:38px;height:38px;font-size:16px;flex-shrink:0}
 #br-code{display:block;white-space:pre-wrap}
 .result{background:var(--carbon);color:#cfe8c2;border-radius:10px;padding:12px;font-family:Consolas,monospace;font-size:12px;max-height:280px;overflow:auto;white-space:pre-wrap}

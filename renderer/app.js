@@ -2185,19 +2185,36 @@ try { window.api.onEvmSwapProgress && window.api.onEvmSwapProgress((m) => msg($(
 // de KoberluSW pagando su propio gas: aqui no se ejecuta ninguna compra.
 let DCA = null;
 let DCA_DIR = { de: 'kb-USDC', a: 'KDA' };   // direccion del plan nuevo
+// Un lado es SIEMPRE KDA; el otro se elige. kb-USDC va al contrato dca2 y kb-ETH, FLUX y
+// bro al dca3, pero eso lo decide main por el par: aqui solo se elige el token.
+const DCA_OTROS = ['kb-USDC', 'kb-ETH', 'FLUX', 'bro'];
 const DCA_PERIODOS = [[300, '5 min'], [900, '15 min'], [3600, '1 h'], [21600, '6 h'], [43200, '12 h'], [86400, '1 día'], [604800, '1 semana'], [2592000, '30 días']];
 const DCA_SLIPS = [[0.005, '0,5%'], [0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0.1, '10%']];
 
 // Pact devuelve los decimales como {decimal:"1.0"} y los enteros como {int:3}.
 function dcaNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
 function dcaPeriodoTxt(seg) { const f = DCA_PERIODOS.find(x => x[0] === Number(seg)); return f ? f[1] : Math.round(Number(seg) / 60) + ' min'; }
-function dcaSimbolo(mod) { return mod === 'coin' ? 'KDA' : 'kb-USDC'; }
+function dcaSimbolo(mod) {
+  if (mod === 'coin') return 'KDA';
+  const e = Object.entries((DCA && DCA.tokens) || {}).find(([, v]) => v.modulo === mod);
+  return e ? e[0] : String(mod).split('.').pop();
+}
 
+// El lado que no es KDA lleva un desplegable con los tokens admitidos.
+function dcaChip(el, sim) {
+  if (sim === 'KDA') { el.textContent = 'KDA'; return; }
+  el.innerHTML = `<select id="dca-tok" class="dca-tok">${DCA_OTROS.map(s => `<option value="${s}"${s === sim ? ' selected' : ''}>${s}</option>`).join('')}</select>`;
+  $('dca-tok').onchange = () => {
+    const s = $('dca-tok').value;
+    DCA_DIR = DCA_DIR.de === 'KDA' ? { de: 'KDA', a: s } : { de: s, a: 'KDA' };
+    dcaPintarDireccion(); dcaResumen();
+  };
+}
 
 function dcaPintarDireccion() {
   if (!$('dca-de')) return;
-  $('dca-de').textContent = DCA_DIR.de;
-  $('dca-a').textContent = DCA_DIR.a;
+  dcaChip($('dca-de'), DCA_DIR.de);
+  dcaChip($('dca-a'), DCA_DIR.a);
   // Saldo de la wallet elegida, para no tener que ir al Panel a mirarlo. Sale de los
   // saldos ya cacheados (window._bal), asi que no cuesta una lectura extra a la cadena.
   const wid = $('dca-wallet') ? $('dca-wallet').value : '';
@@ -2474,7 +2491,7 @@ function dcaRecargar(i) {
   if (!cant || !(Number(cant) > 0)) return;
   askSend(tr('dca_conf_top', { a: esc(cant), s: esc(sim), id: esc(p.id) }),
     async (pass) => {
-      const r = await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant });
+      const r = await window.api.dcaRecargar({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, cantidad: cant, modulo: p.modulo });
       dcaConfirmar(r, $('dca-msg'));
       return t('dca_recargado');
     });
@@ -2484,7 +2501,7 @@ function dcaAccion(i, que) {
   const p = DCA && DCA.planes[i]; if (!p) return;
   askSend(tr('dca_conf_' + que, { id: esc(p.id), b: dcaNum(p.balance), s: dcaSimbolo(p.tokenIn) }),
     async (pass) => {
-      const r = await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que });
+      const r = await window.api.dcaAccion({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, que: que, modulo: p.modulo });
       dcaConfirmar(r, $('dca-msg'));
       return t('dca_hecho');
     });
