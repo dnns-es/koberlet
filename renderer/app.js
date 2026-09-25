@@ -3037,7 +3037,10 @@ async function applyView(v) {
   loadBalances();
 }
 
-function assetRow(sym, amt, usd, dec) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${fmt(amt, dec == null ? 4 : dec)}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">${dinero(usd || 0)}</span></div>`; }
+// Cuatro decimales dejan en 0,0000 un saldo de 0,00175 kb-ETH (vale 3 $). Por debajo de
+// 1 se enseñan 8, como en el Mercado.
+const decAsset = (amt) => Math.abs(Number(amt)) > 0 && Math.abs(Number(amt)) < 1 ? 8 : 4;
+function assetRow(sym, amt, usd, dec) { return `<div class="asset"><span class="a-sym">${esc(sym)}</span><span class="a-amt">${fmt(amt, dec == null ? decAsset(amt) : dec)}</span><span class="a-chg">${chgHtml(sym)}</span><span class="a-usd">${dinero(usd || 0)}</span></div>`; }
 // Una tarjeta = una red de una wallet visible. Colapsada por defecto: solo red + total. Clic en el título despliega tokens/chains.
 function cardBlock(bl, qr) {
   let rows, extra = '', sendForm;
