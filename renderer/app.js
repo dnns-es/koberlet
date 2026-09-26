@@ -6,7 +6,10 @@ function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textCont
 // L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // Limpia el prefijo técnico de Electron ("Error invoking remote method 'x': Error: …") de los errores IPC.
-const cleanErr = (e) => textoXchain(String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, ''));
+const cleanErr = (e) => errIdioma(textoXchain(String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '')));
+// Los errores de main/lib vienen en espanol. Con la ventana en ingles se traducen con la
+// tabla de renderer/errores-en.js; en espanol pasan tal cual, sin tocar ni una letra.
+const errIdioma = (m) => (LNG === 'en' && typeof traducirError === 'function') ? traducirError(m) : String(m);
 // El cross-chain (lib/kda.js) manda CODIGO|dato|dato en vez de una frase hecha: la lib no
 // sabe en qué idioma está la ventana y estos avisos salían en español a todo el mundo.
 // Aquí se arman con el idioma puesto. Lo que no sea un código conocido pasa tal cual.
@@ -38,7 +41,8 @@ function textoXchain(m) {
   return tr(def[0], datos);
 }
 // Estados del Ledger que NO son fallos sino situaciones reintenables (PIN, sin conectar, app cerrada).
-const isLedgerWait = (m) => /Ledger está bloqueado|introduce el PIN|No veo ningún Ledger|Abre la app correcta|Blind signing/i.test(m);
+// Mira el texto ya traducido, asi que lleva tambien las frases inglesas de errores-en.js.
+const isLedgerWait = (m) => /Ledger está bloqueado|introduce el PIN|No veo ningún Ledger|Abre la app correcta|Ledger is locked|enter the PIN|No Ledger found|Open the right app|Blind signing/i.test(m);
 // Cross-chain que sigue su curso y todavía no consta. Lo marca lib/kda.js con ⏳ al principio.
 // Pintarlo de rojo como un error era lo que hacía que la gente reenviara el dinero.
 const esEnCamino = (m) => /^⏳/.test(m);
@@ -1206,7 +1210,7 @@ function setupNotes(u) {
 async function doUpdate(u, statusEl) {
   if (u && u.canAuto) {
     if (statusEl) statusEl.textContent = t('upd_applying');
-    try { await window.api.updateApply(); } catch (e) { if (statusEl) statusEl.textContent = t('upd_err') + e.message; }
+    try { await window.api.updateApply(); } catch (e) { if (statusEl) statusEl.textContent = t('upd_err') + errIdioma(e.message); }
   } else if (u && (u.urlPagina || u.url)) {
     // Sin auto-update (macOS): a la pagina de descargas, que ofrece el .dmg. El .url es el
     // zip de Windows, y mandar a un Mac a bajarse un zip de Windows es peor que no decir nada.
@@ -1226,7 +1230,7 @@ $('btn-check-upd').onclick = async () => {
     }
     else if (u.latest) msg($('upd-status'), t('upd_latest').replace('{v}', u.current), 'ok');
     else msg($('upd-status'), t('upd_nocheck'), 'err');
-  } catch (e) { msg($('upd-status'), e.message, 'err'); }
+  } catch (e) { msg($('upd-status'), errIdioma(e.message), 'err'); }
 };
 $('btn-setup').onclick = async () => {
   const p = $('setup-pass').value, p2 = $('setup-pass2').value;
@@ -1234,7 +1238,7 @@ $('btn-setup').onclick = async () => {
   if (p !== p2) return msg($('setup-msg'), t('err_pass_match'), 'err');
   const { kind, net } = parseNet($('setup-net').value);
   try { msg($('setup-msg'), t('creating_vault')); const r = await window.api.setup(p, kind, net); $('setup-seed').textContent = r.mnemonic; $('setup-step1').hidden = true; $('setup-step2').hidden = false; }
-  catch (e) { msg($('setup-msg'), 'Error: ' + e.message, 'err'); }
+  catch (e) { msg($('setup-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 $('btn-setup-done').onclick = () => screen('scr-unlock');
 $('btn-unlock').onclick = async () => { try { const r = await window.api.unlock($('unlock-pass').value); enter(r.view); } catch (_) { msg($('unlock-msg'), t('err_wrong_pass'), 'err'); } };
@@ -1374,7 +1378,7 @@ async function nftCargar() {
     try {
         nftPintar(await window.api.nftList({ walletId, redKey }));
     } catch (e) {
-        aviso.textContent = '⚠️ ' + (e.message || e);
+        aviso.textContent = '⚠️ ' + errIdioma(e.message || e);
     }
 }
 
@@ -1389,7 +1393,7 @@ function initNft() {
         try {
             await window.api.nftAdd({ walletId: $('nft-wallet').value, redKey: $('nft-red').value, id });
             nftCargar();
-        } catch (e) { alert(e.message || e); }
+        } catch (e) { alert(errIdioma(e.message || e)); }
     };
 }
 
@@ -1533,7 +1537,7 @@ $('btn-bridge-sim').onclick = async () => {
     else if (/row not found|No value found|Insufficient|balance/i.test(err)) { m = t('br_sim_notok'); kind = 'err'; }
     else { m = t('br_sim_err') + esc(err.slice(0, 140)); kind = 'err'; }
     $('br-msg').innerHTML = m; $('br-msg').className = 'msg ' + kind;
-  } catch (e) { msg($('br-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { msg($('br-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 const STEP_SETS = {
   evm2kda: { approve: 'step_approve', transfer: 'step_transfer', ethconfirm: 'step_ethconfirm', kadena: 'step_kadena' },
@@ -1652,7 +1656,7 @@ function pintarNodosKda() {
       const activo = m.url === NODOS.elegido;
       const fijado = m.url === NODOS.fijo;
       let estado;
-      if (m.ok === false) estado = `<span class="nodebad">${esc(m.error || 'no contesta')}</span>`;
+      if (m.ok === false) estado = `<span class="nodebad">${esc(m.error ? errIdioma(m.error) : 'no contesta')}</span>`;
       else if (m.atrasado) estado = `<span class="nodebad">${m.ms} ms · ${m.retraso} bloques atrás</span>`;
       else if (m.ok) estado = `<span class="nodeok">${m.ms} ms · al día</span>`;
       else estado = '<span class="muted">sin medir</span>';
@@ -1678,7 +1682,7 @@ function propiosDe(e) { return (e.lista || []).filter(u => !(e.deFabrica || []).
 
 async function guardarNodos(nodos, fijo) {
   try { NODOS = await window.api.nodosGuardar(nodos, fijo); pintarNodosKda(); }
-  catch (e) { const el = $('kda-nodo-err'); if (el) el.textContent = String(e.message || e); }
+  catch (e) { const el = $('kda-nodo-err'); if (el) el.textContent = errIdioma(e.message || e); }
 }
 
 async function cargarNodosKda() {
@@ -2069,7 +2073,7 @@ async function mkQuote() {
     $('mk-quote').innerHTML = tr('mk_quote_html', { out: q.esperada.toFixed(6), tok: q.tokenOut, min: q.minimo.toFixed(6), slip: q.slippagePct, p: q.precio.toFixed(6), imp: q.impacto.toFixed(2), fpc: q.comisionPct, fee: q.comision, ftok: q.tokenIn, neto: q.alPool });
     $('mk-quote').className = 'msg';
     pintarRecibes('mk', q.esperada);
-  } catch (e) { pintarRecibes('mk', null); msg($('mk-quote'), e.message, 'err'); }
+  } catch (e) { pintarRecibes('mk', null); msg($('mk-quote'), errIdioma(e.message), 'err'); }
 }
 $('mk-swap').onclick = () => {
   const wid = $('mk-wallet').value, amt = $('mk-amt').value;
@@ -2113,7 +2117,7 @@ async function esQuote() {
       (q.gasEth != null ? tr('es_gas_note', { g: q.gasEth.toFixed(5) }) : '');
     $('es-quote').className = 'msg';
     pintarRecibes('es', q.out);
-  } catch (e) { _esQuote = null; pintarRecibes('es', null); msg($('es-quote'), e.message, 'err'); }
+  } catch (e) { _esQuote = null; pintarRecibes('es', null); msg($('es-quote'), errIdioma(e.message), 'err'); }
 }
 $('es-swap').onclick = () => {
   const wid = $('es-wallet').value, amt = $('es-amt').value;
@@ -2640,7 +2644,7 @@ async function ordCotizar() {
   // orden se ejecutara enseguida y eso no es lo que suele buscar quien pone un limite.
   const spot = ORD && ORD.precio;
   const yaPasa = spot && (dir === 'venta' ? precio <= spot : precio >= spot);
-  if (q.avisoPool) return msg($('ord-resumen'), q.avisoPool, 'err');
+  if (q.avisoPool) return msg($('ord-resumen'), errIdioma(q.avisoPool), 'err');
   msg($('ord-resumen'), txt + (yaPasa ? ' ' + t('ord_ya_pasa') : ''), yaPasa ? 'warn' : '');
 }
 
@@ -3132,7 +3136,7 @@ async function loadBalances() {
     initConverter();
     msg($('wallet-msg'), '');
     renderOrdenesActivas();                // las compras del vigilante tambien cambian esto
-  } catch (e) { msg($('wallet-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { msg($('wallet-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 }
 // «En marcha ahora mismo» cambia sin que el usuario haga nada: cada compra la dispara el
 // vigilante. Solo se relee si hay algo en marcha y la ventana se esta mirando.
@@ -3379,7 +3383,7 @@ async function refreshHistory() {
   const wid = $('hist-wallet').value || null;
   $('hist-list').innerHTML = `<div class="muted xs" style="padding:10px 2px">${t('hist_loading')}</div>`;
   let list = [];
-  try { list = await window.api.history(wid); window._histList = list; } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + e.message + '</div>'; return; }
+  try { list = await window.api.history(wid); window._histList = list; } catch (e) { $('hist-list').innerHTML = '<div class="msg err">Error: ' + errIdioma(e.message) + '</div>'; return; }
   // Alex #3: todo lo que venga del indexador (amt/tok/other/chain/id/title/sub) se ESCAPA antes de ir a innerHTML.
   $('hist-list').innerHTML = list.length ? list.map(h => {
     const fecha = new Date(h.ts).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES');
@@ -3481,7 +3485,7 @@ $('hist-close').onclick = () => { $('history-panel').hidden = true; };
 
 // CREAR
 $('btn-create').onclick = () => { $('create-step1').hidden = false; $('create-step2').hidden = true; $('cr-label').value = ''; msg($('cr-msg'), ''); $('modal-create').hidden = false; };
-$('btn-do-create').onclick = async () => { try { msg($('cr-msg'), t('generating')); const { kind, net } = parseNet($('cr-net').value); const r = await window.api.createWallet($('cr-label').value.trim(), kind, net); window._pv = r.view; $('cr-seed').textContent = r.mnemonic; $('create-step1').hidden = true; $('create-step2').hidden = false; msg($('cr-msg'), ''); } catch (e) { msg($('cr-msg'), 'Error: ' + e.message, 'err'); } };
+$('btn-do-create').onclick = async () => { try { msg($('cr-msg'), t('generating')); const { kind, net } = parseNet($('cr-net').value); const r = await window.api.createWallet($('cr-label').value.trim(), kind, net); window._pv = r.view; $('cr-seed').textContent = r.mnemonic; $('create-step1').hidden = true; $('create-step2').hidden = false; msg($('cr-msg'), ''); } catch (e) { msg($('cr-msg'), 'Error: ' + errIdioma(e.message), 'err'); } };
 $('btn-create-done').onclick = () => { $('modal-create').hidden = true; $('cr-seed').textContent = ''; applyView(window._pv); nav('dashboard'); };
 
 // RENOMBRAR
@@ -3499,7 +3503,7 @@ $('btn-do-rename').onclick = async () => {
     CFG.walletMeta[renId] = { tag: $('ren-tag').value, note: $('ren-note').value.trim() };
     await window.api.setConfig(CFG);
     $('modal-rename').hidden = true; applyView(v);
-  } catch (e) { msg($('ren-msg'), e.message, 'err'); }
+  } catch (e) { msg($('ren-msg'), errIdioma(e.message), 'err'); }
 };
 $('ren-label').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-do-rename').click(); });
 
@@ -3527,7 +3531,7 @@ $('btn-lg-add').onclick = async () => {
   try {
     const r = await window.api.ledgerImport($('lg-label').value.trim(), kind, net, Number($('lg-index').value || 0));
     $('modal-ledger').hidden = true; applyView(r.view); nav('dashboard'); msg($('wallet-msg'), t('ledger_added'), 'ok');
-  } catch (e) { msg($('lg-msg'), e.message, 'err'); $('btn-lg-add').disabled = false; }
+  } catch (e) { msg($('lg-msg'), errIdioma(e.message), 'err'); $('btn-lg-add').disabled = false; }
 };
 // El selector de red del modal Ledger cambia la cuenta → invalidar la leída
 $('lg-net').onchange = () => { $('lg-acct').hidden = true; $('btn-lg-add').disabled = true; };
@@ -3549,7 +3553,7 @@ function wireSeedRows() {
   const mn = $('imp-mn').value.trim(); const { kind, net } = parseNet($('imp-net').value);
   $('seed-accts').querySelectorAll('.seed-imp').forEach(b => b.onclick = async () => {
     try { const v = await window.api.importMnemonic($('imp-label').value.trim(), mn, kind, net, Number(b.dataset.idx), b.dataset.method); $('modal-import').hidden = true; $('imp-mn').value = ''; $('imp-label').value = ''; $('seed-accts').innerHTML = ''; applyView(v); nav('dashboard'); }
-    catch (e) { msg($('imp-msg'), 'Error: ' + e.message, 'err'); }
+    catch (e) { msg($('imp-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
   });
   const more = $('btn-seed-more'); if (more) more.onclick = () => scanSeed(false);
 }
@@ -3564,7 +3568,7 @@ async function scanSeed(reset) {
     seedRowsHtml += accts.map(a => { const tag = METHOD_TAG[a.method] ? ` <span class="mtag">${METHOD_TAG[a.method]}</span>` : ''; return `<div class="seedrow"><div class="sr-acc"><b>#${a.index}</b>${tag} <span class="mono">${a.id.slice(0, 12)}…${a.id.slice(-6)}</span></div><div class="sr-bal ${a.amount > 0 ? 'has' : ''}">${a.amount.toFixed(4)} ${a.unit}</div><button class="tiny seed-imp" data-idx="${a.index}" data-method="${a.method}">${t('import')}</button></div>`; }).join('');
     $('seed-accts').innerHTML = seedRowsHtml + `<button id="btn-seed-more" class="ghost tiny">${tr('seed_more', { n: seedOffset })}</button>`;
     wireSeedRows();
-  } catch (e) { $('seed-accts').innerHTML = seedRowsHtml; msg($('imp-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { $('seed-accts').innerHTML = seedRowsHtml; msg($('imp-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 }
 $('btn-seed-scan').onclick = () => scanSeed(true);
 // Buscar una cuenta concreta dentro de la semilla (encuentra método+índice exactos)
@@ -3579,22 +3583,22 @@ $('btn-seed-find').onclick = async () => {
       seedRowsHtml = `<div class="seedrow"><div class="sr-acc">✅ <b>${METHOD_TAG[r.method] || 'EVM'} · #${r.index}</b> <span class="mono">${r.id.slice(0, 14)}…${r.id.slice(-6)}</span></div><button class="tiny seed-imp" data-idx="${r.index}" data-method="${r.method}">${t('import_this')}</button></div>`;
       $('seed-accts').innerHTML = seedRowsHtml; wireSeedRows();
     } else { $('seed-accts').innerHTML = `<div class="muted xs">${tr('seed_notfound', { n: r.scanned })}</div>`; }
-  } catch (e) { $('seed-accts').innerHTML = ''; msg($('imp-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { $('seed-accts').innerHTML = ''; msg($('imp-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); $('tab-mn').hidden = t.dataset.tab !== 'mn'; $('tab-pk').hidden = t.dataset.tab !== 'pk'; });
-$('btn-do-import').onclick = async () => { const label = $('imp-label').value.trim(); const { kind, net } = parseNet($('imp-net').value); const mnMode = document.querySelector('.tab.on').dataset.tab === 'mn'; try { msg($('imp-msg'), t('importing')); const v = mnMode ? await window.api.importMnemonic(label, $('imp-mn').value, kind, net) : await window.api.importPrivkey(label, kind, net, $('imp-pk').value); $('modal-import').hidden = true; $('imp-mn').value = ''; $('imp-pk').value = ''; $('imp-label').value = ''; applyView(v); nav('dashboard'); } catch (e) { msg($('imp-msg'), 'Error: ' + e.message, 'err'); } };
+$('btn-do-import').onclick = async () => { const label = $('imp-label').value.trim(); const { kind, net } = parseNet($('imp-net').value); const mnMode = document.querySelector('.tab.on').dataset.tab === 'mn'; try { msg($('imp-msg'), t('importing')); const v = mnMode ? await window.api.importMnemonic(label, $('imp-mn').value, kind, net) : await window.api.importPrivkey(label, kind, net, $('imp-pk').value); $('modal-import').hidden = true; $('imp-mn').value = ''; $('imp-pk').value = ''; $('imp-label').value = ''; applyView(v); nav('dashboard'); } catch (e) { msg($('imp-msg'), 'Error: ' + errIdioma(e.message), 'err'); } };
 
 // EXPORTAR
 let expChain = null, expWid = null;
 function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : 'EVM'; $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
 $('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : 'eth'); };
-$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), e.message, 'err'); } };
+$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), errIdioma(e.message), 'err'); } };
 
 // borrar wallet: paso 1 (consejo semilla) → paso 2 (última confirmación) → borrar
 $('btn-del-next').onclick = () => { $('del-step1').hidden = true; $('del-step2').hidden = false; };
 $('btn-del-do').onclick = async () => {
   try { applyView(await window.api.walletRemove(window._delId)); $('modal-del').hidden = true; msg($('wallet-msg'), t('wallet_deleted'), 'ok'); }
-  catch (e) { msg($('del-msg'), e.message, 'err'); }
+  catch (e) { msg($('del-msg'), errIdioma(e.message), 'err'); }
 };
 
 // modales + copiar
@@ -3645,7 +3649,7 @@ $('btn-backup').onclick = async () => {
     const r = await window.api.backupExport(p);
     if (r.ok) { msg($('backup-msg'), t('backup_ok').replace('{path}', r.path), 'ok'); $('bk-pass').value = ''; $('bk-pass2').value = ''; $('bk-strength').textContent = ''; }
     else msg($('backup-msg'), '', '');
-  } catch (e) { msg($('backup-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { msg($('backup-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 $('btn-restore').onclick = async () => {
   const p = $('restore-pass').value;
@@ -3655,7 +3659,7 @@ $('btn-restore').onclick = async () => {
     const r = await window.api.backupImport(p);
     if (r.ok) { msg($('restore-msg'), (r.mode === 'merge' ? t('restore_merged').replace('{n}', r.added) : t('restore_ok')), 'ok'); setTimeout(() => location.reload(), 1500); }
     else msg($('restore-msg'), '', '');
-  } catch (e) { msg($('restore-msg'), 'Error: ' + e.message, 'err'); }
+  } catch (e) { msg($('restore-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 // Restaurar desde la pantalla de arranque (recuperación en un equipo nuevo, sin bóveda).
 async function restoreFromAuth(passId, msgId) {
@@ -3663,7 +3667,7 @@ async function restoreFromAuth(passId, msgId) {
   if (!p) return msg($(msgId), t('restore_need_pass'), 'err');
   msg($(msgId), t('bk_working'));
   try { const r = await window.api.backupImport(p); if (r.ok) location.reload(); else msg($(msgId), '', ''); }
-  catch (e) { msg($(msgId), 'Error: ' + e.message, 'err'); }
+  catch (e) { msg($(msgId), 'Error: ' + errIdioma(e.message), 'err'); }
 }
 if ($('lnk-restore-u')) $('lnk-restore-u').onclick = (e) => { e.preventDefault(); restoreFromAuth('unlock-pass', 'unlock-msg'); };
 if ($('lnk-restore-s')) $('lnk-restore-s').onclick = (e) => { e.preventDefault(); restoreFromAuth('setup-pass', 'setup-msg'); };
@@ -3708,7 +3712,7 @@ $('hist-csv').onclick = async () => {
     desc: h.dir ? `${h.amt} ${h.tok}` : (h.title || ''),
     other: h.other || h.wlabel || '', chain: h.chain != null ? h.chain : '', id: h.id || ''
   }));
-  try { const r = await window.api.exportHistory(rows, 'koberlet-historial.csv'); if (r.ok) msg($('wallet-msg'), t('csv_ok'), 'ok'); } catch (e) { msg($('wallet-msg'), e.message, 'err'); }
+  try { const r = await window.api.exportHistory(rows, 'koberlet-historial.csv'); if (r.ok) msg($('wallet-msg'), t('csv_ok'), 'ok'); } catch (e) { msg($('wallet-msg'), errIdioma(e.message), 'err'); }
 };
 
 // M-2: avisar al main de actividad del usuario (throttle 15s) para reiniciar el auto-bloqueo,
