@@ -5,12 +5,13 @@
 #
 #   bash build-instalador.sh
 #
-# Deja F:/koberlet_v<VER>.zip y su .meta.json firmado.
+# Deja koberlet_v<VER>.zip y su .meta.json firmado en la carpeta de la version (salida-builds.sh).
 set -e
 cd "$(dirname "$0")"
 
 VER=$(node -p "require('./package.json').version")
 STAGE=dist-installer
+. ./salida-builds.sh
 
 echo "== Instalador completo de Koberlet $VER =="
 bash build-portable.sh
@@ -36,10 +37,10 @@ SOBRA=$(find "$STAGE" \( -name vault.json -o -name MonederoDNNS-datos \) | wc -l
 [ "$SOBRA" -eq 0 ] || { echo "ERROR: hay una boveda dentro del instalador, abortado"; exit 1; }
 
 # Zip REAL con el tar de Windows (bsdtar). El de Git Bash crea un TAR con nombre .zip.
-rm -f "F:/koberlet_v$VER.zip"
-( cd "$STAGE" && /c/Windows/System32/tar.exe -a -cf "F:/koberlet_v$VER.zip" Koberlet )
+rm -f "$SALIDA/koberlet_v$VER.zip"
+( cd "$STAGE" && /c/Windows/System32/tar.exe -a -cf "$SALIDA/koberlet_v$VER.zip" Koberlet )
 
 # El nombre del fichero sale de la version REAL empaquetada: asi no se puede repetir
 # lo de 2026-08 (koberlet_v2.7.4.zip llevaba dentro la 2.7.5).
-bash firmar-zip.sh "F:/koberlet_v$VER.zip"
-echo "OK -> F:/koberlet_v$VER.zip (version dentro: $DENTRO)"
+bash firmar-zip.sh "$SALIDA/koberlet_v$VER.zip"
+echo "OK -> $SALIDA/koberlet_v$VER.zip (version dentro: $DENTRO)"

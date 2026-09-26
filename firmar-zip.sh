@@ -2,7 +2,7 @@
 # Huella + firma Ed25519 de un archivo publicable (pensado para el INSTALADOR completo,
 # que no se verifica a sí mismo: el auto-update sí, pero el zip grande no).
 #
-#   bash firmar-zip.sh F:/koberlet_v2.7.5.zip
+#   bash firmar-zip.sh F:/Koberlet-publicaciones/2.7.5/koberlet_v2.7.5.zip
 #
 # Imprime el sha256 y la firma, y deja un .meta.json al lado. El sha256 va a `urlSha256`
 # de latest.json y, sobre todo, SE DICTA APARTE (mensaje de Telegram, repo público):

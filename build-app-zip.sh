@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 
 VER=$(node -p "require('./package.json').version")
 STAGE="build-app/app"
+. ./salida-builds.sh
 
 mkdir -p "$STAGE"
 cp main.js preload.js package.json "$STAGE/"
@@ -29,7 +30,7 @@ find "$STAGE/node_modules" -type f \( -name "*.test.js" -o -name "*.spec.js" -o 
 
 # Zip REAL con el tar de Windows (bsdtar). El de Git Bash crea un TAR con nombre .zip.
 ( cd build-app && /c/Windows/System32/tar.exe -a -cf "koberlet-app-$VER.zip" app )
-mv -f "build-app/koberlet-app-$VER.zip" "/f/koberlet-app-$VER.zip"
+mv -f "build-app/koberlet-app-$VER.zip" "$SALIDA/koberlet-app-$VER.zip"
 
 # Firma Ed25519 del sha256 (auditoría Alex #1). La privada NO está en el repo (.keys/, gitignored).
 if [ ! -f .keys/koberlet-update.sec ]; then echo "ERROR: falta .keys/koberlet-update.sec para firmar"; exit 1; fi
@@ -43,5 +44,5 @@ const sig=Buffer.from(nacl.sign.detached(Buffer.from(sha,"utf8"),sec)).toString(
 fs.writeFileSync(metaPath, JSON.stringify({version:ver,sha256:sha,sig},null,2));
 console.log("sha256:",sha);
 console.log("sig:   ",sig);
-' "F:/koberlet-app-$VER.zip" "F:/koberlet-app-$VER.meta.json" "$VER"
-echo "OK -> F:/koberlet-app-$VER.zip + .meta.json (subir + latest.json con sha256 y sig; la app verifica firma antes de aplicar)"
+' "$SALIDA/koberlet-app-$VER.zip" "$SALIDA/koberlet-app-$VER.meta.json" "$VER"
+echo "OK -> $SALIDA/koberlet-app-$VER.zip + .meta.json (subir + latest.json con sha256 y sig; la app verifica firma antes de aplicar)"

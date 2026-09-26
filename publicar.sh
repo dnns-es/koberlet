@@ -14,6 +14,7 @@ set -e
 cd "$(dirname "$0")"
 
 VER=$(node -p "require('./package.json').version")
+. ./salida-builds.sh
 
 # El destino de publicacion NO va en el repositorio: son datos del servidor de DNNS y
 # a quien clone Koberlet no le sirven de nada. Salen de .publicar.conf, que git ignora.
@@ -75,26 +76,26 @@ npm test --silent
 
 # --- 1. Construir ---
 echo "--- paquete de auto-update ---"
-if [ -f "F:/koberlet-app-$VER.zip" ] && [ -f "F:/koberlet-app-$VER.meta.json" ]; then
+if [ -f "$SALIDA/koberlet-app-$VER.zip" ] && [ -f "$SALIDA/koberlet-app-$VER.meta.json" ]; then
   echo "  ya estaba construido, se reutiliza"
 else
   bash build-app-zip.sh >/dev/null
 fi
-APPZIP="F:/koberlet-app-$VER.zip"
+APPZIP="$SALIDA/koberlet-app-$VER.zip"
 # OJO: build-app-zip.sh deja el meta como koberlet-app-<v>.meta.json (sin el .zip) y
 # firmar-zip.sh como <zip>.meta.json. Son convenciones distintas, cada una a su variable.
-APPMETA="F:/koberlet-app-$VER.meta.json"
+APPMETA="$SALIDA/koberlet-app-$VER.meta.json"
 [ -f "$APPZIP" ] && [ -f "$APPMETA" ] || { echo "ERROR: no se genero $APPZIP + $APPMETA"; exit 1; }
 
 if [ "$SOLO_APP" = "0" ]; then
   echo "--- instalador completo (tarda unos minutos) ---"
-  if [ -f "F:/koberlet_v$VER.zip" ] && [ -f "F:/koberlet_v$VER.zip.meta.json" ]; then
+  if [ -f "$SALIDA/koberlet_v$VER.zip" ] && [ -f "$SALIDA/koberlet_v$VER.zip.meta.json" ]; then
     echo "  ya estaba construido, se reutiliza"
   else
     bash build-instalador.sh >/dev/null
   fi
-  FULLZIP="F:/koberlet_v$VER.zip"
-  FULLMETA="F:/koberlet_v$VER.zip.meta.json"
+  FULLZIP="$SALIDA/koberlet_v$VER.zip"
+  FULLMETA="$SALIDA/koberlet_v$VER.zip.meta.json"
   [ -f "$FULLZIP" ] && [ -f "$FULLMETA" ] || { echo "ERROR: no se genero $FULLZIP + $FULLMETA"; exit 1; }
 fi
 
