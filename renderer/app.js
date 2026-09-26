@@ -143,6 +143,7 @@ const LANG = {
     dca_hecho: 'Hecho.',
     dca_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
     dca_historial: 'Mis planes',
+    dca_det: 'Resumen', dca_det_estado: 'Estado', dca_det_bote: 'Queda en el bote', dca_det_gastado: 'Gastado', dca_det_recibido: 'Recibido', dca_det_compras: 'Compras hechas', dca_det_medio: 'Precio medio', dca_det_prox: 'Próxima compra',
     dca_cuenta: '({n} en total, {a} abiertos)',
     dca_dias: 'días',
     dca_meses: 'meses',
@@ -593,6 +594,7 @@ const LANG = {
     dca_hecho: 'Done.',
     dca_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
     dca_historial: 'My plans',
+    dca_det: 'Summary', dca_det_estado: 'Status', dca_det_bote: 'Pot remaining', dca_det_gastado: 'Spent', dca_det_recibido: 'Received', dca_det_compras: 'Buys done', dca_det_medio: 'Average price', dca_det_prox: 'Next buy',
     dca_cuenta: '({n} total, {a} open)',
     dca_dias: 'days',
     dca_meses: 'months',
@@ -2441,6 +2443,7 @@ function dcaPintarPlanes() {
       <div><b>${esc(simIn)} → ${esc(simOut)}</b> <span class="muted xs">${esc(p.id)}</span></div>
       <div class="muted xs">${tr('dca_plan_linea', { q: cuota, s: esc(simIn), p: dcaPeriodoTxt(dcaNum(p.period)) })}</div>
       <div class="muted xs">${tr('dca_plan_estado', { e: esc(p.status), b: bote, s: esc(simIn), n: quedan, c: dcaNum(p.buys), r: dcaNum(p.received), o: esc(simOut) })}</div>
+      ${dcaResumenPlan(p, simIn, simOut)}
       ${abierto ? `<div class="dcabtns">
         <button class="tiny ghost dca-top" data-i="${i}">${t('dca_recargar')}</button>
         <button class="tiny ghost dca-pr" data-i="${i}">${p.status === 'paused' ? t('dca_reanudar') : t('dca_pausar')}</button>
@@ -2451,6 +2454,31 @@ function dcaPintarPlanes() {
   zona.querySelectorAll('.dca-top').forEach(b => b.onclick = () => dcaRecargar(Number(b.dataset.i)));
   zona.querySelectorAll('.dca-pr').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), DCA.planes[Number(b.dataset.i)].status === 'paused' ? 'reanudar' : 'pausar'));
   zona.querySelectorAll('.dca-cerrar').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), 'cerrar'));
+}
+
+// Resumen de UN plan, plegado: lo que enseña la web de KoberluSW (lo pidió un usuario el
+// 26/09/2026, «al menos el precio medio»). El precio medio se da en la moneda de cotización
+// del par: kb-USDC si está en el par, si no KDA. Así sale «1 KDA = 0,0035 kb-USDC» y
+// «1 bro = 478.000 KDA», que es como se lee, y no al revés.
+function dcaResumenPlan(p, simIn, simOut) {
+  const gastado = dcaNum(p.spent), recibido = dcaNum(p.received);
+  const cotiza = (simIn === 'kb-USDC' || simOut === 'kb-USDC') ? 'kb-USDC' : 'KDA';
+  const base = simIn === cotiza ? simOut : simIn;
+  const enCotiza = simIn === cotiza ? gastado : recibido, enBase = simIn === cotiza ? recibido : gastado;
+  const medio = enBase > 0 && enCotiza > 0 ? enCotiza / enBase : 0;
+  const nb = p['next-buy'] && (p['next-buy'].timep || p['next-buy']);
+  const prox = p.status === 'active' && nb ? new Date(nb).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES') : '—';
+  const fila = (k, v) => `<div class="r"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  const cant = (v, s) => fmtCorto(v, decAsset(v)) + ' ' + esc(s);
+  return `<details class="dcadet"><summary class="xs">${t('dca_det')}</summary>
+    ${fila(t('dca_det_estado'), esc(p.status))}
+    ${fila(t('dca_det_bote'), cant(dcaNum(p.balance), simIn))}
+    ${fila(t('dca_det_gastado'), cant(gastado, simIn))}
+    ${fila(t('dca_det_recibido'), cant(recibido, simOut))}
+    ${fila(t('dca_det_compras'), fmtCorto(dcaNum(p.buys), 0))}
+    ${fila(t('dca_det_medio'), medio ? '1 ' + esc(base) + ' = ' + fmtCorto(medio, decAsset(medio)) + ' ' + cotiza : '—')}
+    ${fila(t('dca_det_prox'), prox)}
+  </details>`;
 }
 
 // Resumen antes de firmar: cuántas compras salen, cuánto dura y qué se lleva la comisión.
