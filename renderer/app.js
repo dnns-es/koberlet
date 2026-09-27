@@ -6,7 +6,13 @@ function msg(el, text, kind) { el.className = 'msg ' + (kind || ''); el.textCont
 // L-1: escapar TODO texto (etiquetas de wallet, destinatarios, datos remotos) antes de meterlo en innerHTML.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // Limpia el prefijo técnico de Electron ("Error invoking remote method 'x': Error: …") de los errores IPC.
-const cleanErr = (e) => errIdioma(textoXchain(String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '')));
+const cleanErr = (e) => errIdioma(textoWc(textoXchain(String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, ''))));
+// Los codigos WC_SIN_* de WalletConnect (lib/walletconnect.js, lib/wc-comando.js) no son
+// frases: sin esto salian crudos, «WC_SIN_CHAIN», en los dos idiomas.
+function textoWc(m) {
+  const c = /^WC_(SIN_PROJECTID|SIN_ARRANCAR|SIN_CUENTAS|SIN_CODIGO|SIN_CUENTA|SIN_CHAIN)$/.exec(String(m).trim());
+  return c ? t('wc_' + c[1].toLowerCase()) : m;
+}
 // Los errores de main/lib vienen en espanol. Con la ventana en ingles se traducen con la
 // tabla de renderer/errores-en.js; en espanol pasan tal cual, sin tocar ni una letra.
 const errIdioma = (m) => (LNG === 'en' && typeof traducirError === 'function') ? traducirError(m) : String(m);
@@ -143,9 +149,11 @@ const LANG = {
     dca_hecho: 'Hecho.',
     dca_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
     dca_historial: 'Mis planes',
+    wc_sin_projectid: 'WalletConnect no está configurado en esta versión.', wc_sin_arrancar: 'WalletConnect todavía no ha arrancado. Espera un momento y vuelve a intentarlo.', wc_sin_cuentas: 'No hay ninguna cartera de Kadena que ofrecer a la web.', wc_sin_codigo: 'La web no ha mandado nada que firmar.', wc_sin_cuenta: 'La web pide firmar con una cuenta que no es de este monedero.', wc_sin_chain: 'La web no dice en qué chain va la operación.',
+    nodo_no_contesta: 'no contesta', nodo_atras: '{n} bloques atrás', nodo_al_dia: 'al día', nodo_sin_medir: 'sin medir', nodo_fijado: 'fijado', nodo_tuyo: 'tuyo', nodo_soltar: 'soltar', nodo_fijar: 'fijar', nodo_quitar: 'quitar',
     dca_det: 'Resumen', dca_det_estado: 'Estado', dca_det_bote: 'Queda en el bote', dca_det_gastado: 'Gastado', dca_det_recibido: 'Recibido', dca_det_compras: 'Compras hechas', dca_det_medio: 'Precio medio', dca_det_prox: 'Próxima compra',
     dca_cuenta: '({n} en total, {a} abiertos)',
-    dca_dias: 'días',
+    dca_dias: 'días', dca_p_dia: '1 día', dca_p_semana: '1 semana', dca_p_30d: '30 días',
     dca_meses: 'meses',
     oa_titulo: '🔁 En marcha ahora mismo — {p} planes DCA y {o} órdenes límite',
     oa_limite: 'LÍMITE',
@@ -594,9 +602,11 @@ const LANG = {
     dca_hecho: 'Done.',
     dca_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
     dca_historial: 'My plans',
+    wc_sin_projectid: 'WalletConnect is not configured in this version.', wc_sin_arrancar: 'WalletConnect has not started yet. Wait a moment and try again.', wc_sin_cuentas: 'There is no Kadena wallet to offer the website.', wc_sin_codigo: 'The website sent nothing to sign.', wc_sin_cuenta: 'The website asks to sign with an account that is not in this wallet.', wc_sin_chain: 'The website does not say which chain the operation is on.',
+    nodo_no_contesta: 'not responding', nodo_atras: '{n} blocks behind', nodo_al_dia: 'up to date', nodo_sin_medir: 'not measured', nodo_fijado: 'pinned', nodo_tuyo: 'yours', nodo_soltar: 'unpin', nodo_fijar: 'pin', nodo_quitar: 'remove',
     dca_det: 'Summary', dca_det_estado: 'Status', dca_det_bote: 'Pot remaining', dca_det_gastado: 'Spent', dca_det_recibido: 'Received', dca_det_compras: 'Buys done', dca_det_medio: 'Average price', dca_det_prox: 'Next buy',
     dca_cuenta: '({n} total, {a} open)',
-    dca_dias: 'days',
+    dca_dias: 'days', dca_p_dia: '1 day', dca_p_semana: '1 week', dca_p_30d: '30 days',
     dca_meses: 'months',
     oa_titulo: '🔁 Running right now — {p} DCA plans and {o} limit orders',
     oa_limite: 'LIMIT',
@@ -1658,16 +1668,16 @@ function pintarNodosKda() {
       const activo = m.url === NODOS.elegido;
       const fijado = m.url === NODOS.fijo;
       let estado;
-      if (m.ok === false) estado = `<span class="nodebad">${esc(m.error ? errIdioma(m.error) : 'no contesta')}</span>`;
-      else if (m.atrasado) estado = `<span class="nodebad">${m.ms} ms · ${m.retraso} bloques atrás</span>`;
-      else if (m.ok) estado = `<span class="nodeok">${m.ms} ms · al día</span>`;
-      else estado = '<span class="muted">sin medir</span>';
+      if (m.ok === false) estado = `<span class="nodebad">${esc(m.error ? errIdioma(m.error) : t('nodo_no_contesta'))}</span>`;
+      else if (m.atrasado) estado = `<span class="nodebad">${m.ms} ms · ${tr('nodo_atras', { n: m.retraso })}</span>`;
+      else if (m.ok) estado = `<span class="nodeok">${m.ms} ms · ${t('nodo_al_dia')}</span>`;
+      else estado = `<span class="muted">${t('nodo_sin_medir')}</span>`;
       return `<div class="noderow${activo ? ' node-activo' : ''}">
         <div class="nodename">${activo ? '● ' : ''}${esc(m.url.replace(/^https:\/\//, ''))}
-          ${fijado ? ' <span class="badge">fijado</span>' : ''}${esFabrica(m.url) ? '' : ' <span class="badge">tuyo</span>'}</div>
+          ${fijado ? ` <span class="badge">${t('nodo_fijado')}</span>` : ''}${esFabrica(m.url) ? '' : ` <span class="badge">${t('nodo_tuyo')}</span>`}</div>
         <code class="nodero">${estado}</code>
-        <button class="ghost xs" data-nodo-fijar="${esc(m.url)}">${fijado ? 'soltar' : 'fijar'}</button>
-        ${esFabrica(m.url) ? '' : `<button class="ghost xs" data-nodo-quitar="${esc(m.url)}">quitar</button>`}
+        <button class="ghost xs" data-nodo-fijar="${esc(m.url)}">${fijado ? t('nodo_soltar') : t('nodo_fijar')}</button>
+        ${esFabrica(m.url) ? '' : `<button class="ghost xs" data-nodo-quitar="${esc(m.url)}">${t('nodo_quitar')}</button>`}
       </div>`;
     }).join('');
   caja.querySelectorAll('[data-nodo-fijar]').forEach(b => b.onclick = async () => {
@@ -2200,12 +2210,16 @@ let DCA_DIR = { de: 'kb-USDC', a: 'KDA' };   // direccion del plan nuevo
 // Un lado es SIEMPRE KDA; el otro se elige. kb-USDC va al contrato dca2 y kb-ETH, FLUX y
 // bro al dca3, pero eso lo decide main por el par: aqui solo se elige el token.
 const DCA_OTROS = ['kb-USDC', 'kb-ETH', 'FLUX', 'bro'];
-const DCA_PERIODOS = [[300, '5 min'], [900, '15 min'], [3600, '1 h'], [21600, '6 h'], [43200, '12 h'], [86400, '1 día'], [604800, '1 semana'], [2592000, '30 días']];
+// Los nombres con palabras («1 día») se leen del idioma AL PINTAR: fijos aquí salían en
+// español con la app en inglés.
+const DCA_PERIODOS_SEG = [300, 900, 3600, 21600, 43200, 86400, 604800, 2592000];
+const dcaPeriodos = () => DCA_PERIODOS_SEG.map(v => [v, v < 3600 ? (v / 60) + ' min' : v < 86400 ? (v / 3600) + ' h'
+  : v === 86400 ? t('dca_p_dia') : v === 604800 ? t('dca_p_semana') : t('dca_p_30d')]);
 const DCA_SLIPS = [[0.005, '0,5%'], [0.01, '1%'], [0.02, '2%'], [0.05, '5%'], [0.1, '10%']];
 
 // Pact devuelve los decimales como {decimal:"1.0"} y los enteros como {int:3}.
 function dcaNum(v) { const n = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v); return isFinite(n) ? n : 0; }
-function dcaPeriodoTxt(seg) { const f = DCA_PERIODOS.find(x => x[0] === Number(seg)); return f ? f[1] : Math.round(Number(seg) / 60) + ' min'; }
+function dcaPeriodoTxt(seg) { const f = dcaPeriodos().find(x => x[0] === Number(seg)); return f ? f[1] : Math.round(Number(seg) / 60) + ' min'; }
 function dcaSimbolo(mod) {
   if (mod === 'coin') return 'KDA';
   const e = Object.entries((DCA && DCA.tokens) || {}).find(([, v]) => v.modulo === mod);
@@ -2404,8 +2418,10 @@ async function renderDca() {
   const prev = $('dca-wallet').value;
   $('dca-wallet').innerHTML = kdaW.map(w => `<option value="${w.id}">${esc(w.label)} · ${shortAddr(w.kdaAccount)}</option>`).join('') || `<option value="">${t('nft_sin_wallet')}</option>`;
   if (prev) $('dca-wallet').value = prev;
-  if (!$('dca-periodo').options.length) {
-    $('dca-periodo').innerHTML = DCA_PERIODOS.map(([v, n]) => `<option value="${v}"${v === 86400 ? ' selected' : ''}>${n}</option>`).join('');
+  // El periodo se repinta siempre (por si cambió el idioma), conservando lo elegido.
+  const perAntes = $('dca-periodo').value || '86400';
+  $('dca-periodo').innerHTML = dcaPeriodos().map(([v, n]) => `<option value="${v}"${String(v) === perAntes ? ' selected' : ''}>${n}</option>`).join('');
+  if (!$('dca-slip').options.length) {
     $('dca-slip').innerHTML = DCA_SLIPS.map(([v, n]) => `<option value="${v}"${v === 0.05 ? ' selected' : ''}>${n}</option>`).join('');
   }
   await dcaCargar();
@@ -3095,8 +3111,8 @@ function cardBlock(bl, qr) {
     const per = Object.keys(bl.perChain || {}).length ? t('spread') + Object.entries(bl.perChain).sort((a, b) => a[0] - b[0]).map(([c, x]) => `Chain ${c} → ${fmt(x, 4)}`).join('  ·  ') : t('no_bal_yet');
     extra = `<div class="muted xs perline">${per}</div>`;
     const assetSel = sendable.length ? `<label>${t('lbl_asset')}</label><select class="k-asset"><option value="__kda__" data-native="1">KDA</option>${sendable.map(x => `<option value="${esc(x.symbol)}" data-bal="${x.amount}">${esc(x.symbol)}</option>`).join('')}</select>` : '';
-    sendForm = `${assetSel}<div class="k-chainrow"><div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="0" min="0" max="19"/></div>
-      <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="0" min="0" max="19"/></div></div></div>
+    sendForm = `${assetSel}<div class="k-chainrow"><div class="row2"><div><label>${t('lbl_chain_from')}</label><input class="k-chain" type="number" value="2" min="0" max="19"/></div>
+      <div><label>${t('lbl_chain_to')}</label><input class="k-tochain" type="number" value="2" min="0" max="19"/></div></div></div>
       <label>${t('lbl_dest_k')}</label><input class="k-to" list="dl-kda" placeholder="${t('ph_kda_dest')}"/>
       <label>${t('lbl_amount')}</label><div class="amtrow"><input class="k-amt" type="number" step="0.0001"/><button type="button" class="tiny ghost k-max" title="${t('ttl_max')}">MAX</button></div>
       <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
@@ -3110,7 +3126,7 @@ function cardBlock(bl, qr) {
       <button class="primary e-send" data-wid="${bl.walletId}" data-net="${bl.key}" data-netname="${bl.name}">${t('send')}</button>`;
   }
   return `<div class="card netcard" style="border-top:3px solid ${bl.color}">
-    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err" title="${esc(bl.errorMsg || '')}">${t('offline')}${bl.errorMsg ? ' ⓘ' : ''}</small>` : ''}<span class="nc-sub">${dinero(bl.usd || 0)}</span></div>
+    <div class="nc-head" data-toggle="body"><span class="netdot" style="background:${bl.color}"></span><span class="chev">▸</span> ${bl.name} <small class="muted">${esc(bl.walletLabel)}</small>${bl.error ? ` <small class="err${bl.errorMsg ? ' err-motivo' : ''}" title="${esc(bl.errorMsg || '')}" data-motivo="${esc(bl.errorMsg || '')}" data-red="${esc(bl.name)}">${t('offline')}${bl.errorMsg ? ' ⓘ' : ''}</small>` : ''}<span class="nc-sub">${dinero(bl.usd || 0)}</span></div>
     <div class="nc-body" hidden>
       <div class="assets">${rows}</div>
       ${extra}
@@ -3246,6 +3262,13 @@ function wireCards() {
     box.querySelector('.r-chain').onchange = rehacer;
   });
   // Título → despliega tokens/chains
+  // El motivo de «offline» al PULSAR, no solo al pasar el ratón: en Mac el tooltip no
+  // salía y un colaborador no pudo ver por qué Ethereum estaba caído (26/09/2026).
+  document.querySelectorAll('.netcard .err-motivo').forEach(el => el.onclick = (ev) => {
+    ev.stopPropagation();
+    msg($('wallet-msg'), el.dataset.red + ' · ' + t('offline') + ': ' + cleanErr(el.dataset.motivo), 'err');
+    const w = $('wallet-msg'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'nearest' });
+  });
   document.querySelectorAll('.netcard .nc-head[data-toggle]').forEach(h => h.onclick = () => {
     const b = h.parentElement.querySelector('.nc-body'); if (!b) return;
     b.hidden = !b.hidden; const c = h.querySelector('.chev'); if (c) c.textContent = b.hidden ? '▸' : '▾';
@@ -3273,7 +3296,7 @@ function wireCards() {
       c.querySelector('.k-amt').value = bal > 0 ? (Math.floor(bal * 1e6) / 1e6) : ''; return;
     }
     let per = {}; try { per = JSON.parse(send.dataset.perchain || '{}'); } catch (_) {}
-    const chain = Number(c.querySelector('.k-chain').value || 0);
+    const chain = Number(c.querySelector('.k-chain').value || 2);
     const max = Math.max(0, (per[chain] || 0) - 0.11);
     c.querySelector('.k-amt').value = max > 0 ? (Math.floor(max * 1e6) / 1e6) : '';
   });

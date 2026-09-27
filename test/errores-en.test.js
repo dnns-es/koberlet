@@ -183,7 +183,9 @@ prueba('index.html carga errores-en.js antes que app.js', () => {
     assert.ok(a > 0 && b > a);
 });
 prueba('cleanErr pasa por errIdioma, y errIdioma solo traduce con LNG en ingles', () => {
-    assert.ok(/const cleanErr = [^\n]*errIdioma\(textoXchain\(/.test(fuenteRen), 'cleanErr ya no traduce');
+    assert.ok(/const cleanErr = [^\n]*errIdioma\((textoWc\()?textoXchain\(/.test(fuenteRen), 'cleanErr ya no traduce');
+    // Los codigos WC_SIN_* tienen texto en los dos idiomas (antes salian crudos).
+    for (const c of ['projectid', 'arrancar', 'cuentas', 'codigo', 'cuenta', 'chain']) assert.ok((fuenteRen.match(new RegExp('wc_sin_' + c + ':', 'g')) || []).length === 2, 'falta wc_sin_' + c);
     assert.ok(/const errIdioma = \(m\) => \(LNG === 'en'[^\n]*traducirError\(m\) : String\(m\)/.test(fuenteRen), 'errIdioma ha cambiado');
 });
 prueba('isLedgerWait reconoce los avisos del Ledger tambien en ingles', () => {
