@@ -22,6 +22,7 @@ const bridge = require('./lib/bridge');
 const evmswap = require('./lib/evmswap');
 const dca = require('./lib/dca');
 const ordenes = require('./lib/ordenes');
+const precios = require('./lib/precios');   // respaldo del precio: el pool KDA/kb-USDC si CoinGecko falla
 const observadas = require('./lib/observadas');
 const launch = require('./lib/launch');
 const dex = require('./lib/dex');
@@ -365,22 +366,38 @@ function enableEvmNet(key) { if (!key) return; const c = loadConfig(); const n =
 // Las cuatro van en la MISMA peticion: CoinGecko las devuelve juntas y no cuesta
 // ni una llamada mas. Por eso anadir una moneda es una palabra aqui y una linea
 // en MONEDAS del renderer, y no una fuente de cambio nueva.
-const FIATS = ['usd', 'eur', 'gbp', 'chf'];
+const FIATS = precios.FIATS;
 let _priceCache = { at: 0, full: {} };
+// Las razones eur/usd, gbp/usd y chf/usd de la ultima respuesta buena de CoinGecko,
+// para el respaldo (ver lib/precios.js). No es secreto: fichero plano.
+const RAZONES = () => path.join(app.getPath('userData'), 'cambios.json');
+const cargarRazones = () => { try { return precios.razonesVigentes(JSON.parse(fs.readFileSync(RAZONES(), 'utf8'))); } catch (_) { return null; } };
+const guardarRazones = (r) => { try { if (r) fs.writeFileSync(RAZONES(), JSON.stringify(r)); } catch (_) {} };
 async function refreshPrices() {
   if (Date.now() - _priceCache.at < 60000 && Object.keys(_priceCache.full).length) return;
   const ids = 'kadena,ethereum,binancecoin,polygon-ecosystem-token,usd-coin,tether,dai,wrapped-bitcoin';
+  let m = {};
   try {
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=' + FIATS.join(',') + '&include_24hr_change=true');
     const j = await r.json();
-    const m = {};
     for (const k of Object.keys(j)) {
-      const e = { chg: j[k].usd_24h_change };
+      const e = { chg: j[k].usd_24h_change, fuente: 'coingecko' };
       for (const f of FIATS) e[f] = j[k][f];
       m[k] = e;
     }
-    if (Object.keys(m).length) _priceCache = { at: Date.now(), full: m };
-  } catch (_) { /* sin red: mantiene la última */ }
+    if (m.kadena) guardarRazones(precios.razonesDe(m.kadena));
+  } catch (_) { m = {}; /* sin red o bloqueado: abajo el respaldo */ }
+  // RESPALDO (29/09/2026): sin KDA de CoinGecko -403 de CloudFront, cuota, o un
+  // 200 sin el- el KDA sale del pool KDA/kb-USDC del Mercado, y las estables a un
+  // dolar. Lo demas se queda como estuviera en la ultima lectura buena.
+  if (!m.kadena || !(Number(m.kadena.usd) > 0)) {
+    try {
+      const { cfg, c } = cfgDca();
+      const res = await ordenes.reservas(cfg, parOrdenes(c));
+      m = { ..._priceCache.full, ...m, ...precios.respaldo(res.precio, cargarRazones()) };
+    } catch (_) { /* ni pool: se mantiene la ultima */ }
+  }
+  if (Object.keys(m).length) _priceCache = { at: Date.now(), full: m };
 }
 // Compat: el cálculo de saldos usa un mapa { cgId: usd } (números).
 async function getPrices() { await refreshPrices(); const m = {}; for (const k in _priceCache.full) m[k] = _priceCache.full[k].usd; return m; }
