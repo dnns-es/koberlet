@@ -2158,8 +2158,22 @@ ipcMain.handle('update:apply', async () => {
   // Las comillas simples de la ruta se duplican: el nombre de usuario de Windows puede
   // llevar apóstrofo (O'Brien) y sin esto el comando se rompe por la mitad (auditoría M-3).
   const ps = (p) => String(p).replace(/'/g, "''");
-  await new Promise((resolve, reject) => spawn('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${ps(zipPath)}' -DestinationPath '${ps(upd)}' -Force`], { windowsHide: true })
+  const correr = (cmd, args) => new Promise((resolve, reject) => spawn(cmd, args, { windowsHide: true })
+    .on('error', reject)
     .on('exit', c => c === 0 ? resolve() : reject(new Error('unzip código ' + c))));
+  // Primero el tar.exe que trae Windows 10/11: el paquete son ~16.600 ficheros y
+  // Expand-Archive tardaba MINUTOS en ellos (30/09/2026, Antonio: «actualizo, pero le
+  // costo mucho»; la pantalla parecia colgada). tar lo hace en ~8 s. Si no esta o
+  // falla, se vuelve a PowerShell sobre una carpeta limpia.
+  const tar = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe');
+  let hecho = false;
+  if (fs.existsSync(tar)) {
+    try { await correr(tar, ['-xf', zipPath, '-C', upd]); hecho = fs.existsSync(path.join(upd, 'app', 'main.js')); } catch (_) {}
+    if (!hecho) { try { fs.rmSync(path.join(upd, 'app'), { recursive: true, force: true }); } catch (_) {} }
+  }
+  if (!hecho) {
+    await correr('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${ps(zipPath)}' -DestinationPath '${ps(upd)}' -Force`]);
+  }
   if (!fs.existsSync(path.join(upd, 'app'))) throw new Error('el paquete no contiene la carpeta app.');
   // 3) .bat que espera al cierre, cambia resources/app (con respaldo) y reinicia
   const bat = path.join(upd, 'apply.bat');
