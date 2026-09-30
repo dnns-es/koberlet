@@ -1001,8 +1001,15 @@ async function planesDcaDe(c, cfg, cuenta) {
     dca.planesDe(cfg, cuenta).catch(() => []),
     dca.planesDe({ ...cfg, modulo: c.dca.moduloNuevo, gasolinera: null }, cuenta).catch(() => [])
   ]);
-  return (viejos || []).map(p => ({ ...p, modulo: c.dca.modulo }))
+  const planes = (viejos || []).map(p => ({ ...p, modulo: c.dca.modulo }))
     .concat((nuevos || []).map(p => ({ ...p, modulo: c.dca.moduloNuevo })));
+  // El precio limite vive en otra tabla del contrato: una lectura mas por plan vivo.
+  // Si no se puede leer, null: la pantalla dice "sin leer", no "sin limite".
+  await Promise.all(planes.map(async (p) => {
+    if (p.status === 'closed') { p.limite = 0; return; }
+    p.limite = await dca.limiteDe({ ...cfg, modulo: p.modulo }, p.id).catch(() => null);
+  }));
+  return planes;
 }
 // Precisiones por modulo, para el decimal canonico del topup.
 function precisionesDca(c) {
@@ -1071,7 +1078,15 @@ ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, 
   const rc = await dca.crearPlan(cfg, { owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret,
     tokenIn: tIn.modulo, tokenOut: tOut.modulo, precIn: tIn.precision, minCuota: tIn.minCuota, simIn: de,
     deposito, cuota, periodo, slippage });
-  return { ...rc, chain: cfg.chain };   // el renderer necesita la chain para sondear
+  return { ...rc, chain: cfg.chain, modulo: cfg.modulo };   // el renderer necesita la chain para sondear y el modulo para el limite
+});
+// Precio limite del plan (set-limit del contrato). 0 lo quita.
+ipcMain.handle('dca:limite', async (_e, { passphrase, walletId, id, precio, modulo } = {}) => {
+  const w = walletDca(walletId);
+  if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
+  const { cfg } = cfgDca(modulo);
+  const rl = await dca.fijarLimite(cfg, { id, precio, owner: w.kda.account, publicHex: w.kda.public, secretHex: w.kda.secret });
+  return { ...rl, chain: cfg.chain };
 });
 ipcMain.handle('dca:recargar', async (_e, { passphrase, walletId, id, cantidad, modulo } = {}) => {
   const w = walletDca(walletId);
@@ -1214,6 +1229,17 @@ ipcMain.handle('dex:cambiar', async (_e, { passphrase, walletId, de, a, cantidad
   if (w.ledger) throw new Error('Con Ledger no se puede cambiar aqui: el aparato no sabe ensenar la llamada al AMM y seria firma ciega.');
   if (!passOk(passphrase)) throw new Error('Contrasena incorrecta.');
   const cfg = cfgDex();
+  // El saldo se mira aqui, del lado que firma, y no solo en la pantalla: mandar mas de
+  // lo que hay lo rechaza la cadena COBRANDO el gas del intento (30/09/2026).
+  try {
+    const rs = await kda.local(cfg.node, cfg.networkId, cfg.chain, '(' + de + '.get-balance "' + w.kda.account + '")');
+    const v = rs && rs.status === 'success' ? rs.data : 0;
+    const saldo = Number(typeof v === 'object' && v ? (v.decimal != null ? v.decimal : v.int) : v) || 0;
+    if (Number(cantidad) > saldo) throw new Error('No tienes tanto en la chain 2: hay ' + saldo + ' y pides ' + cantidad + '.');
+  } catch (e) {
+    if (/No tienes tanto/.test(String(e && e.message))) throw e;
+    /* si el nodo no contesta al saldo, decide la cadena, como hasta ahora */
+  }
   const r = await dex.cambiar(cfg, { de, a, cantidad, slippage, cuenta: w.kda.account,
                                      publicHex: w.kda.public, secretHex: w.kda.secret });
   MERCADO_CACHE = null;               // el pool acaba de moverse: la cache ya no vale

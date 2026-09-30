@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('api', {
   dcaCrear: (a) => ipcRenderer.invoke('dca:crear', a),
   dcaRecargar: (a) => ipcRenderer.invoke('dca:recargar', a),
   dcaAccion: (a) => ipcRenderer.invoke('dca:accion', a),
+  dcaLimite: (a) => ipcRenderer.invoke('dca:limite', a),
   // Ordenes limite (free.ksw2): crear y cancelar. La ejecucion no pasa por aqui.
   ordEstado: (a) => ipcRenderer.invoke('ord:estado', a),
   ordCotizar: (a) => ipcRenderer.invoke('ord:cotizar', a),

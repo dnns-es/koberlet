@@ -149,6 +149,21 @@ const LANG = {
     dca_hecho: 'Hecho.',
     dca_ledger: 'Con Ledger no: el aparato no puede enseñarte la llamada al contrato y sería firmar a ciegas.',
     dca_historial: 'Mis planes',
+    dca_limite: 'Precio límite ({t} por KDA), opcional',
+    dca_limite_compra: 'Solo compra si 1 KDA ≤ {p} {t}. Si el precio está por encima, esa cuota se salta y se prueba en la siguiente.',
+    dca_limite_venta: 'Solo vende si 1 KDA ≥ {p} {t}. Si el precio está por debajo, esa cuota se salta y se prueba en la siguiente.',
+    dca_limite_vacio: 'Sin límite: compra al precio que haya. Escribe un precio para que solo compre por debajo (o venda por encima) de él.',
+    dca_limite_fila: 'Límite: 1 KDA {op} {p} {t}',
+    dca_limite_sin: 'Sin precio límite',
+    dca_limite_sinleer: 'Precio límite: sin leer',
+    dca_limite_btn: 'Precio límite',
+    dca_cuanto_limite: 'Precio límite en {t} por KDA ({op}). 0 para quitarlo.',
+    dca_conf_limite: 'Vas a fijar el precio límite del plan {id} en {p} {t} por KDA: {q}.',
+    dca_conf_limite_quitar: 'Vas a quitar el precio límite del plan {id}: comprará al precio que haya.',
+    dca_limite_puesto: 'Precio límite fijado.',
+    dca_limite_despues: 'Plan creado. Cuando entre en un bloque se le fija el precio límite ({p} {t} por KDA): no cierres esta pantalla.',
+    dca_limite_fallo: 'El plan se creó, pero no se pudo fijar el precio límite. Ponlo desde «Mis planes».',
+    dca_limite_rango: 'El precio límite va de 0 a 1000.',
     wc_sin_projectid: 'WalletConnect no está configurado en esta versión.', wc_sin_arrancar: 'WalletConnect todavía no ha arrancado. Espera un momento y vuelve a intentarlo.', wc_sin_cuentas: 'No hay ninguna cartera de Kadena que ofrecer a la web.', wc_sin_codigo: 'La web no ha mandado nada que firmar.', wc_sin_cuenta: 'La web pide firmar con una cuenta que no es de este monedero.', wc_sin_chain: 'La web no dice en qué chain va la operación.',
     nodo_no_contesta: 'no contesta', nodo_atras: '{n} bloques atrás', nodo_al_dia: 'al día', nodo_sin_medir: 'sin medir', nodo_fijado: 'fijado', nodo_tuyo: 'tuyo', nodo_soltar: 'soltar', nodo_fijar: 'fijar', nodo_quitar: 'quitar',
     dca_det: 'Resumen', dca_det_estado: 'Estado', dca_det_bote: 'Queda en el bote', dca_det_gastado: 'Gastado', dca_det_recibido: 'Recibido', dca_det_compras: 'Compras hechas', dca_det_medio: 'Precio medio', dca_det_prox: 'Próxima compra',
@@ -279,6 +294,7 @@ const LANG = {
     mx_frenado: 'parado aquí: por encima del {m} % de impacto no se cambia. Prueba con menos cantidad.',
     mx_mismos: 'Son el mismo token.',
     mx_sin_cotizar: 'Espera a que salga el cálculo.',
+    mx_sin_saldo: 'No tienes tanto en la chain 2: tienes {s} {t}.',
     mx_ruta_no: 'Ese cambio todavía no está montado en Ethereum. De momento solo USDC ⇄ ETH y USDT ⇄ USDC; para lo demás, pasa antes por USDC.',
     mx_ledger: 'Con Ledger no se puede cambiar aquí: el aparato no sabe enseñarte la llamada al mercado, así que sería firmar a ciegas.',
     mx_conf: 'Cambiar {a} {f} por unos {r} {t}.',
@@ -602,6 +618,21 @@ const LANG = {
     dca_hecho: 'Done.',
     dca_ledger: 'Not with Ledger: the device cannot show you the contract call and it would mean blind signing.',
     dca_historial: 'My plans',
+    dca_limite: 'Price limit ({t} per KDA), optional',
+    dca_limite_compra: 'Buys only if 1 KDA ≤ {p} {t}. If the price is above, that buy is skipped and tried again next time.',
+    dca_limite_venta: 'Sells only if 1 KDA ≥ {p} {t}. If the price is below, that sale is skipped and tried again next time.',
+    dca_limite_vacio: 'No limit: buys at whatever the price is. Enter a price so it only buys below it (or sells above it).',
+    dca_limite_fila: 'Limit: 1 KDA {op} {p} {t}',
+    dca_limite_sin: 'No price limit',
+    dca_limite_sinleer: 'Price limit: could not read',
+    dca_limite_btn: 'Price limit',
+    dca_cuanto_limite: 'Price limit in {t} per KDA ({op}). 0 to remove it.',
+    dca_conf_limite: 'You are about to set the price limit of plan {id} to {p} {t} per KDA: {q}.',
+    dca_conf_limite_quitar: 'You are about to remove the price limit of plan {id}: it will buy at whatever the price is.',
+    dca_limite_puesto: 'Price limit set.',
+    dca_limite_despues: 'Plan created. Once it is in a block the price limit ({p} {t} per KDA) will be set: keep this screen open.',
+    dca_limite_fallo: 'The plan was created, but the price limit could not be set. Set it from "My plans".',
+    dca_limite_rango: 'The price limit goes from 0 to 1000.',
     wc_sin_projectid: 'WalletConnect is not configured in this version.', wc_sin_arrancar: 'WalletConnect has not started yet. Wait a moment and try again.', wc_sin_cuentas: 'There is no Kadena wallet to offer the website.', wc_sin_codigo: 'The website sent nothing to sign.', wc_sin_cuenta: 'The website asks to sign with an account that is not in this wallet.', wc_sin_chain: 'The website does not say which chain the operation is on.',
     nodo_no_contesta: 'not responding', nodo_atras: '{n} blocks behind', nodo_al_dia: 'up to date', nodo_sin_medir: 'not measured', nodo_fijado: 'pinned', nodo_tuyo: 'yours', nodo_soltar: 'unpin', nodo_fijar: 'pin', nodo_quitar: 'remove',
     dca_det: 'Summary', dca_det_estado: 'Status', dca_det_bote: 'Pot remaining', dca_det_gastado: 'Spent', dca_det_recibido: 'Received', dca_det_compras: 'Buys done', dca_det_medio: 'Average price', dca_det_prox: 'Next buy',
@@ -732,6 +763,7 @@ const LANG = {
     mx_frenado: 'stopped here: above {m} % impact the swap is blocked. Try a smaller amount.',
     mx_mismos: 'Those are the same token.',
     mx_sin_cotizar: 'Wait for the quote.',
+    mx_sin_saldo: 'You do not have that much on chain 2: you have {s} {t}.',
     mx_ruta_no: 'That swap is not wired up on Ethereum yet. For now only USDC ⇄ ETH and USDT ⇄ USDC; for anything else, go through USDC first.',
     mx_ledger: 'Not available with Ledger: the device cannot show you the market call, so it would be blind signing.',
     mx_conf: 'Swap {a} {f} for about {r} {t}.',
@@ -1767,7 +1799,9 @@ function pintarDisponible(idZona, walletId, simbolo) {
 //
 // En Ethereum solo hay las rutas que estan probadas de verdad (USDC/ETH y USDT/USDC). Si
 // se pide una que no existe se dice claramente, en vez de inventar un camino sin probar.
-const MX = { red: 'kda', tokens: [], de: 'coin', a: null, q: null, cargando: false, fondoMin: 1000, impactoMax: 10 };
+// `de` nace vacio a proposito: el par de fabrica es kb-USDC -> KDA (Antonio, 30/09/2026)
+// y el modulo del kb-USDC se sabe al leer el mercado, en mxCargarKda.
+const MX = { red: 'kda', tokens: [], de: null, a: 'coin', q: null, cargando: false, fondoMin: 1000, impactoMax: 10 };
 const MX_ETH = [
   { sim: 'ETH', mod: 'ETH' }, { sim: 'USDC', mod: 'USDC' }, { sim: 'USDT', mod: 'USDT' }
 ];
@@ -1829,8 +1863,13 @@ async function mxCargarKda() {
   const op = [`<option value="coin">KDA</option>`].concat(MX.tokens.map(x =>
     `<option value="${esc(x.modulo)}">${esc(x.simbolo)}</option>`)).join('');
   $('mx-de').innerHTML = op; $('mx-a').innerHTML = op;
-  if (!MX.tokens.some(x => x.modulo === MX.a)) MX.a = (MX.tokens[0] || {}).modulo || null;
-  if (MX.de === MX.a) MX.de = 'coin';
+  // De fabrica, kb-USDC arriba y KDA abajo: es el cambio que se hace casi siempre en
+  // este mercado (Antonio, 30/09/2026). Si no hubiera par de kb-USDC, el primero con fondo.
+  const esToken = (m) => MX.tokens.some(x => x.modulo === m);
+  if (!MX.de) MX.de = ((MX.tokens.find(x => x.simbolo === 'kb-USDC') || MX.tokens[0]) || {}).modulo || 'coin';
+  if (MX.de !== 'coin' && !esToken(MX.de)) MX.de = 'coin';
+  if (MX.a !== 'coin' && !esToken(MX.a)) MX.a = (MX.tokens[0] || {}).modulo || null;
+  if (MX.de === MX.a) MX.de = MX.a === 'coin' ? ((MX.tokens[0] || {}).modulo || 'coin') : 'coin';
   $('mx-de').value = MX.de; if (MX.a) $('mx-a').value = MX.a;
   $('mx-lista').innerHTML = MX.tokens.map(x => `<div class="vf-linea"><span>${esc(x.simbolo)}</span>`
     + `<span class="cifra">${fmtCorto(x.fondoKda, 0)} KDA</span></div>`).join('');
@@ -1841,6 +1880,7 @@ async function mxCargarKda() {
 async function mxSaldos() {
   const wid = $('mx-wallet').value;
   $('mx-bal-de').textContent = ''; $('mx-bal-a').textContent = '';
+  delete $('mx-bal-de').dataset.saldo; // que no se quede el saldo de otra wallet o token
   if (!wid || MX.red !== 'kda') return;
   for (const [mod, el] of [[MX.de, 'mx-bal-de'], [MX.a, 'mx-bal-a']]) {
     if (!mod) continue;
@@ -1964,6 +2004,13 @@ function mxCambiar() {
   if (MX.red === 'kda' && isLedgerW(wid)) return msg($('mx-msg'), t('mx_ledger'), 'err');
   if (!MX.q) return msg($('mx-msg'), t('mx_sin_cotizar'), 'err');
   if (MX.q.frenado) return msg($('mx-msg'), tr('mx_frenado', { m: MX.impactoMax }), 'err');
+  // Mas de lo que hay no se firma. La cadena lo rechazaria igual, pero COBRANDO el gas
+  // del intento (30/09/2026: Antonio pidio 100 kb-USDC teniendo 22 y pago tres veces).
+  // El saldo es el que pinta la propia pantalla; si no se pudo leer, decide la cadena.
+  const saldoDe = Number(($('mx-bal-de') || {}).dataset && $('mx-bal-de').dataset.saldo);
+  if (MX.red === 'kda' && isFinite(saldoDe) && Number(cant) > saldoDe) {
+    return msg($('mx-msg'), tr('mx_sin_saldo', { s: fmtCorto(saldoDe), t: mxSim(MX.de) }), 'err');
+  }
   // La comisión se dice otra vez aquí, que es el último sitio donde se puede decir que no.
   // En Kadena sale de lo que das; en Ethereum, de lo que recibes: lo hace el propio router.
   const resumen = tr('mx_conf', { a: esc(cant), f: mxSim(MX.de), t: mxSim(MX.a), r: mxNum(MX.q.esperada) })
@@ -2261,10 +2308,12 @@ function dcaDuracion(seg) {
 // la operacion no ha ido. Le paso a un usuario que cerro dos veces un plan con 63.000
 // KDA porque las dos veces vio el plan igual que estaba — y las dos veces habia
 // funcionado. Se sondea el requestKey con tx:info hasta que el nodo lo tiene.
+// Devuelve true si la tx entro en un bloque y salio bien, false si fallo y null si no se
+// llego a ver (que no es un fallo: sigue su curso).
 async function dcaConfirmar(r, elMsg) {
   const rk = r && r.requestKey;
   const chain = r && r.chain;
-  if (!rk || chain === undefined) { setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000); return; }
+  if (!rk || chain === undefined) { setTimeout(() => { dcaCargar(); renderOrdenesActivas(); }, 4000); return null; }
   const aviso = (txt) => { if (elMsg) msg(elMsg, txt); };
   aviso(t('dca_confirmando'));
   // 20 intentos de 6 s = 2 minutos. Pasado eso, la tx sigue su curso: no es un fallo.
@@ -2276,11 +2325,12 @@ async function dcaConfirmar(r, elMsg) {
       const res = (d.datos && d.datos.result) || {};
       dcaCargar(); renderOrdenesActivas();
       aviso(res.status === 'success' ? t('dca_confirmado') : t('dca_reverso'));
-      return;
+      return res.status === 'success';
     }
   }
   dcaCargar(); renderOrdenesActivas();
   aviso(t('dca_tarda'));
+  return null;
 }
 
 // ===== LAUNCH: comprar un token a precio fijo, directo a su contrato =====
@@ -2459,15 +2509,18 @@ function dcaPintarPlanes() {
       <div><b>${esc(simIn)} → ${esc(simOut)}</b> <span class="muted xs">${esc(p.id)}</span></div>
       <div class="muted xs">${tr('dca_plan_linea', { q: cuota, s: esc(simIn), p: dcaPeriodoTxt(dcaNum(p.period)) })}</div>
       <div class="muted xs">${tr('dca_plan_estado', { e: esc(p.status), b: bote, s: esc(simIn), n: quedan, c: dcaNum(p.buys), r: dcaNum(p.received), o: esc(simOut) })}</div>
+      ${abierto ? `<div class="muted xs">${dcaLimiteTxt(p, simIn, simOut)}</div>` : ''}
       ${dcaResumenPlan(p, simIn, simOut)}
       ${abierto ? `<div class="dcabtns">
         <button class="tiny ghost dca-top" data-i="${i}">${t('dca_recargar')}</button>
+        <button class="tiny ghost dca-lim" data-i="${i}">${t('dca_limite_btn')}</button>
         <button class="tiny ghost dca-pr" data-i="${i}">${p.status === 'paused' ? t('dca_reanudar') : t('dca_pausar')}</button>
         <button class="tiny ghost dca-cerrar" data-i="${i}">${t('dca_cerrar')}</button>
       </div>` : ''}
     </div>`;
   }).join('');
   zona.querySelectorAll('.dca-top').forEach(b => b.onclick = () => dcaRecargar(Number(b.dataset.i)));
+  zona.querySelectorAll('.dca-lim').forEach(b => b.onclick = () => dcaLimite(Number(b.dataset.i)));
   zona.querySelectorAll('.dca-pr').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), DCA.planes[Number(b.dataset.i)].status === 'paused' ? 'reanudar' : 'pausar'));
   zona.querySelectorAll('.dca-cerrar').forEach(b => b.onclick = () => dcaAccion(Number(b.dataset.i), 'cerrar'));
 }
@@ -2497,6 +2550,31 @@ function dcaResumenPlan(p, simIn, simOut) {
   </details>`;
 }
 
+// ---- Precio limite ([P8] del contrato): TOKEN por KDA, siendo TOKEN el lado que no es
+// KDA. Comprar KDA (entregas el token): solo si el precio esta por debajo o igual.
+// Vender KDA (entregas KDA): solo si esta por encima o igual. 0 = sin limite.
+// Es lo que pidio Antonio el 30/09/2026: «en dca poner limite de precio».
+const dcaEsVenta = (simIn) => simIn === 'KDA';
+const dcaTokenLimite = (simIn, simOut) => (simIn === 'KDA' ? simOut : simIn);
+const dcaOpLimite = (simIn) => (dcaEsVenta(simIn) ? '≥' : '≤');
+
+function dcaLimiteTxt(p, simIn, simOut) {
+  if (p.limite === null || p.limite === undefined) return t('dca_limite_sinleer');
+  if (!(p.limite > 0)) return t('dca_limite_sin');
+  return tr('dca_limite_fila', { op: dcaOpLimite(simIn), p: fmtCorto(p.limite, decAsset(p.limite)), t: esc(dcaTokenLimite(simIn, simOut)) });
+}
+
+// La ayuda bajo la casilla del formulario, con la direccion del par que este puesta.
+function dcaLimiteAyuda() {
+  if (!$('dca-limite')) return;
+  const de = DCA_DIR.de, a = DCA_DIR.a;
+  const tk = dcaTokenLimite(de, a);
+  const v = Number($('dca-limite').value);
+  $('dca-lbl-limite').textContent = tr('dca_limite', { t: tk });
+  if (!(v > 0)) return void ($('dca-limite-ayuda').textContent = t('dca_limite_vacio'));
+  $('dca-limite-ayuda').textContent = tr(dcaEsVenta(de) ? 'dca_limite_venta' : 'dca_limite_compra', { p: v, t: tk });
+}
+
 // Resumen antes de firmar: cuántas compras salen, cuánto dura y qué se lleva la comisión.
 function dcaResumen() {
   if (!DCA || !$('dca-de')) return;
@@ -2505,6 +2583,7 @@ function dcaResumen() {
   const tk = (DCA.tokens || {})[de] || {};
   $('dca-lbl-dep').textContent = t('dca_bote') + ' (' + de + ')';
   $('dca-lbl-cuota').textContent = t('dca_cuota') + ' (' + de + ')';
+  dcaLimiteAyuda();
   if (de === a) return msg($('dca-resumen'), t('dca_mismo_token'), 'err');
   if (!dep || !cuota) { $('dca-resumen').textContent = ''; return; }
   if (cuota < (tk.minCuota || 0)) return msg($('dca-resumen'), tr('dca_min', { m: tk.minCuota, s: de }), 'err');
@@ -2517,7 +2596,7 @@ function dcaResumen() {
 // Enganches con guarda: un TypeError aquí arriba dejaría toda la interfaz en blanco.
 if ($('dca-wallet')) $('dca-wallet').onchange = () => { dcaPintarDireccion(); dcaCargar(); };
 if ($('dca-invert')) $('dca-invert').onclick = () => { DCA_DIR = { de: DCA_DIR.a, a: DCA_DIR.de }; dcaPintarDireccion(); dcaResumen(); };
-for (const idc of ['dca-dep', 'dca-cuota', 'dca-periodo', 'dca-slip']) {
+for (const idc of ['dca-dep', 'dca-cuota', 'dca-periodo', 'dca-slip', 'dca-limite']) {
   if ($(idc)) { $(idc).oninput = dcaResumen; $(idc).onchange = dcaResumen; }
 }
 
@@ -2526,17 +2605,50 @@ if ($('dca-crear')) $('dca-crear').onclick = () => {
   const de = DCA_DIR.de, a = DCA_DIR.a;
   const dep = $('dca-dep').value, cuota = $('dca-cuota').value;
   const periodo = Number($('dca-periodo').value), slippage = Number($('dca-slip').value);
+  const limite = Number($('dca-limite') && $('dca-limite').value) || 0;
   if (!wid) return msg($('dca-msg'), t('nft_sin_wallet'), 'err');
   if (de === a) return msg($('dca-msg'), t('dca_mismo_token'), 'err');
   if (!dep || !cuota) return msg($('dca-msg'), t('err_fill_dest_amt'), 'err');
+  if (limite < 0 || limite > 1000) return msg($('dca-msg'), t('dca_limite_rango'), 'err');
   if (isLedgerW(wid)) return msg($('dca-msg'), t('dca_ledger'), 'err');
-  askSend(tr('dca_conf', { d: esc(dep), s: esc(de), q: esc(cuota), p: dcaPeriodoTxt(periodo), o: esc(a) }),
+  const tkLim = dcaTokenLimite(de, a);
+  const extra = limite > 0 ? ' ' + tr(dcaEsVenta(de) ? 'dca_limite_venta' : 'dca_limite_compra', { p: limite, t: esc(tkLim) }) : '';
+  askSend(tr('dca_conf', { d: esc(dep), s: esc(de), q: esc(cuota), p: dcaPeriodoTxt(periodo), o: esc(a) }) + extra,
     async (pass) => {
       const r = await window.api.dcaCrear({ passphrase: pass, walletId: wid, de: de, a: a, deposito: dep, cuota: cuota, periodo: periodo, slippage: slippage });
-      dcaConfirmar(r, $('dca-msg'));
-      return tr('dca_creado', { id: r.id });
+      if (!(limite > 0)) { dcaConfirmar(r, $('dca-msg')); return tr('dca_creado', { id: r.id }); }
+      // El limite va en una tabla aparte y exige que el plan YA exista en la cadena:
+      // no cabe en la misma tx (firma acotada al TRANSFER vs enforce-guard suelto).
+      // Se espera a que el plan entre en un bloque y se manda entonces, con la misma
+      // contraseña que acaba de teclear: pedirla dos veces por un solo plan no es serio.
+      dcaConfirmar(r, $('dca-msg')).then(async (ok) => {
+        if (!ok) return msg($('dca-msg'), t('dca_limite_fallo'), 'err');
+        try {
+          const rl = await window.api.dcaLimite({ passphrase: pass, walletId: wid, id: r.id, precio: limite, modulo: r.modulo });
+          dcaConfirmar(rl, $('dca-msg'));
+        } catch (e) { msg($('dca-msg'), t('dca_limite_fallo') + ' ' + cleanErr(e), 'err'); }
+      });
+      return tr('dca_creado', { id: r.id }) + ' ' + tr('dca_limite_despues', { p: limite, t: esc(tkLim) });
     });
 };
+
+function dcaLimite(i) {
+  const p = DCA && DCA.planes[i]; if (!p) return;
+  const simIn = dcaSimbolo(p.tokenIn), simOut = dcaSimbolo(p.tokenOut);
+  const tk = dcaTokenLimite(simIn, simOut), op = dcaOpLimite(simIn);
+  const v = prompt(tr('dca_cuanto_limite', { t: tk, op: '1 KDA ' + op + ' X' }), p.limite > 0 ? String(p.limite) : '');
+  if (v === null) return;
+  const precio = Number(String(v).replace(',', '.'));
+  if (!isFinite(precio) || precio < 0 || precio > 1000) return msg($('dca-msg'), t('dca_limite_rango'), 'err');
+  const txt = precio > 0
+    ? tr('dca_conf_limite', { id: esc(p.id), p: precio, t: esc(tk), q: tr(dcaEsVenta(simIn) ? 'dca_limite_venta' : 'dca_limite_compra', { p: precio, t: esc(tk) }) })
+    : tr('dca_conf_limite_quitar', { id: esc(p.id) });
+  askSend(txt, async (pass) => {
+    const r = await window.api.dcaLimite({ passphrase: pass, walletId: $('dca-wallet').value, id: p.id, precio: precio, modulo: p.modulo });
+    dcaConfirmar(r, $('dca-msg'));
+    return t('dca_limite_puesto');
+  });
+}
 
 function dcaRecargar(i) {
   const p = DCA && DCA.planes[i]; if (!p) return;

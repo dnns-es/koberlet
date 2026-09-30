@@ -152,6 +152,8 @@ const ERRORES_EN = [
   [/^El contrato DCA esta pausado ahora mismo\.$/, 'The DCA contract is paused right now.'],
   [/^Ese plan no es de esta wallet\.$/, "That plan doesn't belong to this wallet."],
   [/^Ese plan ya esta cerrado\.$/, 'That plan is already closed.'],
+  [/^El precio limite va de 0 \(sin limite\) a (.+)\.$/, 'The price limit goes from 0 (no limit) to $1.'],
+  [/^No tienes tanto en la chain 2: hay (.+) y pides (.+)\.$/, "You don't have that much on chain 2: there is $1 and you ask for $2."],
 
   // --- Mercado (AMM de Kadena) y ordenes limite ---
   [/^Ese cambio no está soportado: (.+) → (.+)$/, "That swap isn't supported: $1 → $2"],
