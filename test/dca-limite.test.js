@@ -68,5 +68,43 @@ const prueba = (n, f) => Promise.resolve().then(f).then(() => { ok++; console.lo
     PLAN = { owner: 'k:' + 'cd'.repeat(32), status: 'active' };
     await assert.rejects(dca.fijarLimite(cfg, { id, precio: 0.5, owner: OWNER, publicHex: OWNER.slice(2), secretHex: SECRET }), /no es de esta wallet/);
   });
+  // La cuenta del contrato (execute-dca + kda-price), escrita aparte para comparar.
+  const contrato = (entregaKda, cuota, rk, rt) => {
+    const rin = entregaKda ? rk : rt, rout = entregaKda ? rt : rk;
+    const net = cuota * (1 - 0.005), inFee = net * (1 - 0.003);
+    const esperado = inFee * rout / (rin + inFee);
+    return entregaKda ? esperado / net : net / esperado;   // TOKEN por KDA, neto
+  };
+  const casi = (a, b) => Math.abs(a - b) / b < 1e-12;
+  await prueba('pago y limite: siempre techo de lo que pagas, y cuadra con el contrato', () => {
+    const rk = 1000000, rt = 10000;   // 1 KDA = 0,01 kb-USDC
+    // Compro kb-USDC entregando 1000 KDA: pago en KDA por cada kb-USDC.
+    const pv = dca.pagoActual({ rk, rt, entregaKda: true, cuota: 1000 });
+    assert.ok(pv > 100 && pv < 102, 'unos 100 KDA por kb-USDC, algo mas por comisiones: ' + pv);
+    assert.ok(casi(dca.limiteDesdePago(pv, true), contrato(true, 1000, rk, rt)));
+    // Compro KDA entregando 10 kb-USDC: pago en kb-USDC por cada KDA.
+    const pc = dca.pagoActual({ rk, rt, entregaKda: false, cuota: 10 });
+    assert.ok(pc > 0.01 && pc < 0.0102, pc);
+    assert.ok(casi(dca.limiteDesdePago(pc, false), contrato(false, 10, rk, rt)));
+    // Ida y vuelta.
+    assert.ok(casi(dca.pagoDesdeLimite(dca.limiteDesdePago(117.6, true), true), 117.6));
+    assert.strictEqual(dca.limiteDesdePago(0, true), 0);
+    assert.strictEqual(dca.limiteDesdePago('', false), 0);
+  });
+  await prueba('el valor por defecto deja comprar al precio de ahora', () => {
+    const rk = 987654.321, rt = 9876.54321;
+    for (const entregaKda of [true, false]) {
+      const cuota = entregaKda ? 1000 : 10;
+      const pago = dca.pagoActual({ rk, rt, entregaKda, cuota });
+      const defecto = dca.redondeoArriba(pago);
+      assert.ok(defecto > pago && defecto < pago * 1.003, defecto + ' vs ' + pago);
+      assert.ok(String(defecto).replace(/^0\.0*/, '').replace('.', '').length <= 4, 'cuatro cifras: ' + defecto);
+      // Con ese limite, el contrato dejaria pasar la compra de ahora (y el texto de 12
+      // decimales que se firma no lo estropea).
+      const L = Number(dca.limiteDesdePago(defecto, entregaKda).toFixed(12));
+      const precio = contrato(entregaKda, cuota, rk, rt);
+      assert.ok(entregaKda ? precio >= L : precio <= L, 'no pasaria: ' + precio + ' / ' + L);
+    }
+  });
   console.log(ok + ' pruebas del precio limite OK');
 })().catch((e) => { console.error('FALLA', e); process.exit(1); });

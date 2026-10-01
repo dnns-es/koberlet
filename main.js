@@ -1080,6 +1080,19 @@ ipcMain.handle('dca:crear', async (_e, { passphrase, walletId, de, a, deposito, 
     deposito, cuota, periodo, slippage });
   return { ...rc, chain: cfg.chain, modulo: cfg.modulo };   // el renderer necesita la chain para sondear y el modulo para el limite
 });
+// Reservas del pool KDA/<token> del DCA, para proponer el precio de ahora como limite.
+// El renderer manda el SIMBOLO; el modulo sale de la config, nunca de la pantalla.
+// Devuelve lo que pagarias ahora por cada unidad de lo que compras, con esa cuota, y el
+// valor propuesto para la casilla (redondeado a favor para que opere al precio de ahora).
+ipcMain.handle('dca:pago', async (_e, { de, a, cuota } = {}) => {
+  const { cfg, c } = cfgDca();
+  const entregaKda = de === 'KDA';
+  const tk = c.dca.tokens[entregaKda ? a : de];
+  if (!tk || tk.modulo === 'coin' || (de !== 'KDA' && a !== 'KDA')) throw new Error('Ese par no esta soportado por el DCA.');
+  const { rk, rt } = await dca.reservasPar(cfg, tk.modulo);
+  const pago = dca.pagoActual({ rk, rt, entregaKda, cuota });
+  return { pago, defecto: dca.redondeoArriba(pago) };
+});
 // Precio limite del plan (set-limit del contrato). 0 lo quita.
 ipcMain.handle('dca:limite', async (_e, { passphrase, walletId, id, precio, modulo } = {}) => {
   const w = walletDca(walletId);
