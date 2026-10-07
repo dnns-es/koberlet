@@ -29,10 +29,21 @@ function comprueba(nombre, dio, esperado) {
 
 // Un nodo de mentira: contesta a /cut con la altura que se le diga, tras el retardo
 // que se le diga. `caido` cierra la conexion sin contestar.
-function nodoFalso({ altura, retardoMs = 0, caido = false }) {
+// `sinPact` imita al nodo de la comunidad el 07-10-2026: /cut bien, Pact con 404 de nginx.
+function nodoFalso({ altura, retardoMs = 0, caido = false, sinPact = false }) {
   const srv = http.createServer((req, res) => {
     if (caido) { req.socket.destroy(); return; }
     setTimeout(() => {
+      if (req.url.includes('/pact/')) {
+        if (sinPact) {
+          res.writeHead(404, { 'Content-Type': 'text/html' });
+          res.end('<html><head><title>404 Not Found</title></head></html>');
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ gas: 1, result: { status: 'success', data: { int: altura } } }));
+        return;
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ hashes: { '2': { height: altura, hash: 'x' } } }));
     }, retardoMs);
@@ -88,6 +99,14 @@ function nodoFalso({ altura, retardoMs = 0, caido = false }) {
   const mm = await kdanodo.medir('http://127.0.0.1:' + muerto.puerto, 'mainnet01');
   comprueba('un nodo que corta la conexion no da altura', mm.ok, false);
   comprueba('un fallo del nodo no se confunde con altura 0', mm.altura, null);
+
+  // 07-10-2026: un nodo que va al dia en /cut pero no lee Pact no sirve.
+  const sinPact = await nodoFalso({ altura: 1050, sinPact: true });
+  const ms = await kdanodo.medir('http://127.0.0.1:' + sinPact.puerto, 'mainnet01');
+  comprueba('un nodo que no lee Pact cuenta como caido', ms.ok, false);
+  sinPact.srv.close();
+  comprueba('una respuesta de error de Pact no da altura 0',
+    (() => { try { return kdanodo.alturaDeSonda('{"result":{"status":"failure"}}'); } catch (_) { return 'lanza'; } })(), 'lanza');
 
   // sondear() con los tres: tiene que elegir el bueno aunque el viejo conteste antes.
   kdanodo.configurar({ networkId: 'mainnet01' });

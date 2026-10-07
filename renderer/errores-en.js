@@ -229,6 +229,8 @@ const ERRORES_EN = [
   // --- Nodos y hora ---
   [/^sin altura en la respuesta$/, 'no block height in the response'],
   [/^no contesto en (.+) s$/, 'no answer in $1 s'],
+  [/^no lee Pact: (.*)$/, 'cannot read Pact: $1'],
+  [/^HTTP (\d+) al leer Pact$/, 'HTTP $1 reading Pact'],
   [/^cabecera Date ilegible$/, 'unreadable Date header'],
 
   // --- Actualizacion ---
