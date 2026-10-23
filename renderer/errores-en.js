@@ -161,6 +161,7 @@ const ERRORES_EN = [
   [/^La red del fork no esta activa\.$/, "The fork network isn't active."],
   [/^El token (.+) no responde: su contrato está roto o no existe\.$/, "Token $1 isn't responding: its contract is broken or doesn't exist."],
   [/^El token (.+) devuelve una precisión rara\.$/, 'Token $1 returns an unusual precision.'],
+  [/^Ese token no tiene un contrato con forma válida\.$/, 'That token does not have a validly formed contract.'],
   [/^No pude leer el mercado: ([\s\S]*)$/, "Couldn't read the market: $1"],
   [/^Son el mismo token\.$/, "They're the same token."],
   [/^No hay camino entre esos dos tokens en este mercado\.$/, "There's no route between those two tokens in this market."],

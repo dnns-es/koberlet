@@ -1805,7 +1805,9 @@ const MX = { red: 'kda', tokens: [], de: null, a: 'coin', q: null, cargando: fal
 const MX_ETH = [
   { sim: 'ETH', mod: 'ETH' }, { sim: 'USDC', mod: 'USDC' }, { sim: 'USDT', mod: 'USDT' }
 ];
-const mxSim = (mod) => mod === 'coin' ? 'KDA' : String(mod).split('.').pop();
+// Escapado: el nombre sale del mercado que lee el nodo y acaba dentro de innerHTML
+// (la confirmación del cambio). Aviso de Alex GHSA-wj7g-5v28-pj92.
+const mxSim = (mod) => mod === 'coin' ? 'KDA' : esc(String(mod).split('.').pop());
 // Cuatro decimales dejan en «0,0004» un cambio de 0,00036 kb-ETH. Segun el tamano.
 const mxNum = (n) => fmtCorto(n, Math.abs(Number(n)) < 1 ? 8 : 4);
 
