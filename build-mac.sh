@@ -21,9 +21,9 @@ rm -rf "$DIST"
 mkdir -p "$STAGE"
 
 echo "==> Preparando código de la app (solo runtime)"
-cp main.js preload.js package.json "$STAGE/"
+cp main.js preload.js package.json package-lock.json "$STAGE/"
 cp -r lib renderer "$STAGE/"
-( cd "$STAGE" && npm install --omit=dev --no-audit --no-fund >/dev/null 2>&1 )
+( cd "$STAGE" && npm ci --omit=dev --no-audit --no-fund >/dev/null 2>&1 )
 
 echo "==> Copiando Electron.app -> $APPNAME.app"
 TARGET="$DIST/$APPNAME.app"
@@ -44,6 +44,13 @@ $PB -c "Set :CFBundleDisplayName $APPNAME" 2>/dev/null "$PLIST" || $PB -c "Add :
 $PB -c "Set :CFBundleIdentifier es.dnns.koberlet" "$PLIST"
 $PB -c "Set :CFBundleShortVersionString $VER" "$PLIST"
 $PB -c "Set :CFBundleVersion $VER" "$PLIST"
+# Enlace koberlet://wc?uri=... (issue #7): la web abre Koberlet con la conexion rellena.
+$PB -c "Delete :CFBundleURLTypes" "$PLIST" 2>/dev/null || true
+$PB -c "Add :CFBundleURLTypes array" "$PLIST"
+$PB -c "Add :CFBundleURLTypes:0 dict" "$PLIST"
+$PB -c "Add :CFBundleURLTypes:0:CFBundleURLName string es.dnns.koberlet" "$PLIST"
+$PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST"
+$PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string koberlet" "$PLIST"
 
 # Icono: convertir renderer/icon.ico -> icns si se puede (opcional).
 if [ -f renderer/icon.ico ]; then

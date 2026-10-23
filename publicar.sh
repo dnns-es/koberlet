@@ -144,7 +144,8 @@ const n=require('./$NOTAS');
 const app=JSON.parse(fs.readFileSync('$APPMETA','utf8'));
 j.version='$VER';
 j.appUrl='$BASE/koberlet-app-$VER.zip';
-j.sha256=app.sha256; j.sig=app.sig;
+j.sha256=app.sha256; j.sig=app.sig; j.sigVer=app.sigVer;
+if (!app.sigVer) { console.error('ERROR: el meta del paquete no trae sigVer (rehaz build-app-zip.sh)'); process.exit(1); }
 if ('$SOLO_APP'==='0') {
   const full=JSON.parse(fs.readFileSync('$FULLMETA','utf8'));
   j.url='$BASE/koberlet_v$VER.zip';
@@ -176,6 +177,7 @@ ok(j.appUrl==='$BASE/koberlet-app-$VER.zip', 'appUrl apunta a la $VER');
 if ('$SOLO_APP'==='0') ok(j.url==='$BASE/koberlet_v$VER.zip', 'enlace del instalador apunta a la $VER');
 const firma=(sha,sig)=>{ try { return nacl.sign.detached.verify(Buffer.from(sha,'utf8'),Buffer.from(sig,'hex'),Buffer.from(PUB,'hex')); } catch(e){ return false; } };
 ok(firma(j.sha256,j.sig), 'firma del paquete de auto-update');
+ok(firma('koberlet-app|'+j.version+'|'+j.sha256,j.sigVer), 'firma de la version (sigVer)');
 if ('$SOLO_APP'==='0') ok(firma(j.urlSha256,j.urlSig), 'firma del instalador completo');
 ok(typeof j.notes==='string' && !!j.notes.trim(), 'notas presentes');
 if (mal) { console.error('HAY '+mal+' COMPROBACIONES MAL'); process.exit(1); }

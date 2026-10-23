@@ -10,7 +10,7 @@ const cleanErr = (e) => errIdioma(textoWc(textoXchain(String((e && e.message) ||
 // Los codigos WC_SIN_* de WalletConnect (lib/walletconnect.js, lib/wc-comando.js) no son
 // frases: sin esto salian crudos, «WC_SIN_CHAIN», en los dos idiomas.
 function textoWc(m) {
-  const c = /^WC_(SIN_PROJECTID|SIN_ARRANCAR|SIN_CUENTAS|SIN_CODIGO|SIN_CUENTA|SIN_CHAIN|SIN_LIMITE)$/.exec(String(m).trim());
+  const c = /^WC_(SIN_PROJECTID|SIN_ARRANCAR|SIN_CUENTAS|SIN_CODIGO|SIN_CUENTA|SIN_CHAIN|SIN_LIMITE|SESION_CERRADA)$/.exec(String(m).trim());
   return c ? t('wc_' + c[1].toLowerCase()) : m;
 }
 // Los errores de main/lib vienen en espanol. Con la ventana en ingles se traducen con la
@@ -477,6 +477,17 @@ const LANG = {
     wc_f_sin_limite_ok: 'Lo entiendo y quiero firmarla igualmente',
     wc_sin_limite: 'Esta firma va sin límites: marca la casilla del aviso rojo si de verdad quieres firmarla.',
     wc_f_firmado: 'Firmado y devuelto a la web.',
+    wc_s_redes: 'Redes que pide:', wc_s_ver_ok: '✔ WalletConnect confirma que la petición viene de {d}.',
+    wc_s_ver_mal: '⚠ La dirección de esta web no coincide con la que declara. Puede ser una copia falsa: no conectes si no estás seguro.',
+    wc_s_ver_estafa: '⛔ WalletConnect marca esta web como ESTAFA conocida. No conectes.',
+    wc_s_ver_sin: 'WalletConnect no ha podido confirmar de qué web viene esto.',
+    wc_s_previas: 'Cerrar las {n} conexiones anteriores de esta web (si recargaste la página, ya no sirven y se quedan con tus peticiones)',
+    wc_f_llego: 'La petición llegó a las {h}.', wc_f_no_compartida: 'NO compartida con esta web',
+    wc_sesion_cerrada: 'La web ya cerró esta conexión: esta petición ya no la espera nadie.',
+    wc_f_caducada: 'La web dejó caducar esta petición. Ya no se puede firmar.',
+    wc_f_cerrada: 'La web cerró la conexión. Esta petición ya no la espera nadie.',
+    wc_rechazada: 'Koberlet ha rechazado una petición de {w}: {m}.',
+    wc_enlace: 'La web te ha pasado su enlace de conexión. Comprueba que lo has pedido tú y pulsa Conectar.',
     xc_err_destino_k: 'Para enviar entre chains el destino tiene que ser una cuenta k:.',
     xc_err_misma_chain: 'El origen y el destino son la misma chain.',
     xc_err_cantidad: 'Cantidad no válida.',
@@ -953,6 +964,17 @@ const LANG = {
     wc_f_sin_limite_ok: 'I understand and want to sign it anyway',
     wc_sin_limite: 'This signature is unrestricted: tick the box in the red warning if you really want to sign it.',
     wc_f_firmado: 'Signed and returned to the website.',
+    wc_s_redes: 'Networks requested:', wc_s_ver_ok: '✔ WalletConnect confirms the request comes from {d}.',
+    wc_s_ver_mal: '⚠ This website’s address does not match the one it declares. It may be a fake copy: do not connect unless you are sure.',
+    wc_s_ver_estafa: '⛔ WalletConnect flags this website as a known SCAM. Do not connect.',
+    wc_s_ver_sin: 'WalletConnect could not confirm which website this comes from.',
+    wc_s_previas: 'Close the {n} older connections of this website (if you reloaded the page they no longer work and hold back your requests)',
+    wc_f_llego: 'The request arrived at {h}.', wc_f_no_compartida: 'NOT shared with this website',
+    wc_sesion_cerrada: 'The website already closed this connection: nobody is waiting for this request any more.',
+    wc_f_caducada: 'The website let this request expire. It can no longer be signed.',
+    wc_f_cerrada: 'The website closed the connection. Nobody is waiting for this request any more.',
+    wc_rechazada: 'Koberlet rejected a request from {w}: {m}.',
+    wc_enlace: 'The website passed you its connection link. Check that you asked for it and press Connect.',
     xc_err_destino_k: 'To send between chains the destination must be a k: account.',
     xc_err_misma_chain: 'Source and destination are the same chain.',
     xc_err_cantidad: 'Invalid amount.',
@@ -1393,7 +1415,7 @@ function nftPintar(d) {
             const abierta = NFT_ABIERTA === nombre;
             return `<section class="nft-col${abierta ? ' abierta' : ''}">
                 <div class="nft-portada" data-col="${esc(nombre)}" title="${esc(nombre)}">
-                    ${portada.imagen ? `<img src="${portada.imagen}" alt="">`
+                    ${portada.imagen ? `<img src="${esc(portada.imagen)}" alt="">`
                                      : `<div class="sinimg">${t('nft_sin_imagen')}</div>`}
                     <div class="nft-portada-pie">
                         <div class="nft-portada-tit">${esc(nombre)}</div>
@@ -1469,6 +1491,8 @@ initNft();
 
 async function enter(v) {
   screen('app'); nav('dashboard'); maybeWelcome();
+  // Si la app se abrio desde un enlace koberlet:// con la boveda cerrada, se recoge ahora.
+  setTimeout(() => { if (typeof wcRecogerEnlace === 'function') wcRecogerEnlace(); }, 300);
   // interruptores de redes Kadena (Oficial / Fork), como las EVM
   $('kda-nets').innerHTML = CFG.kda.networks.map(n => `<label class="toggle"><input type="checkbox" data-knet="${n.key}" ${n.enabled ? 'checked' : ''}/><span class="tdot" style="background:${n.color}"></span>${n.name}</label>`).join('');
   $('kda-nets').querySelectorAll('input').forEach(cb => cb.onchange = async () => {
@@ -3165,7 +3189,7 @@ function visorFichaKda(o, r) {
         <span class="cifra">${visorMiles(m.importe)}</span>
         <span class="muted xs">${esc(m.token === 'coin' ? 'KDA' : String(m.token).split('.').pop())}</span>
         <span class="crece muted xs mono">${m.entra ? t('visor_de') : t('visor_a')} ${esc(visorCorta(String(m.otra || '')))}</span>
-        <span class="muted xs">chain ${m.chain}</span>
+        <span class="muted xs">chain ${esc(m.chain)}</span>
         <span class="muted xs">${visorHace(m.cuando)}</span>
       </div>`).join('')}
     </section>` : ''}
@@ -3986,6 +4010,16 @@ if (window.api.onWcPropuesta) window.api.onWcPropuesta(async (p) => {
   wcSesionActual = p;
   $('wc-s-quien').innerHTML = `<b>${esc(p.nombre)}</b><div class="mono xs">${esc(p.url)}</div>`;
   $('wc-s-pide').textContent = t('wc_s_pide') + ' ' + (p.metodos || []).join(', ');
+  // Redes, verificacion de la web y conexiones viejas (aviso de Alex 3d y 3e, issue #7).
+  $('wc-s-redes').textContent = t('wc_s_redes') + ' ' + ((p.redes || []).join(', ') || 'mainnet01');
+  const ver = { ok: ['ok', tr('wc_s_ver_ok', { d: esc(p.origen || p.url) })], mal: ['err', esc(t('wc_s_ver_mal'))],
+    estafa: ['err', esc(t('wc_s_ver_estafa'))] }[p.verificacion] || ['muted', esc(t('wc_s_ver_sin'))];
+  $('wc-s-verifica').className = 'xs ' + ver[0];
+  $('wc-s-verifica').innerHTML = p.verificacion === 'estafa' ? '<b>' + ver[1] + '</b>' : ver[1];
+  const nPrev = (p.previas || []).length;
+  $('wc-s-previas-row').hidden = !nPrev;
+  $('wc-s-previas').checked = true;
+  $('wc-s-previas-txt').textContent = t('wc_s_previas').replace('{n}', String(nPrev));
   // Con que cuenta se conecta lo eliges TU. Las webs se quedan con la primera que les
   // mandamos, asi que sin esto te conectaban con la que hubiera caido primero en la
   // lista -y te decian que tu cuenta no existe porque miraban otra distinta-.
@@ -4002,7 +4036,8 @@ if (window.api.onWcPropuesta) window.api.onWcPropuesta(async (p) => {
 if ($('wc-s-ok')) $('wc-s-ok').onclick = async () => {
   if (!wcSesionActual) return;
   try {
-    const r = await window.api.wcAprobarSesion(wcSesionActual.id, $('wc-s-wallet').value || null);
+    const cerrar = !$('wc-s-previas-row').hidden && $('wc-s-previas').checked;
+    const r = await window.api.wcAprobarSesion(wcSesionActual.id, $('wc-s-wallet').value || null, cerrar);
     $('modal-wc-sesion').hidden = true; wcSesionActual = null;
     wcPintarSesiones(r.sesiones);
     msg($('wc-msg'), t('wc_conectado'), 'ok');
@@ -4047,7 +4082,7 @@ function wcDetalle(c) {
   const json = (v) => esc(typeof v === 'string' ? v : JSON.stringify(v));
   // Quien firma y con que permisos, firmante a firmante. Antes no se veia ni la clave.
   const firmantes = (c.firmantes || []).map((f) => `<div class="xs" style="margin-top:4px">
-      <b>${esc(f.cartera || (f.mia ? t('wc_f_tuya') : t('wc_f_ajena')))}</b> <span class="mono">${esc(String(f.pubKey).slice(0, 8))}…${esc(String(f.pubKey).slice(-6))}</span>
+      <b>${esc(f.cartera || (f.mia ? t('wc_f_tuya') : t('wc_f_ajena')))}</b> <span class="mono">${esc(String(f.pubKey).slice(0, 8))}…${esc(String(f.pubKey).slice(-6))}</span>${f.mia && !f.compartida ? `<span class="err"> · ${esc(t('wc_f_no_compartida'))}</span>` : ''}
       ${f.sinLimite ? `<span class="err"> · ${esc(t('wc_f_sin_limite_corto'))}</span>`
         : (f.permisos || []).map((p) => `<div class="mono xs">${esc(p.nombre)} ${json(p.args || [])}</div>`).join('')}
     </div>`).join('');
@@ -4080,6 +4115,11 @@ function wcDetalle(c) {
 if (window.api.onWcFirma) window.api.onWcFirma((f) => {
   wcFirmaActual = f;
   $('wc-f-quien').innerHTML = `<b>${esc(f.nombre)}</b><div class="mono xs">${esc(f.url)}</div>`;
+  // Cuando llego: si la web se recargo, una peticion vieja se parece a la nueva (issue #7).
+  const hora = f.llegada ? new Date(f.llegada).toLocaleTimeString(LNG === 'en' ? 'en-GB' : 'es-ES') : '?';
+  const avisoVer = f.verificacion === 'estafa' ? ' · ' + t('wc_s_ver_estafa') : f.verificacion === 'mal' ? ' · ' + t('wc_s_ver_mal') : '';
+  $('wc-f-cuando').textContent = t('wc_f_llego').replace('{h}', hora) + avisoVer;
+  $('wc-f-cuando').className = 'xs ' + (avisoVer ? 'err' : 'muted');
   $('wc-f-detalle').innerHTML = (f.comandos || []).map(wcDetalle).join('');
   $('wc-f-pass').value = ''; msg($('wc-f-msg'), '');
   $('wc-f-btns').hidden = false; $('wc-f-pass-row').hidden = false;
@@ -4109,7 +4149,36 @@ if ($('wc-f-no')) $('wc-f-no').onclick = async () => {
   $('modal-wc-firma').hidden = true;
 };
 
-if (window.api.onWcCerrada) window.api.onWcCerrada(() => wcRefrescar());
+// La peticion en pantalla ya no la espera nadie: se dice y se quita el boton de firmar.
+function wcFirmaMuerta(texto) {
+  wcFirmaActual = null;
+  $('wc-f-btns').hidden = true; $('wc-f-pass-row').hidden = true;
+  msg($('wc-f-msg'), texto, 'warn');
+  setTimeout(() => { $('modal-wc-firma').hidden = true; }, 4000);
+}
+if (window.api.onWcCerrada) window.api.onWcCerrada((d) => {
+  if (wcFirmaActual && d && wcFirmaActual.topic === d.topic) wcFirmaMuerta(t('wc_f_cerrada'));
+  wcRefrescar();
+});
+if (window.api.onWcCaducada) window.api.onWcCaducada((d) => {
+  if (wcFirmaActual && d && String(wcFirmaActual.id) === String(d.id)) wcFirmaMuerta(t('wc_f_caducada'));
+});
+if (window.api.onWcRechazada) window.api.onWcRechazada((d) => {
+  toast(t('wc_rechazada').replace('{w}', String((d && d.nombre) || '?')).replace('{m}', errIdioma(String((d && d.motivo) || ''))));
+});
+// Enlace koberlet://wc?uri=... (issue #7): SOLO rellena la caja de Ajustes. Conectar lo
+// pulsa el dueño, y la conexion y cada firma se siguen aprobando a mano.
+async function wcRecogerEnlace() {
+  try {
+    const uri = await window.api.wcEnlace();
+    if (!uri) return;
+    nav('ajustes'); wcRefrescar();
+    $('wc-uri').value = uri;
+    msg($('wc-msg'), t('wc_enlace'), 'warn');
+    $('wc-uri').scrollIntoView({ block: 'center' });
+  } catch (_) {}
+}
+if (window.api.onWcEnlace) window.api.onWcEnlace(() => wcRecogerEnlace());
 
 if (window.api.onXchainProgress) window.api.onXchainProgress((m) => {
   const dlg = $('modal-send');

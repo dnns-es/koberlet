@@ -445,17 +445,50 @@ function createWindow() {
     if (/^https:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
+  // Solo se navega a la PROPIA app (renderer/index.html). Antes valia cualquier file://,
+  // y un enlace a un .html del disco se abria con el puente de la boveda al lado (aviso
+  // de Alex, hallazgo 5).
+  const PROPIA = require('url').pathToFileURL(path.join(__dirname, 'renderer', 'index.html')).href;
   win.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith('file://')) { e.preventDefault(); if (/^https:\/\//.test(url)) shell.openExternal(url); }
+    if (String(url).split(/[?#]/)[0] !== PROPIA) { e.preventDefault(); if (/^https:\/\//.test(url)) shell.openExternal(url); }
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
+// ---- Enlace koberlet://wc?uri=<wc:...> (issue #7; ver lib/wc-enlace.js) ----
+// Solo RELLENA la conexion en Ajustes: no conecta ni aprueba nada.
+let wcEnlace = null;
+const { wcDeEnlace } = require('./lib/wc-enlace');
+function wcRecibirEnlace(args) {
+  const uri = (Array.isArray(args) ? args : [args]).map(wcDeEnlace).find(Boolean);
+  if (!uri) return;
+  wcEnlace = uri;
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) { if (w.isMinimized()) w.restore(); w.focus(); }
+  wcAvisar('wc:enlace', {});
+}
+// La ventana lo recoge (al llegar o al desbloquear). Con la boveda cerrada se guarda.
+ipcMain.handle('wc:enlace', () => {
+  if (!unlocked || !wcEnlace) return null;
+  const u = wcEnlace; wcEnlace = null; return u;
+});
+// macOS lo manda por evento, y puede llegar antes de que la app este lista.
+app.on('open-url', (e, url) => { e.preventDefault(); wcRecibirEnlace(url); });
+
 // Instancia ÚNICA: si ya hay una abierta, la nueva enfoca la existente y se cierra (evita ventanas duplicadas).
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
+  app.on('second-instance', (_e, argv) => {
+    const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); }
+    wcRecibirEnlace(argv);
+  });
+  // Windows: el enlace llega como argumento (al abrir o en `second-instance`).
+  wcRecibirEnlace(process.argv);
   app.whenReady().then(() => {
+    try {
+      if (process.defaultApp) app.setAsDefaultProtocolClient('koberlet', process.execPath, [path.resolve(process.argv[1] || '.')]);
+      else app.setAsDefaultProtocolClient('koberlet');
+    } catch (_) {}
     createWindow(); ensureDesktopShortcut();
     arrancarSondaNodos();
     // puentes que quedaron en camino al cerrar la ultima vez: se retoma la vigilancia sin esperar a nada
@@ -1442,6 +1475,11 @@ const WC_PROJECT_ID = 'b0e3e11cc9ca4e31921e2ff7228a0f44';
 
 // Peticiones de firma a la espera de que una persona diga que si. id -> peticion.
 const wcPendientes = new Map();
+// Conexiones anteriores de la misma web, por propuesta: lo unico que se deja cerrar
+// al aprobar (issue #7). id de propuesta -> [topic].
+const wcPrevias = new Map();
+const wcNs = require('./lib/wc-namespaces');
+const wcMias = () => ((unlocked && unlocked.data.wallets) || []).filter((w) => w.kda).map((w) => String(w.kda.public).toLowerCase());
 
 function wcAvisar(canal, datos) {
   for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send(canal, datos); } catch (_) {} }
@@ -1450,7 +1488,8 @@ function wcAvisar(canal, datos) {
 // Desmenuza el comando para que la ventana pueda enseñarlo. Si algo no se entiende se
 // dice que no se entiende: NUNCA se adorna un comando ilegible con un resumen bonito,
 // que es justo como se cuela una firma que nadie ha leido de verdad.
-function wcExplicar(cmdStr) {
+function wcExplicar(cmdStr, claves) {
+  const compartidas = new Set((claves || []).map((k) => String(k).toLowerCase()));
   try {
     const j = JSON.parse(cmdStr);
     const exec = (j.payload && j.payload.exec) || {};
@@ -1465,6 +1504,8 @@ function wcExplicar(cmdStr) {
         // De quien es la clave, para que se vea CON QUE cartera se firma.
         cartera: w ? String(w.label || '') : '',
         mia: mias.has(pub.toLowerCase()),
+        // ¿Se compartio esta cuenta con la web al conectar? (aviso de Alex, hallazgo 3a)
+        compartida: compartidas.has(pub.toLowerCase()),
         // Sin clist = firma sin limites (ver `firmaSinLimite`).
         sinLimite: !Array.isArray(s.clist) || !s.clist.length,
         permisos: (s.clist || []).map((c) => ({ nombre: String(c.name || ''), args: c.args || [] }))
@@ -1502,16 +1543,35 @@ async function wcArrancar() {
   if (wcArrancado) return;
   await walletconnect.arrancar({
     projectId: WC_PROJECT_ID,
-    alProponer: (p) => wcAvisar('wc:propuesta', p),
-    alPedirFirma: (f) => {
+    alProponer: (p) => { wcPrevias.set(String(p.id), p.previas || []); wcAvisar('wc:propuesta', p); },
+    alPedirFirma: async (f) => {
+      // Lo que no cabe en lo que se aprobo al conectar (otra red, una cuenta que no se
+      // compartio) ni se enseña: se contesta que no y se avisa de por que.
+      for (const c of f.comandos) {
+        const motivo = wcNs.motivoFueraDeSesion(String(c.cmd || ''), walletconnect.sesionViva(f.topic), wcMias());
+        if (motivo) {
+          try { await walletconnect.fallar(f.topic, f.id, 'Koberlet no firma: ' + motivo); } catch (_) {}
+          wcAvisar('wc:rechazada', { nombre: f.nombre, url: f.url, motivo });
+          return;
+        }
+      }
       // Se guarda entera aqui; a la ventana va lo explicado, no el comando crudo.
       wcPendientes.set(String(f.id), f);
       wcAvisar('wc:firma', {
         id: f.id, topic: f.topic, nombre: f.nombre, url: f.url,
-        comandos: f.comandos.map((c) => wcExplicar(c.cmd))
+        llegada: f.llegada, verificacion: f.verificacion,
+        comandos: f.comandos.map((c) => wcExplicar(c.cmd, f.claves))
       });
     },
-    alCerrar: (topic) => wcAvisar('wc:cerrada', { topic })
+    // La web cerro la conexion (o se recargo y la cerro al irse): sus peticiones
+    // pendientes ya no las espera nadie. Se tiran y la ventana cierra la suya (issue #7).
+    alCerrar: (topic) => {
+      for (const [k, f] of wcPendientes) if (f.topic === topic) wcPendientes.delete(k);
+      wcAvisar('wc:cerrada', { topic });
+    },
+    alCaducar: (id) => {
+      if (wcPendientes.delete(String(id))) wcAvisar('wc:caducada', { id });
+    }
   });
   wcArrancado = true;
 }
@@ -1532,23 +1592,26 @@ ipcMain.handle('wc:emparejar', async (_e, { uri }) => {
 // Aprobar una sesion NO firma nada: solo enseña que cuentas hay. Aun asi se limita a
 // las wallets visibles con cuenta KDA, para no regalar de golpe las que el usuario
 // tiene escondidas de la lista.
-ipcMain.handle('wc:aprobar-sesion', async (_e, { id, walletId }) => {
+ipcMain.handle('wc:aprobar-sesion', async (_e, { id, walletId, cerrarPrevias }) => {
   if (!unlocked) throw new Error('bloqueado');
   const conKda = shownWallets().filter((w) => w.kda && w.kda.public);
   if (!conKda.length) throw new Error('No hay ninguna cuenta KDA que ofrecer.');
-  // EL ORDEN IMPORTA, y no es un detalle: las webs se quedan con la PRIMERA cuenta de
-  // la lista (medido en play.smartpacts.io, que hace `accounts[0]`). Mandarlas sin
-  // orden hacía que te conectara con una cartera vacía y la página dijera que tu
-  // cuenta no existe. La elegida va delante; las demás siguen ofreciéndose por si la
-  // web sabe elegir.
+  // Se comparte SOLO la cuenta elegida (aviso de Alex, hallazgo 3c): la pantalla dice
+  // «Conectar con esta cuenta» y se mandaban todas las visibles. Ademas, con una sola,
+  // la web no puede quedarse con otra (play.smartpacts.io hace `accounts[0]`).
   const elegida = conKda.find((w) => w.id === walletId) || conKda[0];
-  const claves = [elegida, ...conKda.filter((w) => w.id !== elegida.id)].map((w) => w.kda.public);
-  await walletconnect.aprobarSesion(id, claves);
+  await walletconnect.aprobarSesion(id, [elegida.kda.public]);
+  // Las conexiones anteriores de la misma web, si el dueño lo marco (issue #7). Solo
+  // las que se apuntaron al llegar la propuesta: la ventana no elige que se cierra.
+  const previas = wcPrevias.get(String(id)) || [];
+  wcPrevias.delete(String(id));
+  if (cerrarPrevias === true) for (const topic of previas) await walletconnect.desconectar(topic);
   return { sesiones: walletconnect.sesiones() };
 });
 
 ipcMain.handle('wc:rechazar-sesion', async (_e, { id }) => {
   if (!unlocked) throw new Error('bloqueado');
+  wcPrevias.delete(String(id));
   await walletconnect.rechazarSesion(id);
   return { ok: true };
 });
@@ -1593,6 +1656,15 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
   const f = wcPendientes.get(String(id));
   if (!f) throw new Error('Esa petición ya no está.');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  // La conexion tiene que seguir viva: si la web la cerro, la respuesta no la espera nadie.
+  const sesion = walletconnect.sesionViva(f.topic);
+  if (!sesion) { wcPendientes.delete(String(id)); throw new Error('WC_SESION_CERRADA'); }
+  // Otra vez aqui, no solo al llegar: nada se firma fuera de lo aprobado al conectar.
+  for (const c of (f.comandos || [])) {
+    const motivo = wcNs.motivoFueraDeSesion(String(c.cmd || ''), sesion, wcMias());
+    if (motivo) throw new Error('Koberlet no firma esto: ' + motivo + '.');
+  }
+  const compartidas = wcNs.clavesDeSesion(sesion);
   if (aceptaSinLimite !== true && (f.comandos || []).some((c) => firmaSinLimite(String(c.cmd || '')))) {
     throw new Error('WC_SIN_LIMITE');
   }
@@ -1606,6 +1678,7 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
     const pub = String(((j.signers || [])[0] || {}).pubKey || '').toLowerCase();
     const w = unlocked.data.wallets.find((x) => x.kda && String(x.kda.public).toLowerCase() === pub);
     if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
+    if (!compartidas.includes(pub)) throw new Error('Koberlet no firma esto: pide firmar con una cuenta que no se compartió con esta web.');
     if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
     const r = kda.firmarCmd(cmdStr, w.kda.secret);
     wcPendientes.delete(String(id));
@@ -1627,6 +1700,7 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
     for (const pub of pedidas) {
       const w = unlocked.data.wallets.find((x) => x.kda && String(x.kda.public).toLowerCase() === pub);
       if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
+      if (!compartidas.includes(pub)) throw new Error('Koberlet no firma esto: pide firmar con una cuenta que no se compartió con esta web.');
       if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
       const r = kda.firmarCmd(cmdStr, w.kda.secret);
       sigs.push({ pubKey: pub, sig: r.sig });
@@ -2201,6 +2275,15 @@ ipcMain.handle('update:apply', async () => {
   let sigOk = false;
   try { sigOk = nacl.sign.detached.verify(Buffer.from(gotHash, 'utf8'), Buffer.from(j.sig, 'hex'), Buffer.from(UPDATE_PUBKEY, 'hex')); } catch (_) {}
   if (!sigOk) throw new Error('Firma del paquete inválida; actualización rechazada (posible manipulación).');
+  // NUNCA HACIA ATRAS (aviso de Alex, hallazgo 4). La firma de arriba solo cubre el sha256,
+  // asi que un latest.json manipulado podia servir un paquete VIEJO, firmado de verdad, y
+  // devolver a todos a una version de antes de las auditorias. `sigVer` firma version y
+  // sha256 juntos, y la version tiene que ser mayor que la instalada.
+  const verNueva = (typeof j.version === 'string' && /^\d+\.\d+\.\d+$/.test(j.version)) ? j.version : '';
+  if (!verNueva || cmpVer(verNueva, APP_VERSION) <= 0) throw new Error('La versión del servidor no es más nueva que la instalada; no se actualiza.');
+  let verOk = false;
+  try { verOk = nacl.sign.detached.verify(Buffer.from('koberlet-app|' + verNueva + '|' + gotHash, 'utf8'), Buffer.from(String(j.sigVer || ''), 'hex'), Buffer.from(UPDATE_PUBKEY, 'hex')); } catch (_) {}
+  if (!verOk) throw new Error('La versión del paquete no va firmada; actualización rechazada por seguridad.');
   const zipPath = path.join(upd, 'app.zip');
   fs.writeFileSync(zipPath, bytes);
   // 2) extraer con PowerShell (queda upd/app)
@@ -2224,6 +2307,10 @@ ipcMain.handle('update:apply', async () => {
     await correr('powershell', ['-NoProfile', '-NonInteractive', '-Command', `Expand-Archive -LiteralPath '${ps(zipPath)}' -DestinationPath '${ps(upd)}' -Force`]);
   }
   if (!fs.existsSync(path.join(upd, 'app'))) throw new Error('el paquete no contiene la carpeta app.');
+  // Y lo de dentro tiene que ser la version que dice la firma.
+  let verDentro = '';
+  try { verDentro = JSON.parse(fs.readFileSync(path.join(upd, 'app', 'package.json'), 'utf8')).version; } catch (_) {}
+  if (verDentro !== verNueva) throw new Error('El paquete no es la versión anunciada; actualización rechazada por seguridad.');
   // 3) .bat que espera al cierre, cambia resources/app (con respaldo) y reinicia
   const bat = path.join(upd, 'apply.bat');
   const q = (p) => '"' + p + '"';

@@ -14,9 +14,9 @@ if [ -d "$DATOS" ]; then TMP_DATOS="$(mktemp -d)"; cp -r "$DATOS" "$TMP_DATOS/da
 
 rm -rf portable-build
 mkdir -p portable-build/app
-cp main.js preload.js package.json portable-build/app/
+cp main.js preload.js package.json package-lock.json portable-build/app/
 cp -r lib renderer portable-build/app/
-( cd portable-build/app && npm install --omit=dev --no-audit --no-fund )
+( cd portable-build/app && npm ci --omit=dev --no-audit --no-fund )
 # Fuera el codigo de PRUEBAS de las dependencias. Nada lo importa (comprobado), no se
 # ejecuta jamas y viaja en el instalador por inercia. Ademas, el 28/08/2026 Windows
 # Defender marco uno de ellos -@kadena/hd-wallet/.../kadenaEncryption.test.js- como

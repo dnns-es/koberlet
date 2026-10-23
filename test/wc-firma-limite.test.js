@@ -36,7 +36,7 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'app.js'), 'u
 ok(/c\.sinLimite \?/.test(app) && /wc-f-acepto/.test(app), 'aviso rojo con casilla');
 ok(/mueveDinero: p\.nombre === 'coin\.TRANSFER' \|\| p\.nombre === 'coin\.TRANSFER_XCHAIN'/.test(app), 'solo el TRANSFER de coin se pinta como KDA');
 ok(/wc_f_firmantes/.test(app) && /c\.nonce/.test(app) && /c\.ttl/.test(app), 'se ven firmantes, ttl y nonce');
-ok(/SIN_LIMITE\)\$/.test(app), 'el codigo WC_SIN_LIMITE tiene su frase');
+ok(/\|SIN_LIMITE[|)]/.test(app),'el codigo WC_SIN_LIMITE tiene su frase');
 for (const k of ['wc_f_sin_limite_t', 'wc_f_sin_limite_s', 'wc_f_sin_limite_ok', 'wc_sin_limite', 'wc_f_firmantes']) {
   ok(app.split(k + ':').length === 3, k + ' en español y en inglés');
 }

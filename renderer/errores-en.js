@@ -128,6 +128,17 @@ const ERRORES_EN = [
   // --- Webs conectadas (WalletConnect / firma desde una pagina) ---
   [/^Esa petición ya no está\.$/, 'That request no longer exists.'],
   [/^La página pide firmar con una clave que no está en esta bóveda\.$/, "The page asks to sign with a key that isn't in this vault."],
+  // Auto-update que no va hacia atras (aviso de Alex, hallazgo 4).
+  [/^La versión del servidor no es más nueva que la instalada; no se actualiza\.$/, "The server's version is not newer than the installed one; not updating."],
+  [/^La versión del paquete no va firmada; actualización rechazada por seguridad\.$/, "The package version is not signed; update rejected for security."],
+  [/^El paquete no es la versión anunciada; actualización rechazada por seguridad\.$/, 'The package is not the announced version; update rejected for security.'],
+  // WalletConnect: lo que no cabe en lo aprobado al conectar (aviso de Alex, 3a y 3d).
+  [/^Koberlet no firma esto: ([\s\S]*?)\.?$/, 'Koberlet will not sign this: $1.'],
+  [/^pide firmar con una cuenta que no se compartió con esta web$/, 'it asks to sign with an account that was not shared with this website'],
+  [/^la red (\S+) no se aprobó al conectar$/, 'network $1 was not approved when connecting'],
+  [/^la red (\S+) no se aprobo al conectar$/, 'network $1 was not approved when connecting'],
+  [/^el comando no se entiende$/, 'the command cannot be understood'],
+  [/^la sesion no tiene ninguna cuenta$/, 'the session has no account'],
   [/^La página manda un comando que no se entiende; no se firma\.$/, "The page sent a command that can't be understood; not signing."],
   [/^La página no dice con qué clave hay que firmar; no se firma\.$/, "The page doesn't say which key to sign with; not signing."],
 

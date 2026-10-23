@@ -10,10 +10,12 @@ STAGE="build-app/app"
 . ./salida-builds.sh
 
 mkdir -p "$STAGE"
-cp main.js preload.js package.json "$STAGE/"
+cp main.js preload.js package.json package-lock.json "$STAGE/"
 rm -rf "$STAGE/lib" "$STAGE/renderer"
 cp -r lib renderer "$STAGE/"
-( cd "$STAGE" && npm install --omit=dev --no-audit --no-fund )
+# `npm ci` con el lockfile: se empaqueta EXACTAMENTE lo probado. Con `npm install` y sin
+# lockfile, la 2.16.1 llevaba 22 paquetes en otra version y 12 de mas (aviso de Alex, 4).
+( cd "$STAGE" && npm ci --omit=dev --no-audit --no-fund )
 # Fuera el codigo de PRUEBAS de las dependencias. Nada lo importa (comprobado), no se
 # ejecuta jamas y viaja en el instalador por inercia. Ademas, el 28/08/2026 Windows
 # Defender marco uno de ellos -@kadena/hd-wallet/.../kadenaEncryption.test.js- como
@@ -41,7 +43,10 @@ const zip=fs.readFileSync(zipPath);
 const sha=crypto.createHash("sha256").update(zip).digest("hex");
 const sec=Buffer.from(fs.readFileSync(".keys/koberlet-update.sec","utf8").trim(),"hex");
 const sig=Buffer.from(nacl.sign.detached(Buffer.from(sha,"utf8"),sec)).toString("hex");
-fs.writeFileSync(metaPath, JSON.stringify({version:ver,sha256:sha,sig},null,2));
+// sigVer firma TAMBIEN la version: sin ella, un latest.json manipulado podia devolver a
+// todos a un paquete viejo firmado (aviso de Alex, hallazgo 4). Desde la 2.16.3 se exige.
+const sigVer=Buffer.from(nacl.sign.detached(Buffer.from("koberlet-app|"+ver+"|"+sha,"utf8"),sec)).toString("hex");
+fs.writeFileSync(metaPath, JSON.stringify({version:ver,sha256:sha,sig,sigVer},null,2));
 console.log("sha256:",sha);
 console.log("sig:   ",sig);
 ' "$SALIDA/koberlet-app-$VER.zip" "$SALIDA/koberlet-app-$VER.meta.json" "$VER"

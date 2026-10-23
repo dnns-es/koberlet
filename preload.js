@@ -57,7 +57,11 @@ contextBridge.exposeInMainWorld('api', {
   // WalletConnect: conectar Koberlet a paginas de fuera para firmar en ellas.
   wcEstado: () => ipcRenderer.invoke('wc:estado'),
   wcEmparejar: (uri) => ipcRenderer.invoke('wc:emparejar', { uri }),
-  wcAprobarSesion: (id, walletId) => ipcRenderer.invoke('wc:aprobar-sesion', { id, walletId }),
+  wcAprobarSesion: (id, walletId, cerrarPrevias) => ipcRenderer.invoke('wc:aprobar-sesion', { id, walletId, cerrarPrevias: cerrarPrevias === true }),
+  wcEnlace: () => ipcRenderer.invoke('wc:enlace'),
+  onWcEnlace: (cb) => ipcRenderer.on('wc:enlace', () => cb()),
+  onWcCaducada: (cb) => ipcRenderer.on('wc:caducada', (_e, d) => cb(d)),
+  onWcRechazada: (cb) => ipcRenderer.on('wc:rechazada', (_e, d) => cb(d)),
   wcRechazarSesion: (id) => ipcRenderer.invoke('wc:rechazar-sesion', { id }),
   wcDesconectar: (topic) => ipcRenderer.invoke('wc:desconectar', { topic }),
   wcFirmar: (id, passphrase, aceptaSinLimite) => ipcRenderer.invoke('wc:firmar', { id, passphrase, aceptaSinLimite: aceptaSinLimite === true }),
