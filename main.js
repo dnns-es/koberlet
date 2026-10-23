@@ -2194,6 +2194,7 @@ const UPDATE_PUBKEY = '57e9f4fae9fcfa361e58b702cf83ff9b8b806d606a2e741b40b77ed28
 // no un campo de latest.json: asi un servidor que mienta no puede cambiar a donde lleva el boton.
 const PAGINA_DESCARGAS = 'https://koberlet.dnns.es/';
 const nacl = require('tweetnacl');
+const { verificarPaquete } = require('./lib/actualizacion');
 const cmpVer = (a, b) => { const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; } return 0; };
 // `sistema` sale de aqui y no de navigator: la pantalla lo necesita para no ofrecer la
 // actualizacion automatica donde no se puede aplicar (solo Windows).
@@ -2269,21 +2270,9 @@ ipcMain.handle('update:apply', async () => {
   const res = await fetch(appUrl, { signal: AbortSignal.timeout(120000) });
   if (!res.ok) throw new Error('descarga falló: ' + res.status);
   const bytes = Buffer.from(await res.arrayBuffer());
-  // 1b) VERIFICAR integridad + autenticidad antes de tocar nada
-  const gotHash = crypto.createHash('sha256').update(bytes).digest('hex');
-  if (gotHash !== String(j.sha256).toLowerCase()) throw new Error('El paquete descargado no coincide con el sha256 esperado; se descarta.');
-  let sigOk = false;
-  try { sigOk = nacl.sign.detached.verify(Buffer.from(gotHash, 'utf8'), Buffer.from(j.sig, 'hex'), Buffer.from(UPDATE_PUBKEY, 'hex')); } catch (_) {}
-  if (!sigOk) throw new Error('Firma del paquete inválida; actualización rechazada (posible manipulación).');
-  // NUNCA HACIA ATRAS (aviso de Alex, hallazgo 4). La firma de arriba solo cubre el sha256,
-  // asi que un latest.json manipulado podia servir un paquete VIEJO, firmado de verdad, y
-  // devolver a todos a una version de antes de las auditorias. `sigVer` firma version y
-  // sha256 juntos, y la version tiene que ser mayor que la instalada.
-  const verNueva = (typeof j.version === 'string' && /^\d+\.\d+\.\d+$/.test(j.version)) ? j.version : '';
-  if (!verNueva || cmpVer(verNueva, APP_VERSION) <= 0) throw new Error('La versión del servidor no es más nueva que la instalada; no se actualiza.');
-  let verOk = false;
-  try { verOk = nacl.sign.detached.verify(Buffer.from('koberlet-app|' + verNueva + '|' + gotHash, 'utf8'), Buffer.from(String(j.sigVer || ''), 'hex'), Buffer.from(UPDATE_PUBKEY, 'hex')); } catch (_) {}
-  if (!verOk) throw new Error('La versión del paquete no va firmada; actualización rechazada por seguridad.');
+  // 1b) VERIFICAR integridad, autenticidad y que no vuelve atras ANTES de tocar nada
+  // (lib/actualizacion.js, probado en test/actualizacion.test.js).
+  const { version: verNueva } = verificarPaquete(j, bytes, APP_VERSION, UPDATE_PUBKEY);
   const zipPath = path.join(upd, 'app.zip');
   fs.writeFileSync(zipPath, bytes);
   // 2) extraer con PowerShell (queda upd/app)

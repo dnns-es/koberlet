@@ -85,8 +85,7 @@ ok(!/chain \$\{m\.chain\}/.test(app), 'chain del visor escapada');
 ok(!/url\.startsWith\('file:\/\/'\)/.test(main) && /PROPIA/.test(main), 'will-navigate: solo la propia app');
 
 // --- 4: el auto-update no va hacia atras ---
-ok(/cmpVer\(verNueva, APP_VERSION\) <= 0/.test(main), '4: version mayor que la instalada');
-ok(/'koberlet-app\|' \+ verNueva \+ '\|' \+ gotHash/.test(main), '4: la version va firmada');
+ok(/verificarPaquete\(j, bytes, APP_VERSION, UPDATE_PUBKEY\)/.test(main), '4: version mayor y firmada (test/actualizacion.test.js)');
 ok(/verDentro !== verNueva/.test(main), '4: el paquete es la version anunciada');
 ok(/sigVer/.test(lee('build-app-zip.sh')) && /sigVer/.test(lee('publicar.sh')), '4: build y publicar firman la version');
 for (const f of ['build-app-zip.sh', 'build-portable.sh', 'build-mac.sh']) {
