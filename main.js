@@ -1455,10 +1455,22 @@ function wcExplicar(cmdStr) {
     const j = JSON.parse(cmdStr);
     const exec = (j.payload && j.payload.exec) || {};
     const cont = (j.payload && j.payload.cont) || null;
-    const firmantes = (j.signers || []).map((s) => ({
-      pubKey: String(s.pubKey || ''),
-      permisos: (s.clist || []).map((c) => ({ nombre: String(c.name || ''), args: c.args || [] }))
-    }));
+    const mias = new Set(((unlocked && unlocked.data.wallets) || [])
+      .filter((w) => w.kda).map((w) => String(w.kda.public).toLowerCase()));
+    const firmantes = (j.signers || []).map((s) => {
+      const pub = String(s.pubKey || '');
+      const w = ((unlocked && unlocked.data.wallets) || []).find((x) => x.kda && String(x.kda.public).toLowerCase() === pub.toLowerCase());
+      return {
+        pubKey: pub,
+        // De quien es la clave, para que se vea CON QUE cartera se firma.
+        cartera: w ? String(w.label || '') : '',
+        mia: mias.has(pub.toLowerCase()),
+        // Sin clist = firma sin limites (ver `firmaSinLimite`).
+        sinLimite: !Array.isArray(s.clist) || !s.clist.length,
+        permisos: (s.clist || []).map((c) => ({ nombre: String(c.name || ''), args: c.args || [] }))
+      };
+    });
+    const meta = j.meta || {};
     return {
       legible: true,
       red: String(j.networkId || ''),
@@ -1471,7 +1483,12 @@ function wcExplicar(cmdStr) {
       gasMax: Number(((j.meta && j.meta.gasLimit) || 0) * ((j.meta && j.meta.gasPrice) || 0)),
       codigo: String(exec.code || (cont ? 'continuación de un pacto (' + cont.pactId + ')' : '')),
       datos: exec.data || (cont && cont.data) || {},
-      firmantes
+      // Lo que tambien se firma y antes no se enseñaba (aviso de Alex, hallazgo 1).
+      ttl: Number(meta.ttl) || 0,
+      creado: Number(meta.creationTime) || 0,
+      nonce: String(j.nonce || ''),
+      firmantes,
+      sinLimite: firmantes.some((f) => f.mia && f.sinLimite)
     };
   } catch (e) {
     return { legible: false, error: String(e.message || e), crudo: String(cmdStr).slice(0, 2000) };
@@ -1555,11 +1572,30 @@ ipcMain.handle('wc:rechazar-firma', async (_e, { id }) => {
 //   - cada comando se firma con la clave que la dApp pide, y esa clave tiene que ser
 //     de una wallet de esta boveda; si pide una que no tenemos, se dice y no se firma;
 //   - una wallet de Ledger no puede firmar por aqui: su clave no esta en la boveda.
-ipcMain.handle('wc:firmar', async (_e, { id, passphrase }) => {
+/**
+ * ¿Pide la web una firma SIN LIMITES con alguna clave de esta boveda?
+ *
+ * Una firma sin clist vale para cualquier capability no gestionada o `enforce-guard`
+ * directo de cualquier modulo, no solo para lo que dice el codigo (aviso privado de
+ * Alex, GHSA-wj7g-5v28-pj92, hallazgo 1). Se bloquea AQUI, en main, y no solo en la
+ * pantalla: solo se firma si el dueño marco a mano que lo entiende.
+ */
+function firmaSinLimite(cmdStr) {
+  let j;
+  try { j = JSON.parse(cmdStr); } catch (_) { return false; }
+  const mias = new Set(unlocked.data.wallets.filter((w) => w.kda).map((w) => String(w.kda.public).toLowerCase()));
+  return (j.signers || []).some((s) => mias.has(String(s.pubKey || '').toLowerCase())
+    && (!Array.isArray(s.clist) || !s.clist.length));
+}
+
+ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
   if (!unlocked) throw new Error('bloqueado');
   const f = wcPendientes.get(String(id));
   if (!f) throw new Error('Esa petición ya no está.');
   if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  if (aceptaSinLimite !== true && (f.comandos || []).some((c) => firmaSinLimite(String(c.cmd || '')))) {
+    throw new Error('WC_SIN_LIMITE');
+  }
 
   // kadena_sign_v1: el comando lo monto el monedero (lib/wc-comando.js) y su PRIMER
   // firmante es la cuenta de la sesion; los demas son `extraSigners` que firman en otra

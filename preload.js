@@ -60,7 +60,7 @@ contextBridge.exposeInMainWorld('api', {
   wcAprobarSesion: (id, walletId) => ipcRenderer.invoke('wc:aprobar-sesion', { id, walletId }),
   wcRechazarSesion: (id) => ipcRenderer.invoke('wc:rechazar-sesion', { id }),
   wcDesconectar: (topic) => ipcRenderer.invoke('wc:desconectar', { topic }),
-  wcFirmar: (id, passphrase) => ipcRenderer.invoke('wc:firmar', { id, passphrase }),
+  wcFirmar: (id, passphrase, aceptaSinLimite) => ipcRenderer.invoke('wc:firmar', { id, passphrase, aceptaSinLimite: aceptaSinLimite === true }),
   wcRechazarFirma: (id) => ipcRenderer.invoke('wc:rechazar-firma', { id }),
   onWcPropuesta: (cb) => ipcRenderer.on('wc:propuesta', (_e, p) => cb(p)),
   onWcFirma: (cb) => ipcRenderer.on('wc:firma', (_e, f) => cb(f)),

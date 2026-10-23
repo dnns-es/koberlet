@@ -10,7 +10,7 @@ const cleanErr = (e) => errIdioma(textoWc(textoXchain(String((e && e.message) ||
 // Los codigos WC_SIN_* de WalletConnect (lib/walletconnect.js, lib/wc-comando.js) no son
 // frases: sin esto salian crudos, «WC_SIN_CHAIN», en los dos idiomas.
 function textoWc(m) {
-  const c = /^WC_(SIN_PROJECTID|SIN_ARRANCAR|SIN_CUENTAS|SIN_CODIGO|SIN_CUENTA|SIN_CHAIN)$/.exec(String(m).trim());
+  const c = /^WC_(SIN_PROJECTID|SIN_ARRANCAR|SIN_CUENTAS|SIN_CODIGO|SIN_CUENTA|SIN_CHAIN|SIN_LIMITE)$/.exec(String(m).trim());
   return c ? t('wc_' + c[1].toLowerCase()) : m;
 }
 // Los errores de main/lib vienen en espanol. Con la ventana en ingles se traducen con la
@@ -469,6 +469,13 @@ const LANG = {
     wc_f_ilegible: 'No entiendo lo que te piden firmar. No lo firmes.',
     wc_f_mueve: 'Autorizas mover', wc_f_de: 'de', wc_f_a: 'a',
     wc_f_hace: 'Lo que se ejecuta:', wc_f_red: 'Red:', wc_f_gas: 'Gas, como mucho:', wc_f_otros: 'Otros permisos:',
+    wc_f_paga: 'lo paga', wc_f_firmantes: 'Quién firma:', wc_f_tuya: 'Cuenta de este monedero', wc_f_ajena: 'Otra cuenta (no firma aquí)',
+    wc_f_mas: 'Más detalles de lo que se firma', wc_f_creado: 'Creado:', wc_f_datos: 'Datos que acompañan:',
+    wc_f_sin_limite_corto: 'firma SIN LÍMITES',
+    wc_f_sin_limite_t: '⚠ Esta web pide una firma sin límites',
+    wc_f_sin_limite_s: 'Una firma sin permisos concretos no vale solo para lo que pone arriba: sirve para cualquier contrato que se fíe de tu clave. Una web honrada pide los permisos que necesita. Si no sabes por qué la pide sin límites, no firmes.',
+    wc_f_sin_limite_ok: 'Lo entiendo y quiero firmarla igualmente',
+    wc_sin_limite: 'Esta firma va sin límites: marca la casilla del aviso rojo si de verdad quieres firmarla.',
     wc_f_firmado: 'Firmado y devuelto a la web.',
     xc_err_destino_k: 'Para enviar entre chains el destino tiene que ser una cuenta k:.',
     xc_err_misma_chain: 'El origen y el destino son la misma chain.',
@@ -938,6 +945,13 @@ const LANG = {
     wc_f_ilegible: 'I cannot understand what you are being asked to sign. Do not sign it.',
     wc_f_mueve: 'You authorise moving', wc_f_de: 'from', wc_f_a: 'to',
     wc_f_hace: 'What it runs:', wc_f_red: 'Network:', wc_f_gas: 'Gas, at most:', wc_f_otros: 'Other permissions:',
+    wc_f_paga: 'paid by', wc_f_firmantes: 'Who signs:', wc_f_tuya: 'Account in this wallet', wc_f_ajena: 'Another account (does not sign here)',
+    wc_f_mas: 'More details of what is signed', wc_f_creado: 'Created:', wc_f_datos: 'Attached data:',
+    wc_f_sin_limite_corto: 'UNRESTRICTED signature',
+    wc_f_sin_limite_t: '⚠ This website asks for an unrestricted signature',
+    wc_f_sin_limite_s: 'A signature without specific permissions is not limited to what is shown above: any contract that trusts your key accepts it. An honest website asks for the permissions it needs. If you do not know why it asks for an unrestricted one, do not sign.',
+    wc_f_sin_limite_ok: 'I understand and want to sign it anyway',
+    wc_sin_limite: 'This signature is unrestricted: tick the box in the red warning if you really want to sign it.',
     wc_f_firmado: 'Signed and returned to the website.',
     xc_err_destino_k: 'To send between chains the destination must be a k: account.',
     xc_err_misma_chain: 'Source and destination are the same chain.',
@@ -4020,15 +4034,30 @@ function wcDetalle(c) {
   const permisos = [];
   for (const f of (c.firmantes || [])) {
     for (const p of (f.permisos || [])) {
-      // coin.TRANSFER es el permiso que mueve dinero: se saca aparte y en grande, con
-      // cuanto y a quien, porque es el unico numero que de verdad hay que mirar.
+      // coin.TRANSFER es el permiso que mueve KDA: se saca aparte y en grande, con
+      // cuanto y a quien. SOLO el de coin, exacto: el TRANSFER de otro modulo tiene
+      // sus argumentos en otro orden (marmalade: id, de, a, cantidad) y pintarlo como
+      // «KDA» enseñaba cifras falsas (aviso de Alex, hallazgo 3b).
       const args = (p.args || []).map((a) => (a && typeof a === 'object' && a.decimal !== undefined) ? a.decimal : a);
-      permisos.push({ nombre: p.nombre, args, mueveDinero: /\.TRANSFER/i.test(p.nombre) });
+      permisos.push({ nombre: p.nombre, args, mueveDinero: p.nombre === 'coin.TRANSFER' || p.nombre === 'coin.TRANSFER_XCHAIN' });
     }
   }
   const dinero = permisos.filter((p) => p.mueveDinero);
   const resto = permisos.filter((p) => !p.mueveDinero);
+  const json = (v) => esc(typeof v === 'string' ? v : JSON.stringify(v));
+  // Quien firma y con que permisos, firmante a firmante. Antes no se veia ni la clave.
+  const firmantes = (c.firmantes || []).map((f) => `<div class="xs" style="margin-top:4px">
+      <b>${esc(f.cartera || (f.mia ? t('wc_f_tuya') : t('wc_f_ajena')))}</b> <span class="mono">${esc(String(f.pubKey).slice(0, 8))}…${esc(String(f.pubKey).slice(-6))}</span>
+      ${f.sinLimite ? `<span class="err"> · ${esc(t('wc_f_sin_limite_corto'))}</span>`
+        : (f.permisos || []).map((p) => `<div class="mono xs">${esc(p.nombre)} ${json(p.args || [])}</div>`).join('')}
+    </div>`).join('');
+  const fecha = c.creado ? new Date(c.creado * 1000).toLocaleString(LNG === 'en' ? 'en-GB' : 'es-ES') : '?';
   return `
+    ${c.sinLimite ? `<div class="card" style="border-color:var(--mal)">
+        <b class="err">${esc(t('wc_f_sin_limite_t'))}</b>
+        <div class="xs">${esc(t('wc_f_sin_limite_s'))}</div>
+        <label class="xs"><input type="checkbox" class="wc-f-acepto"> ${esc(t('wc_f_sin_limite_ok'))}</label>
+      </div>` : ''}
     ${dinero.map((p) => `<div class="card" style="border-color:var(--aviso)">
         <b>${esc(t('wc_f_mueve'))} ${esc(String(p.args[2] !== undefined ? p.args[2] : '?'))} KDA</b>
         <div class="xs">${esc(t('wc_f_de'))} <span class="mono">${esc(String(p.args[0] || ''))}</span></div>
@@ -4038,8 +4067,13 @@ function wcDetalle(c) {
       <div class="xs"><b>${esc(t('wc_f_hace'))}</b></div>
       <pre class="mono xs" style="white-space:pre-wrap">${esc(c.codigo || '')}</pre>
       <div class="xs">${esc(t('wc_f_red'))} ${esc(c.red)} · chain ${esc(c.chain)}</div>
-      <div class="xs">${esc(t('wc_f_gas'))} ${esc(String(c.gasMax))} KDA</div>
-      ${resto.length ? `<div class="xs muted">${esc(t('wc_f_otros'))} ${esc(resto.map((p) => p.nombre).join(', '))}</div>` : ''}
+      <div class="xs">${esc(t('wc_f_gas'))} ${esc(String(c.gasMax))} KDA · ${esc(t('wc_f_paga'))} <span class="mono">${esc(c.pagaGas)}</span></div>
+      ${resto.length ? `<div class="xs muted">${esc(t('wc_f_otros'))}</div>${resto.map((p) => `<div class="mono xs">${esc(p.nombre)} ${json(p.args)}</div>`).join('')}` : ''}
+      <div class="xs" style="margin-top:6px"><b>${esc(t('wc_f_firmantes'))}</b></div>${firmantes}
+      <details class="xs" style="margin-top:6px"><summary>${esc(t('wc_f_mas'))}</summary>
+        <div>${esc(t('wc_f_creado'))} ${esc(fecha)} · TTL ${esc(String(c.ttl))} s · nonce <span class="mono">${esc(c.nonce)}</span></div>
+        <div>${esc(t('wc_f_datos'))}</div><pre class="mono xs" style="white-space:pre-wrap">${json(c.datos || {})}</pre>
+      </details>
     </div>`;
 }
 
@@ -4057,7 +4091,11 @@ if ($('wc-f-ok')) $('wc-f-ok').onclick = async () => {
   const b = $('wc-f-ok'); b.disabled = true;
   msg($('wc-f-msg'), t('signing'));
   try {
-    await window.api.wcFirmar(wcFirmaActual.id, $('wc-f-pass').value);
+    // Si el comando pide una firma sin limites, main no firma salvo que el dueño haya
+    // marcado TODAS las casillas del aviso rojo.
+    const casillas = [...document.querySelectorAll('#wc-f-detalle .wc-f-acepto')];
+    const acepta = casillas.length > 0 && casillas.every((x) => x.checked);
+    await window.api.wcFirmar(wcFirmaActual.id, $('wc-f-pass').value, acepta);
     msg($('wc-f-msg'), '✅ ' + t('wc_f_firmado'), 'ok');
     wcFirmaActual = null;
     setTimeout(() => { $('modal-wc-firma').hidden = true; }, 1800);
