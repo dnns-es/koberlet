@@ -1,0 +1,7 @@
+{
+  "notes": "USDT de Tron a KDA: el coste en TRX que se muestra antes de firmar se ajusta mejor al real. / Tron USDT to KDA: the TRX cost shown before signing now matches the real cost more closely.",
+  "notes_i18n": {
+    "es": "USDT DE TRON A KDA\n\n- El gasto en TRX que ves antes de firmar se ajusta mejor a lo que cuesta de verdad el envio por el puente de Tether (antes salia un poco por debajo).",
+    "en": "TRON USDT TO KDA\n\n- The TRX cost you see before signing now matches more closely what the transfer over Tether's bridge really costs (it used to come out slightly low)."
+  }
+}
