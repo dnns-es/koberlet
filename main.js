@@ -975,7 +975,7 @@ ipcMain.handle('balances', async () => {
           total += usd;
         } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'evm', key: n.key, name: n.name, color: n.color, symbol: n.symbol, address: w.eth.address, native: 0, nativeUsd: 0, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
       }
-    } else if (w.kind === 'tron' && w.tron && !modoPruebas) {
+    } else if (w.kind === 'tron' && w.tron) {
       const n = c.tron;
       const base = { walletId: w.id, walletLabel: w.label, kind: 'tron', key: 'tron', name: n.name, color: n.color, symbol: n.symbol, address: w.tron.address };
       try {

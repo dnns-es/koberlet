@@ -1,0 +1,7 @@
+{
+  "notes": "Arreglo: tras anadir una cuenta de Tron, el panel daba error y no mostraba los saldos. / Fix: after adding a Tron account, the dashboard showed an error and no balances.",
+  "notes_i18n": {
+    "es": "ARREGLO\n\nEn la 2.16.4, al anadir una cuenta de Tron el panel mostraba \"modoPruebas is not defined\" y no cargaba ningun saldo. Ya se ven la tarjeta de Tron y todas las demas.",
+    "en": "FIX\n\nIn 2.16.4, after adding a Tron account the dashboard showed \"modoPruebas is not defined\" and loaded no balances. The Tron card and all the others now show up."
+  }
+}
