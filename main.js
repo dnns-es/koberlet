@@ -29,6 +29,8 @@ const dex = require('./lib/dex');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
 const tron = require('./lib/tron');
+const tron2kda = require('./lib/tron2kda');
+const { ethers } = require('ethers');
 const ktime = require('./lib/kdatime');
 const QRCode = require('qrcode');
 // Ledger: carga PEREZOSA (node-hid es un módulo nativo; si fallara en algún equipo, la app debe arrancar igual).
@@ -1856,6 +1858,130 @@ ipcMain.handle('send:tron', async (_e, { passphrase, walletId, token, to, amount
   logHistory({ type: 'send-tron', wallet: w.label, desc: `Envío ${p.resumen.cantidad} ${p.resumen.simbolo} · Tron`, to: pide.to, id: txID });
   const r = await tron.esperar(txID, c.tron);
   return { hash: txID, ...r };
+});
+
+// ---- USDT de Tron → KDA (lib/tron2kda.js) ----
+// Tres wallets del usuario: la de Tron (origen), una de Ethereum (paso intermedio, firma
+// Koberlet) y una de Kadena (destino). Las operaciones se guardan en un fichero plano (no
+// lleva secretos: direcciones, hashes y en qué paso van) para poder reanudarlas.
+const T2K = () => path.join(app.getPath('userData'), 'tron2kda.json');
+const t2kLeer = () => { try { return JSON.parse(fs.readFileSync(T2K(), 'utf8')); } catch (_) { return []; } };
+function t2kGuardar(op) {
+  const l = t2kLeer(); const i = l.findIndex(x => x.id === op.id);
+  if (i < 0) l.unshift(op); else l[i] = op;
+  fs.writeFileSync(T2K(), JSON.stringify(l.slice(0, 50), null, 2));
+}
+// OJO: lib/dex.js quiere el deslizamiento en TANTO POR UNO (0,01 = 1 %). Con un 1 a secas el
+// minimo garantizado salia 0 KDA: sin proteccion ninguna. Pillado en la cotizacion real del 11-11.
+const T2K_SLIP = 0.01;
+const _t2kEnMarcha = new Set();   // una operación no se avanza dos veces a la vez
+function t2kAviso(op, fase) {
+  for (const w of BrowserWindow.getAllWindows()) { try { w.webContents.send('t2k:estado', { op, fase: fase || null, donde: tron2kda.dondeEsta(op) }); } catch (_) {} }
+}
+function t2kWallets({ tronWalletId, ethWalletId, kdaWalletId }) {
+  const wt = walletById(tronWalletId), we = walletById(ethWalletId), wk = walletById(kdaWalletId);
+  if (!wt || !wt.tron) throw new Error('Elige tu wallet de Tron.');
+  if (!we || !we.eth) throw new Error('Elige una wallet de Ethereum para el paso intermedio.');
+  if (!wk || !wk.kda) throw new Error('Elige la wallet de Kadena que recibirá el KDA.');
+  // Los pasos 2 a 4 los firma Koberlet solo, sin aparato que enseñe nada: con Ledger no.
+  if (we.ledger || wk.ledger) throw new Error('Para traer USDT de Tron, las wallets de Ethereum y de Kadena no pueden ser de Ledger: Koberlet tiene que firmar varios pasos seguidos.');
+  return { wt, we, wk };
+}
+async function t2kDeps({ wt, we, wk }) {
+  const c = loadConfig();
+  const net = c.evm.find(n => n.key === 'eth');
+  const par = c.evmSwap.pares.find(p => p.de === 'USDT' && p.a === 'USDC');
+  const ruta = c.bridge.routes.find(r => r.symbol === 'USDC');
+  const b = c.bridge;
+  const kbUsdc = bridge.NS + '.kb-USDC';
+  const erc = ['function balanceOf(address) view returns (uint256)'];
+  const conEth = async (fn) => { const pr = nodo.proveedor(await rpcDe(net), { staticNetwork: true }); try { return await fn(pr); } finally { try { pr.destroy(); } catch (_) {} } };
+  const saldoTok = (tok) => (addr) => conEth(pr => new ethers.Contract(tok, erc, pr).balanceOf(addr));
+  return {
+    tronCfg: c.tron, tronSecret: wt.tron.secret,
+    guardar: async (op) => t2kGuardar(op), aviso: t2kAviso,
+    espera: { cada: 15000, tope: 30 * 60000 }, esperaPuente: { cada: 15000, tope: 45 * 60000 },
+    precioGasEth: () => conEth(async pr => (await pr.getFeeData()).gasPrice || 1000000000n),
+    saldoEth: (addr) => conEth(pr => pr.getBalance(addr)),
+    saldoUsdtEth: saldoTok(par.tokenDe), saldoUsdcEth: saldoTok(par.tokenA),
+    cotizarUniswap: async (x) => evmswap.cotizar({ rpc: await rpcDe(net), tokenIn: par.tokenDe, tokenOut: par.tokenA, decIn: 6, decOut: 6, amount: x }),
+    cambiarUsdtUsdc: async (x) => {
+      const r = await evmswap.swap({ rpc: await rpcDe(net), secretHex: we.eth.secret, tokenIn: par.tokenDe, tokenOut: par.tokenA, decIn: 6, decOut: 6, amount: x, slippage: 0.5 });
+      logHistory({ type: 'evm-swap', wallet: we.label, desc: `Tron → KDA: cambio ${x} USDT → USDC · Uniswap`, to: '', id: r.hash });
+      return r;
+    },
+    enviarPuente: async (x) => {
+      const r = await bridge.sendEvm2Kda({ rpc: await rpcEvmPuente(), secretHex: we.eth.secret, router: ruta.evmRouter, token: ruta.evmToken, kadenaAccount: wk.kda.account, amount: x, decimals: ruta.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
+      if (r.receiptOk === false) throw new Error('El envío por el puente falló en Ethereum (' + r.txHash + '). Tu USDC sigue en tu wallet de Ethereum.');
+      logHistory({ type: 'bridge', dir: 'evm2kda', wallet: we.label, amount: x, symbol: 'USDC', msgId: r.messageId || null, desc: `Tron → KDA: puente ${x} USDC · Ethereum → Kadena`, to: wk.kda.account, id: r.txHash });
+      return r;
+    },
+    saldoKbUsdc: async (cuenta) => {
+      const v = (await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: [ruta], account: cuenta }))[0].balance;
+      if (v === null || v === undefined) throw new Error('no se pudo leer el saldo kb-USDC');
+      return v;
+    },
+    cotizarMercatus: async (x) => { const { m, cfg } = await mercadoDex(false); const q = await dex.cotizar(cfg, m, kbUsdc, 'coin', x, T2K_SLIP); return { esperada: q.esperada, minimo: q.minimo, impacto: q.impacto, frenado: q.frenado }; },
+    cambiarMercatus: async (x) => {
+      const r = await dex.cambiar(cfgDex(), { de: kbUsdc, a: 'coin', cantidad: x, slippage: T2K_SLIP, cuenta: wk.kda.account, publicHex: wk.kda.public, secretHex: wk.kda.secret });
+      MERCADO_CACHE = null;
+      logHistory({ type: 'dex', wallet: wk.label, chain: 2, id: r.requestKey, to: '', desc: `Tron → KDA: cambio ${x} kb-USDC → KDA · Mercatus` });
+      return r;
+    },
+    esperarKadena: async (rk) => {
+      const cfg = cfgDex();
+      const res = await kda.pollResult({ node: cfg.node, networkId: cfg.networkId, chain: cfg.chain, requestKey: rk, tries: 40, delayMs: 3000 });
+      if (!res || !res.result) return { ok: false, motivo: 'sin respuesta de Kadena todavía' };
+      if (res.result.status !== 'success') return { ok: false, motivo: String((res.result.error && res.result.error.message) || 'fallo').slice(0, 160) };
+      return { ok: true };
+    }
+  };
+}
+// Avanza en segundo plano: la pantalla se entera por 't2k:estado'. Puede durar 20-40 min
+// (LayerZero + relé del puente) y nadie debe quedarse mirando una ventana bloqueada.
+function t2kLanzar(op, ws) {
+  if (_t2kEnMarcha.has(op.id)) return;
+  _t2kEnMarcha.add(op.id);
+  (async () => {
+    try {
+      const deps = await t2kDeps(ws);
+      const r = await tron2kda.avanzar(op, deps);
+      t2kAviso(op, r.pendiente ? 'pendiente_' + r.motivo : (r.hecho ? 'hecho' : null));
+    } catch (e) { t2kAviso({ ...op, error: motivo(e) }, 'error'); }
+    finally { _t2kEnMarcha.delete(op.id); }
+  })();
+}
+ipcMain.handle('t2k:cotizar', async (_e, a = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const ws = t2kWallets(a);
+  const deps = await t2kDeps(ws);
+  return tron2kda.cotizar({ cantidad: a.cantidad, tronAddr: ws.wt.tron.address, ethAddr: ws.we.eth.address, kdaCuenta: ws.wk.kda.account }, deps);
+});
+ipcMain.handle('t2k:iniciar', async (_e, a = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (!passOk(a.passphrase)) throw new Error('Contraseña incorrecta.');
+  const ws = t2kWallets(a);
+  if (t2kLeer().some(o => o.estado !== 'hecho' && !o.cerrada && o.tronAddr === ws.wt.tron.address)) throw new Error('Ya hay una operación de Tron a KDA a medias con esta wallet. Termínala primero.');
+  // Se recotiza al firmar: lo que se ejecuta sale de números de ahora, no de hace un rato.
+  const deps = await t2kDeps(ws);
+  const q = await tron2kda.cotizar({ cantidad: a.cantidad, tronAddr: ws.wt.tron.address, ethAddr: ws.we.eth.address, kdaCuenta: ws.wk.kda.account }, deps);
+  if (q.frenado) throw new Error('Mercatus está demasiado fino para esa cantidad ahora mismo (impacto ' + Number(q.impacto).toFixed(1) + '%). Prueba con menos.');
+  if (q.faltaTrx) throw new Error(`Te faltan TRX en tu wallet de Tron: el paso de Tron gastará unos ${q.trxEstimados} TRX y tienes ${q.trxDisponible}.`);
+  const op = tron2kda.crear(q, { tron: ws.wt.id, eth: ws.we.id, kda: ws.wk.id });
+  t2kGuardar(op);
+  logHistory({ type: 'tron2kda', wallet: ws.wt.label, desc: `Tron → KDA: ${q.cantidad} USDT (≈ ${Number(q.kdaEsperado).toFixed(2)} KDA)`, to: ws.wk.kda.account, id: op.id });
+  t2kLanzar(op, ws);
+  return { id: op.id };
+});
+ipcMain.handle('t2k:lista', () => t2kLeer().slice(0, 10).map(op => ({ ...op, donde: tron2kda.dondeEsta(op), enMarcha: _t2kEnMarcha.has(op.id) })));
+ipcMain.handle('t2k:continuar', async (_e, { passphrase, id } = {}) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  const op = t2kLeer().find(x => x.id === id);
+  if (!op) throw new Error('Esa operación no existe.');
+  if (op.estado === 'hecho') return { hecho: true };
+  t2kLanzar(op, t2kWallets({ tronWalletId: op.wallets.tron, ethWalletId: op.wallets.eth, kdaWalletId: op.wallets.kda }));
+  return { ok: true };
 });
 
 ipcMain.handle('bridge:config', () => loadConfig().bridge);

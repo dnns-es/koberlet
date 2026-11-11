@@ -19,6 +19,27 @@
 // desconocido» de relleno, «destino», «2 minutos»…).
 
 const ERRORES_EN = [
+  // --- USDT de Tron → KDA (lib/tron2kda.js y su parte de main) ---
+  [/^Elige tu wallet de Tron\.$/, 'Choose your Tron wallet.'],
+  [/^Elige una wallet de Ethereum para el paso intermedio\.$/, 'Choose an Ethereum wallet for the intermediate step.'],
+  [/^Elige la wallet de Kadena que recibirá el KDA\.$/, 'Choose the Kadena wallet that will receive the KDA.'],
+  [/^Para traer USDT de Tron, las wallets de Ethereum y de Kadena no pueden ser de Ledger: Koberlet tiene que firmar varios pasos seguidos\.$/, 'To bring USDT from Tron, the Ethereum and Kadena wallets cannot be Ledger: Koberlet has to sign several steps in a row.'],
+  [/^El envío por el puente falló en Ethereum \(([\s\S]*)\)\. Tu USDC sigue en tu wallet de Ethereum\.$/, 'The bridge transfer failed on Ethereum ($1). Your USDC is still in your Ethereum wallet.'],
+  [/^no se pudo leer el saldo kb-USDC$/, 'could not read the kb-USDC balance'],
+  [/^Ya hay una operación de Tron a KDA a medias con esta wallet\. Termínala primero\.$/, 'There is already a half-done Tron to KDA operation with this wallet. Finish it first.'],
+  [/^Mercatus está demasiado fino para esa cantidad ahora mismo \(impacto ([\s\S]*)%\)\. Prueba con menos\.$/, 'Mercatus is too thin for that amount right now (impact $1%). Try less.'],
+  [/^Te faltan TRX en tu wallet de Tron: el paso de Tron gastará unos ([\s\S]*) TRX y tienes ([\s\S]*)\.$/, 'Not enough TRX in your Tron wallet: the Tron step will spend about $1 TRX and you have $2.'],
+  [/^Esa operación no existe\.$/, 'That operation does not exist.'],
+  [/^La protección de precio del cambio en Mercatus no está bien \(mínimo ([\s\S]*) para ([\s\S]*) esperados\)\. No se cambia\.$/, 'The price protection of the Mercatus swap is wrong (minimum $1 for $2 expected). The swap is not made.'],
+  [/^El puente de Tether no responde \(([\s\S]*)\): ([\s\S]*)$/, 'The Tether bridge is not responding ($1): $2'],
+  [/^El puente de Tether no admite tanto de una vez ahora mismo\.$/, 'The Tether bridge does not accept that much at once right now.'],
+  [/^El mínimo para traer USDT de Tron a KDA es ([\s\S]*) USDT: por debajo, las comisiones se comen el cambio\.$/, 'The minimum to bring USDT from Tron to KDA is $1 USDT: below that, the fees eat the swap.'],
+  [/^No hay USDT suficiente en Tron: tienes ([\s\S]*)\.$/, 'Not enough USDT on Tron: you have $1.'],
+  [/^La transacción de Tron falló \(([\s\S]*)\)\. Mira ([\s\S]*) en Tronscan\.$/, 'The Tron transaction failed ($1). Check $2 on Tronscan.'],
+  [/^Tron no confirma la transacción ([\s\S]*) todavía\. Vuelve a pulsar Continuar en un minuto\.$/, 'Tron has not confirmed transaction $1 yet. Press Continue again in a minute.'],
+  [/^El cambio a USDC no se ve todavía en Ethereum\. Vuelve a pulsar Continuar en un minuto\.$/, 'The swap to USDC is not visible on Ethereum yet. Press Continue again in a minute.'],
+  [/^Mercatus está muy fino ahora \(moverías el precio un ([\s\S]*)%\)\. Tu dinero está a salvo como kb-USDC en tu cuenta Kadena: puedes cambiarlo a KDA desde el Mercado cuando quieras, o en partes\.$/, 'Mercatus is very thin right now (you would move the price by $1%). Your money is safe as kb-USDC in your Kadena account: you can swap it to KDA from the Market whenever you want, or in parts.'],
+  [/^El cambio en Mercatus no salió \(([\s\S]*), ([\s\S]*)\)\. Tu kb-USDC sigue en tu cuenta Kadena\.$/, 'The Mercatus swap did not go through ($1, $2). Your kb-USDC is still in your Kadena account.'],
   // --- Tron (lib/tron.js y su parte de main) ---
   [/^Esa cuenta de Tron ya está añadida\.$/, 'That Tron account is already added.'],
   [/^Esta wallet no tiene cuenta de Tron\.$/, 'This wallet has no Tron account.'],

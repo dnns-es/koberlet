@@ -890,6 +890,30 @@
     </div>
   </div>
 
+  <!-- MODAL: USDT de Tron → KDA (lib/tron2kda.js) -->
+  <div id="modal-t2k" class="modal" hidden>
+    <div class="card ancha">
+      <h2 data-i18n="t2k_title">USDT de Tron → KDA</h2>
+      <p class="muted xs" data-i18n="t2k_intro">Tu USDT viaja por el puente oficial de Tether a tu wallet de Ethereum, se cambia a USDC, cruza el puente a tu wallet de Kadena y se cambia a KDA en Mercatus. Todo a cuentas tuyas: si algo se para, el dinero está en una de ellas.</p>
+      <div id="t2k-form">
+        <div class="row2">
+          <div><label data-i18n="t2k_eth">Wallet de Ethereum (paso intermedio)</label><select id="t2k-eth"></select></div>
+          <div><label data-i18n="t2k_kda">Wallet de Kadena (recibe el KDA)</label><select id="t2k-kda"></select></div>
+        </div>
+        <label data-i18n="t2k_amount">USDT a traer (mínimo 10)</label>
+        <div class="amtrow"><input id="t2k-amt" type="number" step="0.01" min="10"/><button type="button" class="tiny ghost" id="t2k-max">MAX</button></div>
+        <button id="btn-t2k-cotizar" class="ghost" data-i18n="t2k_quote">Calcular</button>
+        <div id="t2k-cot" class="sendsum" hidden></div>
+        <label data-i18n="lbl_pass">Contraseña</label><input id="t2k-pass" type="password" />
+        <div class="btnrow2"><button id="btn-t2k-go" class="primary" disabled data-i18n="t2k_go">Convertir a KDA</button><button class="ghost" data-close data-i18n="close_btn">Cerrar</button></div>
+      </div>
+      <div id="t2k-steps" class="steps" hidden></div>
+      <div id="t2k-donde" class="info" hidden></div>
+      <div id="t2k-pend" hidden></div>
+      <div id="t2k-msg" class="msg"></div>
+    </div>
+  </div>
+
   <!-- MODAL: una web pide conectarse -->
   <div id="modal-wc-sesion" class="modal" hidden>
     <div class="card narrow">

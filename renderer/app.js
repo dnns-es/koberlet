@@ -366,6 +366,7 @@ const LANG = {
     addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
     ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (cuenta de Kadena o 0x…).', ab_pick: '📇 Libreta',
     csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
+    t2k_title: 'USDT de Tron → KDA', t2k_btn: '⇄ A KDA', t2k_intro: 'Tu USDT viaja por el puente oficial de Tether a tu wallet de Ethereum, se cambia a USDC, cruza el puente a tu wallet de Kadena y se cambia a KDA en Mercatus. Todo a cuentas tuyas: si algo se para, el dinero está en una de ellas.', t2k_eth: 'Wallet de Ethereum (paso intermedio)', t2k_kda: 'Wallet de Kadena (recibe el KDA)', t2k_amount: 'USDT a traer (mínimo 10)', t2k_quote: 'Calcular', t2k_go: 'Convertir a KDA', t2k_continue: 'Continuar', t2k_quoting: 'Calculando con precios de ahora…', t2k_starting: 'Arrancando…', t2k_need_pass: 'Escribe la contraseña de la bóveda.', t2k_need_wallets: 'Necesitas una wallet de Ethereum y una de Kadena (que no sean de Ledger). Créalas en Wallets.', t2k_c_recibes: 'Recibes', t2k_c_min: 'Como mínimo', t2k_c_eth: 'Llega a Ethereum', t2k_c_tether: 'Comisión de Tether (0,03 %)', t2k_c_trx: 'Gasto en Tron', t2k_c_2firmas: 'permiso + envío', t2k_c_gas: 'ETH para el gas (lo trae el puente)', t2k_c_impacto: 'Impacto en Mercatus', t2k_c_tiempo: 'Tiempo', t2k_c_tiempo_v: '20 a 45 min', t2k_falta_trx: 'Te faltan TRX: el paso de Tron gastará unos {n} TRX y tienes {h}.', t2k_frenado: 'Mercatus está demasiado fino para esa cantidad ahora mismo. Prueba con menos.', t2k_impacto_alto: 'Ojo: moverás el precio de Mercatus un {p} %. Recibirás menos KDA de lo que vale.', t2k_s_permiso: 'Permiso al puente de Tether (Tron)', t2k_s_tron: 'Envío desde Tron', t2k_s_eth: 'Llegada a Ethereum', t2k_s_usdc: 'Cambio a USDC (Uniswap)', t2k_s_puente: 'Envío por el puente a Kadena', t2k_s_kda: 'Llegada a Kadena (5-15 min, a veces más)', t2k_s_mercatus: 'Cambio a KDA (Mercatus)', t2k_done: '¡Hecho! El KDA ya está en tu wallet de Kadena.', t2k_pendiente: 'Va lento, es normal.', t2k_paused: 'Esta operación está a medias. Pulsa Continuar para seguir donde se quedó: no se repite nada de lo que ya salió.', t2k_donde_tron: 'Tu dinero sigue en tu wallet de Tron.', t2k_donde_camino_eth: 'Tu USDT está de camino a tu wallet de Ethereum (puente de Tether). Puedes cerrar la ventana: Koberlet sigue vigilando.', t2k_donde_eth_usdt: 'Tu dinero está en tu wallet de Ethereum como USDT.', t2k_donde_eth_usdc: 'Tu dinero está en tu wallet de Ethereum como USDC.', t2k_donde_camino_kda: 'Tu USDC está cruzando el puente a tu wallet de Kadena. Puedes cerrar la ventana: Koberlet sigue vigilando.', t2k_donde_kda_kbusdc: 'Tu dinero está en tu wallet de Kadena como kb-USDC.', t2k_donde_kda: 'Tu dinero está en tu wallet de Kadena.',
     tron_ajena: 'Esta cuenta de Tron tiene OTRO dueño: alguien cambió sus permisos y tu clave ya no puede firmar. No recibas nada aquí y deja de usar esta semilla.',
     recv_note_tron: 'Recibes en Tron (red TRC20). Esta dirección T… solo vale en Tron: si te envían USDT, que elijan la red TRC20 / Tron. Una cuenta nueva se activa con el primer TRX que reciba.', lbl_dest_tron: 'Destino (T…)', ph_tron_dest: 'T…', tron_preparing: 'Preparando el envío en Tron y calculando el coste…', tron_recursos: 'Energía {e} · ancho de banda {b} (si no llegan, se queman TRX)', tron_no_activada: 'Cuenta aún sin activar: se activa al recibir el primer TRX.', tron_cost_burn: 'Este envío quemará unos <b>{trx} TRX</b> de comisión de la red Tron.', tron_cost_free: 'Este envío no quema TRX: lo cubren tu energía y tu ancho de banda.', tron_cost_energy: 'Energía necesaria {e} (tienes {c}).', tron_cost_activate: 'El destino es una cuenta nueva: enviarle TRX la activa y cuesta ~1,1 TRX más.', tron_dest_new: 'El destino nunca ha usado Tron: un USDT a una cuenta nueva gasta casi el doble de energía.', tron_sent_pending: 'Enviada, aún sin confirmar. Mírala en Tronscan: ', cf_send_tron: 'Enviar <b>{a} {s}</b> en Tron<br>a <span class="mono">{to}</span>',
     converter: '🧮 Conversor', recv_note_kda: 'Recibes en Kadena. Para Mercado/Puente los fondos deben ir a la chain 2.', recv_note_evm: 'Recibes en {net}. La misma dirección 0x vale en todas las redes EVM; asegúrate de que quien te envía usa la red correcta.', share: 'Compartir',
@@ -855,6 +856,7 @@ const LANG = {
     addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
     ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (a Kadena account or 0x…).', ab_pick: '📇 Book',
     csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
+    t2k_title: 'Tron USDT → KDA', t2k_btn: '⇄ To KDA', t2k_intro: 'Your USDT travels through Tether\'s official bridge to your Ethereum wallet, is swapped to USDC, crosses the bridge to your Kadena wallet and is swapped to KDA on Mercatus. Everything goes to your own accounts: if anything stops, the money is in one of them.', t2k_eth: 'Ethereum wallet (intermediate step)', t2k_kda: 'Kadena wallet (receives the KDA)', t2k_amount: 'USDT to bring (minimum 10)', t2k_quote: 'Calculate', t2k_go: 'Convert to KDA', t2k_continue: 'Continue', t2k_quoting: 'Calculating with current prices…', t2k_starting: 'Starting…', t2k_need_pass: 'Type your vault password.', t2k_need_wallets: 'You need an Ethereum wallet and a Kadena wallet (not Ledger). Create them in Wallets.', t2k_c_recibes: 'You receive', t2k_c_min: 'At least', t2k_c_eth: 'Arrives on Ethereum', t2k_c_tether: 'Tether fee (0.03%)', t2k_c_trx: 'Spent on Tron', t2k_c_2firmas: 'approval + transfer', t2k_c_gas: 'ETH for gas (brought by the bridge)', t2k_c_impacto: 'Mercatus impact', t2k_c_tiempo: 'Time', t2k_c_tiempo_v: '20 to 45 min', t2k_falta_trx: 'Not enough TRX: the Tron step will spend about {n} TRX and you have {h}.', t2k_frenado: 'Mercatus is too thin for that amount right now. Try less.', t2k_impacto_alto: 'Careful: you will move the Mercatus price by {p}%. You will get less KDA than it is worth.', t2k_s_permiso: 'Approval to the Tether bridge (Tron)', t2k_s_tron: 'Transfer from Tron', t2k_s_eth: 'Arrival on Ethereum', t2k_s_usdc: 'Swap to USDC (Uniswap)', t2k_s_puente: 'Transfer over the bridge to Kadena', t2k_s_kda: 'Arrival on Kadena (5-15 min, sometimes more)', t2k_s_mercatus: 'Swap to KDA (Mercatus)', t2k_done: 'Done! The KDA is in your Kadena wallet.', t2k_pendiente: 'It is slow, that is normal.', t2k_paused: 'This operation is half done. Press Continue to resume where it stopped: nothing that already went out is repeated.', t2k_donde_tron: 'Your money is still in your Tron wallet.', t2k_donde_camino_eth: 'Your USDT is on its way to your Ethereum wallet (Tether bridge). You can close the window: Koberlet keeps watching.', t2k_donde_eth_usdt: 'Your money is in your Ethereum wallet as USDT.', t2k_donde_eth_usdc: 'Your money is in your Ethereum wallet as USDC.', t2k_donde_camino_kda: 'Your USDC is crossing the bridge to your Kadena wallet. You can close the window: Koberlet keeps watching.', t2k_donde_kda_kbusdc: 'Your money is in your Kadena wallet as kb-USDC.', t2k_donde_kda: 'Your money is in your Kadena wallet.',
     tron_ajena: 'This Tron account has ANOTHER owner: someone changed its permissions and your key can no longer sign. Do not receive anything here and stop using this seed.',
     recv_note_tron: 'Receiving on Tron (TRC20 network). This T… address only works on Tron: if someone sends you USDT, they must choose the TRC20 / Tron network. A new account is activated by the first TRX it receives.', lbl_dest_tron: 'Destination (T…)', ph_tron_dest: 'T…', tron_preparing: 'Preparing the Tron transfer and working out the cost…', tron_recursos: 'Energy {e} · bandwidth {b} (if short, TRX is burned)', tron_no_activada: 'Account not activated yet: it activates on the first TRX received.', tron_cost_burn: 'This transfer will burn about <b>{trx} TRX</b> in Tron network fees.', tron_cost_free: 'This transfer burns no TRX: your energy and bandwidth cover it.', tron_cost_energy: 'Energy needed {e} (you have {c}).', tron_cost_activate: 'The destination is a new account: sending it TRX activates it and costs ~1.1 TRX more.', tron_dest_new: 'The destination has never used Tron: USDT to a new account uses almost twice the energy.', tron_sent_pending: 'Sent, not confirmed yet. Check it on Tronscan: ', cf_send_tron: 'Send <b>{a} {s}</b> on Tron<br>to <span class="mono">{to}</span>',
     converter: '🧮 Converter', recv_note_kda: 'Receiving on Kadena. For Market/Bridge funds must be on chain 2.', recv_note_evm: 'Receiving on {net}. The same 0x address works on all EVM networks; make sure the sender uses the right network.', share: 'Share',
@@ -3334,6 +3336,7 @@ function cardBlock(bl, qr) {
       <button class="act-btn" data-panel="recv">${t('btn_recv')}</button>
       <button class="act-btn" data-panel="send">${t('btn_send')}</button>
       <button class="act-btn nc-expand" title="${t('btn_expand')}">🔍 ${t('btn_expand')}</button>
+      ${bl.kind === 'tron' && !bl.error && !bl.ajena ? `<button class="act-btn t-2kda" data-wid="${bl.walletId}" title="${t('t2k_title')}">${t('t2k_btn')}</button>` : ''}
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
       <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : (bl.kind === 'tron' ? t('recv_note_tron') : t('recv_note_evm').replace('{net}', esc(bl.name)))}</div>
@@ -3560,6 +3563,7 @@ function wireCards() {
     const wid = btn.dataset.wid;
     askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to, { ledger: isLedgerW(wid) });
   });
+  document.querySelectorAll('.t-2kda').forEach(btn => btn.onclick = () => abrirT2k(btn.dataset.wid));
   // Tron: MAX en TRX deja 1 TRX de margen para el ancho de banda; en un token, el saldo entero.
   document.querySelectorAll('.t-max').forEach(btn => btn.onclick = () => {
     const c = btn.closest('.netcard'); const o = c.querySelector('.t-asset').selectedOptions[0]; if (!o) return;
@@ -3589,6 +3593,119 @@ function wireCards() {
     finally { btn.disabled = false; }
   });
 }
+// ---- USDT de Tron → KDA ----
+// La ventana solo pide y enseña: cotizar, arrancar y seguir. Lo que se firma lo decide el
+// proceso principal con números recién leídos (t2k:iniciar recotiza). El avance llega por
+// 't2k:estado' aunque la ventana se cierre: la operación sigue en segundo plano.
+let T2K = { wid: null, cot: null, opId: null };
+const T2K_PASOS = [
+  ['tron_permiso', 't2k_s_permiso'], ['tron_enviado', 't2k_s_tron'], ['eth_llegado', 't2k_s_eth'],
+  ['usdc', 't2k_s_usdc'], ['puente_enviado', 't2k_s_puente'], ['kda_llegado', 't2k_s_kda'], ['hecho', 't2k_s_mercatus']
+];
+function t2kPintarPasos(op, fase) {
+  const el = $('t2k-steps'); el.hidden = false;
+  const orden = ['inicio', ...T2K_PASOS.map(p => p[0])];
+  const i = orden.indexOf(op.estado);
+  el.innerHTML = T2K_PASOS.map(([est, k], j) => {
+    const hecho = i >= j + 1, ahora = i === j && op.estado !== 'hecho';
+    return `<div class="stp ${hecho ? 'done' : ''}"><span class="si">${hecho ? '✅' : (ahora ? (op.error ? '⚠️' : '⏳') : '·')}</span><span class="sl">${t(k)}</span></div>`;
+  }).join('');
+  const d = $('t2k-donde');
+  d.hidden = false;
+  if (op.estado === 'hecho') d.textContent = t('t2k_done');
+  else if (op.error) d.innerHTML = '⚠️ ' + esc(cleanErr({ message: op.error })) + '<br>' + t('t2k_donde_' + (op.donde || tron2kdaDonde(op))) + '<br><button class="tiny" id="btn-t2k-seguir">' + t('t2k_continue') + '</button>';
+  else d.textContent = (fase && fase.startsWith('pendiente') ? t('t2k_pendiente') + ' ' : '') + t('t2k_donde_' + (op.donde || tron2kdaDonde(op)));
+  const b = $('btn-t2k-seguir'); if (b) b.onclick = () => t2kSeguir(op.id);
+}
+// Copia de dondeEsta() para cuando la op llega sin ese dato (lista local).
+function tron2kdaDonde(op) {
+  if (['inicio', 'tron_permiso'].includes(op.estado) && !(op.pasos && op.pasos.envio)) return 'tron';
+  return { tron_permiso: 'camino_eth', tron_enviado: 'camino_eth', eth_llegado: 'eth_usdt', usdc: 'eth_usdc', puente_enviado: 'camino_kda', kda_llegado: 'kda_kbusdc' }[op.estado] || 'kda';
+}
+async function t2kSeguir(id) {
+  const pass = $('t2k-pass').value;
+  if (!pass) { $('t2k-form').hidden = false; $('btn-t2k-go').hidden = true; return msg($('t2k-msg'), t('t2k_need_pass'), 'err'); }
+  try { msg($('t2k-msg'), ''); T2K.opId = id; await window.api.t2kContinuar(pass, id); $('t2k-pass').value = ''; }
+  catch (e) { msg($('t2k-msg'), 'Error: ' + cleanErr(e), 'err'); }
+}
+async function abrirT2k(wid) {
+  T2K = { wid, cot: null, opId: null };
+  t2kResetForm();
+  const opt =(k) => WALLETS.filter(w => w.kind === k && !w.ledger).map(w => `<option value="${w.id}">${esc(w.label)}</option>`).join('');
+  $('t2k-eth').innerHTML = opt('evm'); $('t2k-kda').innerHTML = opt('kda');
+  $('t2k-amt').value = ''; $('t2k-pass').value = ''; $('t2k-cot').hidden = true; $('btn-t2k-go').disabled = true; $('btn-t2k-go').hidden = false;
+  $('t2k-form').hidden = false; $('t2k-steps').hidden = true; $('t2k-donde').hidden = true; $('t2k-pend').hidden = true; msg($('t2k-msg'), '');
+  if (!$('t2k-eth').value || !$('t2k-kda').value) msg($('t2k-msg'), t('t2k_need_wallets'), 'err');
+  $('modal-t2k').hidden = false;
+  // Operaciones a medias de esta wallet: se enseñan primero, para no empezar otra encima.
+  try {
+    const w = WALLETS.find(x => x.id === wid);
+    const pend = (await window.api.t2kLista()).filter(o => o.estado !== 'hecho' && w && o.tronAddr === w.tronAddress);
+    if (pend.length) {
+      const o = pend[0]; T2K.opId = o.id;
+      $('t2k-form').hidden = true;
+      t2kPintarPasos(o, null);
+      if (!o.enMarcha && !o.error) {
+        $('t2k-donde').innerHTML += '<br>' + t('t2k_paused') + '<br><label>' + t('lbl_pass') + '</label>';
+        $('t2k-form').hidden = false; $('t2k-form').querySelectorAll('.row2,label,.amtrow,#btn-t2k-cotizar,#t2k-cot').forEach(x => x.hidden = true);
+        $('btn-t2k-go').hidden = false; $('btn-t2k-go').disabled = false; $('btn-t2k-go').textContent = t('t2k_continue');
+        $('btn-t2k-go').onclick = () => t2kSeguir(o.id);
+      }
+    }
+  } catch (_) {}
+}
+function t2kResetForm() {
+  $('t2k-form').querySelectorAll('.row2,label,.amtrow,#btn-t2k-cotizar').forEach(x => x.hidden = false);
+  $('btn-t2k-go').textContent = t('t2k_go'); $('btn-t2k-go').onclick = t2kIniciar;
+}
+async function t2kCotizar() {
+  const a = { tronWalletId: T2K.wid, ethWalletId: $('t2k-eth').value, kdaWalletId: $('t2k-kda').value, cantidad: $('t2k-amt').value };
+  $('btn-t2k-go').disabled = true; $('t2k-cot').hidden = true; msg($('t2k-msg'), t('t2k_quoting'));
+  try {
+    const q = await window.api.t2kCotizar(a);
+    T2K.cot = { ...a, q };
+    const linea = (k, v) => `<div class="row-sp"><span>${t(k)}</span><b>${v}</b></div>`;
+    $('t2k-cot').innerHTML =
+      linea('t2k_c_recibes', '≈ ' + fmt(q.kdaEsperado, 2) + ' KDA') +
+      linea('t2k_c_min', fmt(q.kdaMinimo, 2) + ' KDA') +
+      linea('t2k_c_eth', fmt(q.llegaEth, 4) + ' USDT') +
+      linea('t2k_c_tether', fmt(q.comisionTether, 4) + ' USDT') +
+      linea('t2k_c_trx', '≈ ' + fmt(q.trxEstimados, 2) + ' TRX' + (q.necesitaPermiso ? ' (' + t('t2k_c_2firmas') + ')' : '')) +
+      (Number(q.gasEthTraido) > 0 ? linea('t2k_c_gas', q.gasEthTraido + ' ETH') : '') +
+      linea('t2k_c_impacto', fmt(q.impacto, 2) + ' %') +
+      linea('t2k_c_tiempo', t('t2k_c_tiempo_v')) +
+      (q.faltaTrx ? `<div class="warn" style="margin-top:8px">${tr('t2k_falta_trx', { n: fmt(q.trxEstimados, 2), h: fmt(q.trxDisponible, 2) })}</div>` : '') +
+      (q.frenado ? `<div class="warn" style="margin-top:8px">${t('t2k_frenado')}</div>` : '') +
+      (q.impacto > 3 && !q.frenado ? `<div class="warn" style="margin-top:8px">${tr('t2k_impacto_alto', { p: fmt(q.impacto, 1) })}</div>` : '');
+    $('t2k-cot').hidden = false; msg($('t2k-msg'), '');
+    $('btn-t2k-go').disabled = !!(q.faltaTrx || q.frenado);
+  } catch (e) { msg($('t2k-msg'), 'Error: ' + cleanErr(e), 'err'); }
+}
+async function t2kIniciar() {
+  if (!T2K.cot) return;
+  const pass = $('t2k-pass').value; if (!pass) return msg($('t2k-msg'), t('t2k_need_pass'), 'err');
+  $('btn-t2k-go').disabled = true; msg($('t2k-msg'), t('t2k_starting'));
+  try {
+    const r = await window.api.t2kIniciar({ ...T2K.cot, q: undefined, passphrase: pass });
+    T2K.opId = r.id; $('t2k-pass').value = ''; $('t2k-form').hidden = true; msg($('t2k-msg'), '');
+    t2kPintarPasos({ estado: 'inicio', pasos: {} }, null);
+  } catch (e) { msg($('t2k-msg'), 'Error: ' + cleanErr(e), 'err'); $('btn-t2k-go').disabled = false; }
+}
+$('btn-t2k-cotizar').onclick = t2kCotizar;
+$('btn-t2k-go').onclick = t2kIniciar;
+$('t2k-amt').oninput = () => { $('btn-t2k-go').disabled = true; $('t2k-cot').hidden = true; };
+['t2k-eth', 't2k-kda'].forEach(id => $(id).onchange = () => { $('btn-t2k-go').disabled = true; $('t2k-cot').hidden = true; });
+$('t2k-max').onclick = () => {
+  const bl = ((window._bal || {}).blocks || []).find(b => b.kind === 'tron' && b.walletId === T2K.wid);
+  const u = bl ? (bl.tokens.find(x => x.symbol === 'USDT') || {}).amount || 0 : 0;
+  $('t2k-amt').value = u > 0 ? Math.floor(u * 100) / 100 : ''; $('t2k-amt').oninput();
+};
+window.api.onT2k(({ op, fase }) => {
+  if (!$('modal-t2k').hidden && T2K.opId === op.id) { t2kPintarPasos(op, fase); if (op.estado === 'hecho' || fase === 'hecho') { t2kResetForm(); loadBalances(); } }
+  else if (fase === 'hecho') { msg($('wallet-msg'), t('t2k_done'), 'ok'); loadBalances(); }
+  else if (op.error) msg($('wallet-msg'), t('t2k_title') + ': ' + cleanErr({ message: op.error }), 'err');
+});
+
 // confirmación de envío con contraseña
 // Idea 3: si se pasa `recipient`, se muestra la dirección destacada (cabeza/cola) y se exige marcar el visto bueno antes de firmar.
 function fmtAddr(a) { const s = String(a || ''); if (s.length <= 16) return esc(s); return `<span class="ah">${esc(s.slice(0, 8))}</span>${esc(s.slice(8, -6))}<span class="ah">${esc(s.slice(-6))}</span>`; }

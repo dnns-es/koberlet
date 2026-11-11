@@ -654,3 +654,7 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
    desplegable de al lado para que la fila no quede coja. */
 #ord-caduca{padding-top:10px;line-height:1.35}
 #ord-libro>div{padding:3px 0}
+
+/* USDT de Tron -> KDA: desglose de la cotizacion */
+.row-sp{display:flex;justify-content:space-between;gap:12px;padding:2px 0}
+.row-sp b{font-weight:600}
