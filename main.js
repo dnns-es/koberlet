@@ -28,6 +28,7 @@ const launch = require('./lib/launch');
 const dex = require('./lib/dex');
 const swap = require('./lib/swap');
 const ethswap = require('./lib/ethswap');
+const tron = require('./lib/tron');
 const ktime = require('./lib/kdatime');
 const QRCode = require('qrcode');
 // Ledger: carga PEREZOSA (node-hid es un módulo nativo; si fallara en algún equipo, la app debe arrancar igual).
@@ -190,6 +191,17 @@ const DEFAULT_CONFIG = {
       { symbol: 'DAI', cg: 'dai', kadenaModule: 'kb-DAI', evmRouter: '0x85CC60531119041B250003E25fe0c5920606c6dB', evmToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
       { symbol: 'WBTC', cg: 'wrapped-bitcoin', kadenaModule: 'kb-WBTC', evmRouter: '0xDFdB8F3dEb5458BFA25cc97df41298A915a34BF3', evmToken: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 }
     ]
+  },
+  // Tron (11-11-2026). Mucha gente tiene su USDT ahí (Trust Wallet). Tokens fijos del código,
+  // como en EVM: el renderer elige por dirección de esta lista y nunca puede meter otra.
+  // Del usuario solo se respeta un nodo https y su clave de API de TronGrid (opcional: sin ella
+  // el nodo público deja 3 peticiones por segundo, y Koberlet las espacia para no pasarse).
+  tron: {
+    name: 'Tron', color: '#EB0029', symbol: 'TRX', cg: 'tron',
+    node: 'https://api.trongrid.io', apiKey: '',
+    tokens: [
+      { symbol: 'USDT', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', decimals: 6, cg: 'tether' }
+    ]
   }
 };
 
@@ -298,6 +310,11 @@ const loadConfig = () => {
     // La orilla Kadena del puente usa el MISMO nodo que la red, elegido por la sonda.
     kda: { ...DEFAULT_CONFIG.bridge.kda, node: _elegido },
     evm: { ...DEFAULT_CONFIG.bridge.evm, rpc: (redEth && redEth.rpc) || DEFAULT_CONFIG.bridge.evm.rpc } };
+  // Tron: igual que EVM, todo fijo del código salvo un nodo https y la clave de API.
+  const tronSuyo = (c.tron && typeof c.tron === 'object') ? c.tron : {};
+  c.tron = { ...DEFAULT_CONFIG.tron,
+    node: httpsOk(tronSuyo.node) ? tronSuyo.node : DEFAULT_CONFIG.tron.node,
+    apiKey: /^[0-9a-f-]{20,64}$/i.test(String(tronSuyo.apiKey || '')) ? String(tronSuyo.apiKey) : '' };
   c.updateMode = (c.updateMode === 'auto') ? 'auto' : 'manual'; // manual por defecto: avisar y que el usuario decida
   c.lockMinutes = (c.lockMinutes === undefined || c.lockMinutes === null) ? 10 : Math.max(0, Number(c.lockMinutes) || 0); // M-2: auto-bloqueo, 10 min por defecto (0=nunca)
   // Libreta de direcciones (idea 1): lista {alias, address, kind:'kda'|'evm'} saneada. No es secreto.
@@ -375,7 +392,7 @@ const cargarRazones = () => { try { return precios.razonesVigentes(JSON.parse(fs
 const guardarRazones = (r) => { try { if (r) fs.writeFileSync(RAZONES(), JSON.stringify(r)); } catch (_) {} };
 async function refreshPrices() {
   if (Date.now() - _priceCache.at < 60000 && Object.keys(_priceCache.full).length) return;
-  const ids = 'kadena,ethereum,binancecoin,polygon-ecosystem-token,usd-coin,tether,dai,wrapped-bitcoin';
+  const ids = 'kadena,ethereum,binancecoin,polygon-ecosystem-token,usd-coin,tether,dai,wrapped-bitcoin,tron';
   let m = {};
   try {
     const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + ids + '&vs_currencies=' + FIATS.join(',') + '&include_24hr_change=true');
@@ -407,7 +424,7 @@ function view() {
   if (!unlocked) return null;
   const shown = new Set(shownIds());
   return {
-    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : 'Kadena', shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null, ledger: !!x.ledger })),
+    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : (x.kind === 'tron' ? 'Tron' : 'Kadena'), shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null, tronAddress: x.tron ? x.tron.address : null, ledger: !!x.ledger })),
     shown: shownIds().slice()
   };
 }
@@ -685,10 +702,11 @@ ipcMain.handle('vault:status', () => ({ exists: vault.existe(VAULT()), unlocked:
 
 ipcMain.handle('vault:setup', async (_e, { passphrase, kind, net }) => {
   if (vault.existe(VAULT())) backupVault(); // salvaguarda: nunca machacar una bóveda existente (p.ej. doble-submit) sin respaldo con fecha
-  const { mnemonic, kda: k, eth: e } = await wallets.createNew(kind);
+  const { mnemonic, kda: k, eth: e, tron: tr } = await wallets.createNew(kind);
   const id = crypto.randomUUID();
-  const w = { id, label: kind === 'kda' ? 'Mi wallet KDA' : 'Mi wallet ' + evmNetName(net || 'eth'), kind, kda: k, eth: e };
+  const w = { id, label: kind === 'kda' ? 'Mi wallet KDA' : (kind === 'tron' ? 'Mi wallet Tron' : 'Mi wallet ' + evmNetName(net || 'eth')), kind, kda: k, eth: e };
   if (kind === 'evm') w.net = net || 'eth';
+  if (kind === 'tron') w.tron = tr;
   vault.crear(VAULT(), passphrase, { wallets: [w], active: id, shown: [id] });
   if (kind === 'evm') enableEvmNet(net || 'eth');
   return { ok: true, mnemonic };
@@ -738,7 +756,7 @@ ipcMain.handle('backup:import', async (_e, { password }) => {
   if (!data || !Array.isArray(data.wallets) || !data.wallets.length) throw new Error('La copia no contiene wallets.');
   const restored = migrate(data).data; // normaliza el formato (una wallet = una red)
   if (unlocked) {
-    const dup = (w) => unlocked.data.wallets.some(x => (w.kda && x.kda && x.kda.account === w.kda.account) || (w.eth && x.eth && x.eth.address === w.eth.address));
+    const dup = (w) => unlocked.data.wallets.some(x => (w.kda && x.kda && x.kda.account === w.kda.account) || (w.eth && x.eth && x.eth.address === w.eth.address) || (w.tron && x.tron && x.tron.address === w.tron.address));
     let added = 0;
     for (const w of restored.wallets) { if (!dup(w)) { if (!unlocked.data.wallets.some(x => x.id === w.id)) { unlocked.data.wallets.push(w); added++; } } }
     unlocked.data.shown = unlocked.data.wallets.map(w => w.id);
@@ -783,19 +801,22 @@ ipcMain.handle('wallet:remove', (_e, { id }) => {
 });
 const addShown = (id) => { const s = new Set(shownIds()); s.add(id); unlocked.data.shown = unlocked.data.wallets.filter(w => s.has(w.id)).map(w => w.id); };
 ipcMain.handle('wallet:create', async (_e, { label, kind, net }) => {
-  const { mnemonic, kda: k, eth: e } = await wallets.createNew(kind);
+  const { mnemonic, kda: k, eth: e, tron: tr } = await wallets.createNew(kind);
   const id = crypto.randomUUID();
-  const w = { id, label: label || (kind === 'kda' ? 'Nueva KDA' : 'Nueva ' + evmNetName(net || 'eth')), kind, kda: k, eth: e };
+  const w = { id, label: label || (kind === 'kda' ? 'Nueva KDA' : (kind === 'tron' ? 'Nueva Tron' : 'Nueva ' + evmNetName(net || 'eth'))), kind, kda: k, eth: e };
   if (kind === 'evm') { w.net = net || 'eth'; enableEvmNet(w.net); }
+  if (kind === 'tron') w.tron = tr;
   unlocked.data.wallets.push(w); addShown(id);
   unlocked.data.active = id; saveVault();
   return { view: view(), mnemonic }; // la semilla se muestra UNA vez para que la anote
 });
 ipcMain.handle('wallet:import-mnemonic', async (_e, { label, mnemonic, kind, net, index, method }) => {
-  const { kda: k, eth: e } = await wallets.deriveAt(mnemonic, index || 0, method || 'chainweaver');
+  const { kda: k, eth: e, tron: tr } = await wallets.deriveAt(mnemonic, index || 0, method || 'chainweaver');
   const id = crypto.randomUUID();
-  const w = { id, label: label || 'Importada', kind: kind || 'kda', kda: kind === 'evm' ? null : k, eth: kind === 'evm' ? e : null };
+  const w = { id, label: label || 'Importada', kind: kind || 'kda', kda: (kind === 'evm' || kind === 'tron') ? null : k, eth: kind === 'evm' ? e : null };
   if (kind === 'evm') { w.net = net || 'eth'; enableEvmNet(w.net); }
+  if (kind === 'tron') w.tron = tr;
+  if (w.tron && unlocked.data.wallets.some(x => x.tron && x.tron.address === w.tron.address)) throw new Error('Esa cuenta de Tron ya está añadida.');
   unlocked.data.wallets.push(w); addShown(id); unlocked.data.active = id; saveVault(); return view();
 });
 // Busca una cuenta CONCRETA dentro de la semilla: prueba índices 0..max en ambos métodos y devuelve el que la genera (sin consultar saldo, rápido).
@@ -804,10 +825,10 @@ ipcMain.handle('seed:find', async (_e, { mnemonic, kind, net, target, maxIndex }
   const tgt = String(target || '').trim().toLowerCase();
   if (!tgt) throw new Error('Indica la cuenta a buscar.');
   const max = Math.min(Math.max(maxIndex || 30, 1), 100);
-  const methods = kind === 'evm' ? ['evm'] : ['chainweaver', ...wallets.SLIP_METHODS];
+  const methods = kind === 'evm' ? ['evm'] : (kind === 'tron' ? ['tron'] : ['chainweaver', ...wallets.SLIP_METHODS]);
   for (let i = 0; i < max; i++) {
     for (const m of methods) {
-      const id = kind === 'evm' ? wallets.deriveEth(mnemonic, i).address : (await wallets.deriveKda(mnemonic, i, m)).account;
+      const id = kind === 'evm' ? wallets.deriveEth(mnemonic, i).address : (kind === 'tron' ? wallets.deriveTron(mnemonic, i).address : (await wallets.deriveKda(mnemonic, i, m)).account);
       if (id.toLowerCase() === tgt) return { found: true, index: i, method: m, id };
     }
   }
@@ -826,6 +847,17 @@ ipcMain.handle('seed:accounts', async (_e, { mnemonic, kind, net, start, count }
       try { const b = await eth.getBalances(e.address, { rpc: await rpcDe(nd), tokens: nd.tokens }); amount = b.native + b.tokens.reduce((sm, t) => sm + t.amount, 0); } catch (_) {}
       return { index: i, method: 'evm', id: e.address, amount, unit: nd.symbol };
     }));
+  }
+  if (kind === 'tron') {
+    // En serie, no en paralelo: el nodo público de Tron solo deja 3 peticiones por segundo.
+    const out = [];
+    for (const i of idxs) {
+      const tr = wallets.deriveTron(mnemonic, i);
+      let amount = 0;
+      try { const b = await tron.getBalances(tr.address, c.tron); amount = b.native; } catch (_) {}
+      out.push({ index: i, method: 'tron', id: tr.address, amount, unit: 'TRX' });
+    }
+    return out;
   }
   const nets = c.kda.networks.filter(x => x.enabled);
   const jobs = [];
@@ -860,6 +892,10 @@ ipcMain.handle('wallet:import-privkey', (_e, { label, kind, net, priv }) => {
   const w = { id: crypto.randomUUID(), label: label || 'Importada', kda: null, eth: null };
   if (kind === 'kda') { w.kind = 'kda'; w.kda = wallets.kdaFromPriv(priv); }
   else if (kind === 'evm') { w.kind = 'evm'; w.eth = wallets.ethFromPriv(priv); w.net = net || 'eth'; enableEvmNet(w.net); }
+  else if (kind === 'tron') {
+    w.kind = 'tron'; w.tron = wallets.tronFromPriv(priv);
+    if (unlocked.data.wallets.some(x => x.tron && x.tron.address === w.tron.address)) throw new Error('Esa cuenta de Tron ya está añadida.');
+  }
   else throw new Error('Cadena no válida.');
   unlocked.data.wallets.push(w); addShown(w.id); unlocked.data.active = w.id; saveVault(); return view();
 });
@@ -939,6 +975,18 @@ ipcMain.handle('balances', async () => {
           total += usd;
         } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'evm', key: n.key, name: n.name, color: n.color, symbol: n.symbol, address: w.eth.address, native: 0, nativeUsd: 0, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
       }
+    } else if (w.kind === 'tron' && w.tron && !modoPruebas) {
+      const n = c.tron;
+      const base = { walletId: w.id, walletLabel: w.label, kind: 'tron', key: 'tron', name: n.name, color: n.color, symbol: n.symbol, address: w.tron.address };
+      try {
+        const b = await tron.getBalances(w.tron.address, n);
+        // Los tokens se enseñan aunque estén a 0 (lista curada): así se ve que USDT está soportado.
+        const tokens = b.tokens.map(t => ({ ...t, usd: t.amount * px((n.tokens.find(x => x.address === t.address) || {}).cg) }));
+        const nativeUsd = b.native * px(n.cg);
+        const usd = nativeUsd + tokens.reduce((s, t) => s + t.usd, 0);
+        blocks.push({ ...base, native: b.native, nativeUsd, tokens, usd, activada: b.activada, energia: b.energia, banda: b.banda, ajena: b.ajena });
+        total += usd;
+      } catch (e) { blocks.push({ ...base, native: 0, nativeUsd: 0, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }
     }
   }
   return { blocks, total };
@@ -1773,6 +1821,41 @@ ipcMain.handle('send:evm', async (_e, { passphrase, walletId, network, token, to
               : await eth.sendToken({ rpc: rpcEnvio, secretHex: w.eth.secret, token, to, amount }));
   logHistory({ type: 'send-evm', wallet: w.label, desc: `Envío ${amount} ${nativo ? n.symbol : 'token'} · ${n.name}`, to, id: r.hash });
   return r;
+});
+
+// ---- Tron: envío en dos pasos ----
+// 1) tron:preparar construye y simula el envío (lib/tron.js) y dice lo que va a quemar en TRX,
+//    para enseñarlo ANTES de pedir la contraseña: en Tron el coste no es obvio (un envío de
+//    USDT puede quemar 15-30 TRX si no tienes energía) y nadie debería enterarse después.
+// 2) send:tron lo vuelve a construir en el momento de firmar. No se reutiliza lo del paso 1
+//    porque la transacción lleva una referencia de bloque que Tron solo acepta 60 s, y nadie
+//    escribe la contraseña con un cronómetro delante. Si el coste ha subido más de la cuenta
+//    desde lo que se enseñó, no se firma: se vuelve a enseñar.
+async function tronPreparar(walletId, token, to, amount) {
+  const c = loadConfig(); const w = walletById(walletId);
+  if (!w || !w.tron) throw new Error('Esta wallet no tiene cuenta de Tron.');
+  const tk = token ? c.tron.tokens.find(x => x.address === token) : null;
+  if (token && !tk) throw new Error('Token de Tron no soportado.');
+  const pide = { from: w.tron.address, to: String(to || '').trim(), amount: String(amount), token: tk ? tk.address : null, decimals: tk ? tk.decimals : 6 };
+  const p = await tron.preparar(pide, c.tron);
+  return { c, w, pide, p };
+}
+ipcMain.handle('tron:preparar', async (_e, { walletId, token, to, amount }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  const { p } = await tronPreparar(walletId, token, to, amount);
+  return { resumen: p.resumen, coste: p.coste };
+});
+ipcMain.handle('send:tron', async (_e, { passphrase, walletId, token, to, amount, costeVisto }) => {
+  if (!unlocked) throw new Error('bloqueado');
+  if (!passOk(passphrase)) throw new Error('Contraseña incorrecta.');
+  const { c, w, pide, p } = await tronPreparar(walletId, token, to, amount);
+  const visto = Number(costeVisto) || 0;
+  if (p.coste.trx > visto * 1.25 + 0.5) throw new Error(`El coste ha subido desde que lo viste (${p.coste.trx} TRX en vez de ${visto}). Vuelve a pulsar Enviar para verlo.`);
+  tron.comprobar(p.raw, pide);
+  const txID = await tron.emitir(p.raw, w.tron.secret, c.tron);
+  logHistory({ type: 'send-tron', wallet: w.label, desc: `Envío ${p.resumen.cantidad} ${p.resumen.simbolo} · Tron`, to: pide.to, id: txID });
+  const r = await tron.esperar(txID, c.tron);
+  return { hash: txID, ...r };
 });
 
 ipcMain.handle('bridge:config', () => loadConfig().bridge);

@@ -19,6 +19,32 @@
 // desconocido» de relleno, «destino», «2 minutos»…).
 
 const ERRORES_EN = [
+  // --- Tron (lib/tron.js y su parte de main) ---
+  [/^Esa cuenta de Tron ya está añadida\.$/, 'That Tron account is already added.'],
+  [/^Esta wallet no tiene cuenta de Tron\.$/, 'This wallet has no Tron account.'],
+  [/^Token de Tron no soportado\.$/, 'Unsupported Tron token.'],
+  [/^El coste ha subido desde que lo viste \(([\s\S]*) TRX en vez de ([\s\S]*)\)\. Vuelve a pulsar Enviar para verlo\.$/, 'The cost went up since you saw it ($1 TRX instead of $2). Press Send again to see it.'],
+  [/^Dirección de 20 bytes no válida\.$/, 'Invalid 20-byte address.'],
+  [/^Dirección Tron no válida: ([\s\S]*)$/, 'Invalid Tron address: $1'],
+  [/^Dirección Tron con la suma de control mal \(¿una letra equivocada\?\): ([\s\S]*)$/, 'Tron address with a bad checksum (a wrong letter?): $1'],
+  [/^varint negativo$/, 'negative varint'],
+  [/^protobuf cortado$/, 'truncated protobuf'],
+  [/^tipo protobuf no soportado: ([\s\S]*)$/, 'unsupported protobuf type: $1'],
+  [/^la transacción debe llevar exactamente un contrato$/, 'the transaction must carry exactly one contract'],
+  [/^tipo de contrato inesperado: ([\s\S]*)$/, 'unexpected contract type: $1'],
+  [/^El nodo de Tron no ha contestado bien \(([\s\S]*)\)\.$/, 'The Tron node did not answer properly ($1).'],
+  [/^Nodo de Tron: ([\s\S]*)$/, 'Tron node: $1'],
+  [/^El destino es la misma cuenta\.$/, 'The destination is the same account.'],
+  [/^Esta cuenta de Tron aún no está activada: necesita recibir algo de TRX primero\.$/, 'This Tron account is not activated yet: it needs to receive some TRX first.'],
+  [/^Esta cuenta de Tron tiene OTRO dueño: alguien cambió sus permisos y tu clave ya no puede firmar\. No envíes nada a esta dirección\.$/, 'This Tron account has ANOTHER owner: someone changed its permissions and your key can no longer sign. Do not send anything to this address.'],
+  [/^El envío fallaría: el contrato lo rechaza$/, 'The transfer would fail: the contract rejects it'],
+  [/^El envío fallaría: ([\s\S]*)$/, 'The transfer would fail: $1'],
+  [/^No hay TRX suficiente: hacen falta ([\s\S]*) TRX para la energía y hay ([\s\S]*)\.$/, 'Not enough TRX: $1 TRX is needed for energy and there is $2.'],
+  [/^No hay TRX suficiente: hacen falta ([\s\S]*) TRX y hay ([\s\S]*)\.$/, 'Not enough TRX: $1 TRX is needed and there is $2.'],
+  [/^No hay ([\s\S]*) suficiente\.$/, 'Not enough $1.'],
+  [/^La transacción construida no coincide con lo pedido \(([\s\S]*)\)\. No se firma\.$/, 'The built transaction does not match what was asked ($1). It will not be signed.'],
+  [/^Tron no ha aceptado la transacción: ([\s\S]*)$/, 'Tron did not accept the transaction: $1'],
+  [/^La transacción entró pero falló en Tron \(([\s\S]*)\)\. Mira ([\s\S]*) en Tronscan\.$/, 'The transaction got in but failed on Tron ($1). Check $2 on Tronscan.'],
   // --- Boveda, wallets y contrasena ---
   [/^bloqueado$/, 'Vault is locked.'],
   [/^Bóveda vacía o corrupta\.$/, 'The vault is empty or corrupted.'],

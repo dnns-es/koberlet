@@ -51,6 +51,8 @@ contextBridge.exposeInMainWorld('api', {
   sendKda: (passphrase, walletId, kdaNet, chain, to, amount) => ipcRenderer.invoke('send:kda', { passphrase, walletId, kdaNet, chain, to, amount }),
   sendKdaToken: (passphrase, walletId, symbol, to, amount) => ipcRenderer.invoke('send:kdatoken', { passphrase, walletId, symbol, to, amount }),
   sendEvm: (passphrase, walletId, network, token, to, amount) => ipcRenderer.invoke('send:evm', { passphrase, walletId, network, token, to, amount }),
+  tronPreparar: (walletId, token, to, amount) => ipcRenderer.invoke('tron:preparar', { walletId, token, to, amount }),
+  sendTron: (passphrase, walletId, token, to, amount, costeVisto) => ipcRenderer.invoke('send:tron', { passphrase, walletId, token, to, amount, costeVisto }),
   sendKdaXchain: (passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount) => ipcRenderer.invoke('send:kda-xchain', { passphrase, walletId, kdaNet, sourceChain, targetChain, to, amount }),
   sendKdaSmart: (passphrase, walletId, kdaNet, targetChain, to, amount) => ipcRenderer.invoke('send:kda-smart', { passphrase, walletId, kdaNet, targetChain, to, amount }),
   onXchainProgress: (cb) => ipcRenderer.on('xchain:progress', (_e, m) => cb(m)),

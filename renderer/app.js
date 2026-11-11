@@ -366,6 +366,8 @@ const LANG = {
     addrbook_hint: 'Guarda destinatarios con un nombre para elegirlos al enviar y no pegar la dirección a mano.',
     ab_saved: 'Dirección guardada.', ab_bad: 'Indica un nombre y una dirección válida (cuenta de Kadena o 0x…).', ab_pick: '📇 Libreta',
     csv_ok: 'Historial exportado.', csv_empty: 'No hay operaciones que exportar.', low_gas: 'Poco {sym} en {net} para gas ({bal}). Repón antes de operar.',
+    tron_ajena: 'Esta cuenta de Tron tiene OTRO dueño: alguien cambió sus permisos y tu clave ya no puede firmar. No recibas nada aquí y deja de usar esta semilla.',
+    recv_note_tron: 'Recibes en Tron (red TRC20). Esta dirección T… solo vale en Tron: si te envían USDT, que elijan la red TRC20 / Tron. Una cuenta nueva se activa con el primer TRX que reciba.', lbl_dest_tron: 'Destino (T…)', ph_tron_dest: 'T…', tron_preparing: 'Preparando el envío en Tron y calculando el coste…', tron_recursos: 'Energía {e} · ancho de banda {b} (si no llegan, se queman TRX)', tron_no_activada: 'Cuenta aún sin activar: se activa al recibir el primer TRX.', tron_cost_burn: 'Este envío quemará unos <b>{trx} TRX</b> de comisión de la red Tron.', tron_cost_free: 'Este envío no quema TRX: lo cubren tu energía y tu ancho de banda.', tron_cost_energy: 'Energía necesaria {e} (tienes {c}).', tron_cost_activate: 'El destino es una cuenta nueva: enviarle TRX la activa y cuesta ~1,1 TRX más.', tron_dest_new: 'El destino nunca ha usado Tron: un USDT a una cuenta nueva gasta casi el doble de energía.', tron_sent_pending: 'Enviada, aún sin confirmar. Mírala en Tronscan: ', cf_send_tron: 'Enviar <b>{a} {s}</b> en Tron<br>a <span class="mono">{to}</span>',
     converter: '🧮 Conversor', recv_note_kda: 'Recibes en Kadena. Para Mercado/Puente los fondos deben ir a la chain 2.', recv_note_evm: 'Recibes en {net}. La misma dirección 0x vale en todas las redes EVM; asegúrate de que quien te envía usa la red correcta.', share: 'Compartir',
     backup_title: 'Copia de seguridad de la bóveda', backup_do: '⬇ Exportar copia cifrada', restore_do: '⬆ Restaurar copia…',
     backup_hint: 'Guarda una copia cifrada de tu bóveda (a un USB, disco o carpeta segura) para recuperarla en otro equipo. Va cifrada con tu contraseña.',
@@ -853,6 +855,8 @@ const LANG = {
     addrbook_hint: 'Save recipients with a name to pick them when sending instead of pasting the address.',
     ab_saved: 'Address saved.', ab_bad: 'Enter a name and a valid address (a Kadena account or 0x…).', ab_pick: '📇 Book',
     csv_ok: 'History exported.', csv_empty: 'No operations to export.', low_gas: 'Low {sym} on {net} for gas ({bal}). Top up before operating.',
+    tron_ajena: 'This Tron account has ANOTHER owner: someone changed its permissions and your key can no longer sign. Do not receive anything here and stop using this seed.',
+    recv_note_tron: 'Receiving on Tron (TRC20 network). This T… address only works on Tron: if someone sends you USDT, they must choose the TRC20 / Tron network. A new account is activated by the first TRX it receives.', lbl_dest_tron: 'Destination (T…)', ph_tron_dest: 'T…', tron_preparing: 'Preparing the Tron transfer and working out the cost…', tron_recursos: 'Energy {e} · bandwidth {b} (if short, TRX is burned)', tron_no_activada: 'Account not activated yet: it activates on the first TRX received.', tron_cost_burn: 'This transfer will burn about <b>{trx} TRX</b> in Tron network fees.', tron_cost_free: 'This transfer burns no TRX: your energy and bandwidth cover it.', tron_cost_energy: 'Energy needed {e} (you have {c}).', tron_cost_activate: 'The destination is a new account: sending it TRX activates it and costs ~1.1 TRX more.', tron_dest_new: 'The destination has never used Tron: USDT to a new account uses almost twice the energy.', tron_sent_pending: 'Sent, not confirmed yet. Check it on Tronscan: ', cf_send_tron: 'Send <b>{a} {s}</b> on Tron<br>to <span class="mono">{to}</span>',
     converter: '🧮 Converter', recv_note_kda: 'Receiving on Kadena. For Market/Bridge funds must be on chain 2.', recv_note_evm: 'Receiving on {net}. The same 0x address works on all EVM networks; make sure the sender uses the right network.', share: 'Share',
     backup_title: 'Vault backup', backup_do: '⬇ Export encrypted backup', restore_do: '⬆ Restore backup…',
     backup_hint: 'Save an encrypted copy of your vault (to a USB, disk or safe folder) to recover it on another computer. It is encrypted with your password.',
@@ -1193,9 +1197,10 @@ document.querySelectorAll('.langbtn').forEach(b => b.onclick = () => setLang(LNG
 function screen(name) { ['scr-setup', 'scr-unlock', 'scr-visor'].forEach(s => $(s).hidden = true); $('app').hidden = true; if (name === 'app') $('app').hidden = false; else $(name).hidden = false; }
 function nav(v) { ['dashboard', 'wallets', 'nft', 'red', 'dca', 'ordenes', 'launch', 'mercado', 'puente', 'seguridad', 'ajustes', 'info'].forEach(n => $('view-' + n).hidden = (n !== v)); document.querySelectorAll('.nav').forEach(a => a.classList.toggle('on', a.dataset.nav === v)); $('crumb').textContent = t('nav_' + v); }
 
-// Opciones de red para crear/importar: KDA + cada red EVM. value = 'kda' o 'evm:<key>'.
-function netOptions() { return '<option value="kda">Kadena (KDA)</option>' + CFG.evm.map(n => `<option value="evm:${n.key}">${n.name}</option>`).join(''); }
-function parseNet(sel) { return sel === 'kda' ? { kind: 'kda', net: null } : { kind: 'evm', net: sel.slice(4) }; }
+// Opciones de red para crear/importar: KDA + cada red EVM + Tron. value = 'kda', 'evm:<key>' o 'tron'.
+// Ledger no firma Tron en Koberlet: su selector se monta sin esa opción.
+function netOptions(sinTron) { return '<option value="kda">Kadena (KDA)</option>' + CFG.evm.map(n => `<option value="evm:${n.key}">${n.name}</option>`).join('') + (sinTron ? '' : '<option value="tron">Tron (TRX · USDT)</option>'); }
+function parseNet(sel) { return sel === 'kda' ? { kind: 'kda', net: null } : (sel === 'tron' ? { kind: 'tron', net: null } : { kind: 'evm', net: sel.slice(4) }); }
 
 async function boot() {
   const st = await window.api.status(); CFG = st.config;
@@ -3255,7 +3260,7 @@ async function applyView(v) {
   updateNetContext();
   $('sec-wallet').innerHTML = v.wallets.map(w => `<option value="${w.id}">${esc(w.label)} · ${w.kind === 'kda' ? 'Kadena' : w.netName}</option>`).join('');
   $('wallet-list').innerHTML = v.wallets.map(w => `<div class="wrow ${w.shown ? 'active' : ''}">
-    <label class="wshow" title="${t('ttl_show_dash')}"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : '#627eea'}"></span></label>
+    <label class="wshow" title="${t('ttl_show_dash')}"><input type="checkbox" data-show="${w.id}" ${w.shown ? 'checked' : ''}/> <span class="tdot" style="background:${w.kind === 'kda' ? '#63e038' : (w.kind === 'tron' ? '#EB0029' : '#627eea')}"></span></label>
     <div class="wmeta"><div class="wl">${esc(w.label)} ${w.ledger ? `<span class="wtag ledger">${t('ledger_badge')}</span>` : ''} ${wTagBadge(w.id)}</div><div class="wa">${w.kind === 'kda' ? 'Kadena' : w.netName}${w.shown ? ` · <span class="grn">${t('on_dash')}</span>` : ''}${wNote(w.id)}</div></div>
     <div class="wact"><button class="copy" data-ren="${w.id}" title="${t('ttl_rename')}">✏️</button><button class="copy" data-del="${w.id}" title="${t('ttl_del')}">🗑</button></div></div>`).join('');
   $('wallet-list').querySelectorAll('[data-show]').forEach(cb => cb.onchange = async () => applyView(await window.api.walletShown(cb.dataset.show, cb.checked)));
@@ -3300,6 +3305,17 @@ function cardBlock(bl, qr) {
       <label>${t('lbl_amount')}</label><div class="amtrow"><input class="k-amt" type="number" step="0.0001"/><button type="button" class="tiny ghost k-max" title="${t('ttl_max')}">MAX</button></div>
       <div class="muted xs k-xhint" hidden>${t('xchain_hint')}</div>
       <button class="primary k-send" data-wid="${bl.walletId}" data-knet="${bl.knet}" data-perchain='${JSON.stringify(bl.perChain || {})}'>${t('send')}</button>`;
+  } else if (bl.kind === 'tron') {
+    rows = assetRow(bl.symbol, bl.native, bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount, t.usd)).join('');
+    // En Tron el gas no es un número pequeño: se paga en energía y ancho de banda, y si no se
+    // tienen se queman TRX. Se enseña lo que hay para que el coste del envío no pille de nuevas.
+    extra = `<div class="muted xs perline">${bl.error ? '' : (bl.activada ? tr('tron_recursos', { e: fmtCorto(bl.energia || 0, 0), b: fmtCorto(bl.banda || 0, 0) }) : t('tron_no_activada'))}</div>`
+      + (bl.ajena ? `<div class="warn" style="display:block;margin-top:6px">⚠ ${t('tron_ajena')}</div>` : '');
+    const opts = `<option value="" data-amt="${bl.native}" data-native="1">TRX</option>` + bl.tokens.map(x => `<option value="${esc(x.address)}" data-amt="${x.amount}">${esc(x.symbol)}</option>`).join('');
+    sendForm = `<label>${t('lbl_asset')}</label><select class="t-asset">${opts}</select>
+      <label>${t('lbl_dest_tron')}</label><input class="t-to" placeholder="${t('ph_tron_dest')}" spellcheck="false"/>
+      <label>${t('lbl_amount')}</label><div class="amtrow"><input class="t-amt" type="number" step="0.000001"/><button type="button" class="tiny ghost t-max" title="${t('ttl_max')}">MAX</button></div>
+      <button class="primary t-send" data-wid="${bl.walletId}">${t('send')}</button>`;
   } else {
     rows = assetRow(bl.symbol, bl.native, bl.nativeUsd) + bl.tokens.map(t => assetRow(t.symbol, t.amount, t.usd)).join('');
     const opts = `<option value="${bl.symbol}" data-amt="${bl.native}" data-native="1">${bl.symbol}</option>` + bl.tokens.map(t => `<option value="${t.address}" data-amt="${t.amount}">${t.symbol}</option>`).join('');
@@ -3320,7 +3336,7 @@ function cardBlock(bl, qr) {
       <button class="act-btn nc-expand" title="${t('btn_expand')}">🔍 ${t('btn_expand')}</button>
     </div>
     <div class="nc-panel" data-pan="recv" hidden>
-      <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : t('recv_note_evm').replace('{net}', esc(bl.name))}</div>
+      <div class="recv-note muted xs">📥 ${bl.kind === 'kda' ? t('recv_note_kda') : (bl.kind === 'tron' ? t('recv_note_tron') : t('recv_note_evm').replace('{net}', esc(bl.name)))}</div>
       <div class="addr"><span class="mono">${esc(bl.address)}</span><button class="copy" data-ct="${esc(bl.address)}">${t('copy')}</button></div>
       <img class="qr" src="${qr}"/>
       ${bl.kind === 'kda' ? `<div class="cobro">
@@ -3372,12 +3388,15 @@ setInterval(() => {
   if (zona && !zona.hidden && document.visibilityState === 'visible') renderOrdenesActivas();
 }, 60000);
 // Idea 2: aviso de gas bajo. Umbral por símbolo del token nativo de cada red.
-const GAS_MIN = { ETH: 0.0015, BNB: 0.005, POL: 1, MATIC: 1, KDA: 0.5 };
+// TRX: un envío de USDT sin energía quema ~15-30 TRX; por debajo de 30 se avisa.
+const GAS_MIN = { ETH: 0.0015, BNB: 0.005, POL: 1, MATIC: 1, KDA: 0.5, TRX: 30 };
 function renderGasWarnings(blocks) {
   const el = $('gas-warn'); if (!el) return;
   const warns = [];
   for (const bl of blocks) {
     if (bl.error) continue;
+    // Una cuenta Tron sin tokens no necesita TRX para nada: avisar ahí sería ruido.
+    if (bl.kind === 'tron' && !(bl.tokens || []).some(x => x.amount > 0)) continue;
     const sym = bl.kind === 'kda' ? 'KDA' : bl.symbol;
     const bal = Number(bl.native || 0);
     const min = GAS_MIN[sym] ?? 0.001;
@@ -3540,6 +3559,34 @@ function wireCards() {
     if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
     const wid = btn.dataset.wid;
     askSend(tr('cf_send_evm', { a: esc(amt), s: esc(label), net: esc(btn.dataset.netname), to: esc(to) }) + ledgerNote(wid), async (pass) => { const r = await window.api.sendEvm(pass, wid, btn.dataset.net, asset, to, amt); return t('sent_tx') + r.hash; }, to, { ledger: isLedgerW(wid) });
+  });
+  // Tron: MAX en TRX deja 1 TRX de margen para el ancho de banda; en un token, el saldo entero.
+  document.querySelectorAll('.t-max').forEach(btn => btn.onclick = () => {
+    const c = btn.closest('.netcard'); const o = c.querySelector('.t-asset').selectedOptions[0]; if (!o) return;
+    const amt = Number(o.dataset.amt || 0);
+    const max = o.dataset.native ? Math.max(0, amt - 1) : amt;
+    c.querySelector('.t-amt').value = max > 0 ? (Math.floor(max * 1e6) / 1e6) : '';
+  });
+  // Tron: antes de pedir la contraseña se prepara el envío para enseñar lo que va a quemar.
+  document.querySelectorAll('.t-send').forEach(btn => btn.onclick = async () => {
+    const c = btn.closest('.netcard'); const sel = c.querySelector('.t-asset');
+    const token = sel.value || null, label = sel.options[sel.selectedIndex].textContent;
+    const to = c.querySelector('.t-to').value.trim(), amt = c.querySelector('.t-amt').value;
+    if (!to || !amt) return msg($('wallet-msg'), t('err_fill_dest_amt'), 'err');
+    const wid = btn.dataset.wid;
+    btn.disabled = true; msg($('wallet-msg'), t('tron_preparing'));
+    try {
+      const p = await window.api.tronPreparar(wid, token, to, amt);
+      msg($('wallet-msg'), '');
+      const k = p.coste;
+      const coste = k.trx > 0 ? tr('tron_cost_burn', { trx: fmt(k.trx, 2) }) : t('tron_cost_free');
+      const detalle = (k.energia ? tr('tron_cost_energy', { e: fmtCorto(k.energia, 0), c: fmtCorto(k.cubreEnergia, 0) }) : '')
+        + (k.activarDestino ? '<br>' + t('tron_cost_activate') : '')
+        + (token && !k.destinoActivado ? '<br>' + t('tron_dest_new') : '');
+      askSend(tr('cf_send_tron', { a: esc(amt), s: esc(label), to: esc(to) }) + `<br><span class="warn" style="display:block;margin-top:8px">⛽ ${coste}${detalle ? '<br><small>' + detalle + '</small>' : ''}</span>`,
+        async (pass) => { const r = await window.api.sendTron(pass, wid, token, to, amt, k.trx); return (r.pendiente ? t('tron_sent_pending') : t('sent_tx')) + r.hash; }, to, {});
+    } catch (e) { msg($('wallet-msg'), 'Error: ' + cleanErr(e), 'err'); }
+    finally { btn.disabled = false; }
   });
 }
 // confirmación de envío con contraseña
@@ -3743,7 +3790,7 @@ $('ren-label').addEventListener('keydown', e => { if (e.key === 'Enter') $('btn-
 
 // LEDGER: leer cuenta del aparato y añadirla como wallet (la clave se queda en el aparato)
 $('btn-ledger').onclick = () => {
-  $('lg-net').innerHTML = netOptions();
+  $('lg-net').innerHTML = netOptions(true);
   $('lg-label').value = ''; $('lg-index').value = '0';
   $('lg-acct').hidden = true; $('lg-acct-txt').textContent = ''; $('btn-lg-add').disabled = true;
   msg($('lg-msg'), ''); $('modal-ledger').hidden = false;
@@ -3782,7 +3829,7 @@ $('btn-import').onclick = () => {
 };
 // Escanear las cuentas de una semilla (índices 0,1,2… con paginación) y elegir cuál importar, como eckoWallet.
 let seedOffset = 0, seedRowsHtml = '';
-const METHOD_TAG = { chainweaver: 'Chainweaver', ecko: 'eckoWallet', 'ecko-acct': 'eckoWallet·acct', 'ecko-4': 'eckoWallet·4', 'ecko-3': 'eckoWallet·3', 'ecko-chg': 'eckoWallet·chg', 'ecko-direct': 'eckoWallet·seed', evm: '' };
+const METHOD_TAG = { chainweaver: 'Chainweaver', ecko: 'eckoWallet', 'ecko-acct': 'eckoWallet·acct', 'ecko-4': 'eckoWallet·4', 'ecko-3': 'eckoWallet·3', 'ecko-chg': 'eckoWallet·chg', 'ecko-direct': 'eckoWallet·seed', evm: '', tron: 'Trust Wallet · TronLink' };
 function wireSeedRows() {
   const mn = $('imp-mn').value.trim(); const { kind, net } = parseNet($('imp-net').value);
   $('seed-accts').querySelectorAll('.seed-imp').forEach(b => b.onclick = async () => {
@@ -3824,8 +3871,8 @@ $('btn-do-import').onclick = async () => { const label = $('imp-label').value.tr
 
 // EXPORTAR
 let expChain = null, expWid = null;
-function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : 'EVM'; $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
-$('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : 'eth'); };
+function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : (chain === 'tron' ? 'TRON' : 'EVM'); $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
+$('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : (w.kind === 'tron' ? 'tron' : 'eth')); };
 $('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), errIdioma(e.message), 'err'); } };
 
 // borrar wallet: paso 1 (consejo semilla) → paso 2 (última confirmación) → borrar

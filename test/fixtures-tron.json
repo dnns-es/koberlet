@@ -1,0 +1,51 @@
+{
+ "nota": "Transacciones construidas por el nodo oficial (TronGrid) el 11-11-2026, sin firmar. Sirven para comprobar que lib/tron.js codifica igual.",
+ "destino": "TCLBgkbfVkJroVBJVqBEsxtPNQEQMTQCLQ",
+ "trx": {
+  "raw_data_hex": "0a0269602208f084d9e4e5ce1e8d40989fc6d79c345a67080112630a2d747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e5472616e73666572436f6e747261637412320a154189cbcb2372e1c2fbc00f24895a406a0c722c89f312154119e7e376e7c213b7e7e7e46cc70a5dd086daff2a1887ad4b70fee4c2d79c34",
+  "txID": "2847d70e0ecdbb467423fcd1b2f80c5402d7c1072b69488c5040e3528f873034",
+  "raw_data": {
+   "ref_block_bytes": "6960",
+   "ref_block_hash": "f084d9e4e5ce1e8d",
+   "expiration": 1794406191000,
+   "contract": [
+    {
+     "parameter": {
+      "value": {
+       "owner_address": "TNXoiAJ3dct8Fjg4M9fkLFh9S2v9TXc32G",
+       "to_address": "TCLBgkbfVkJroVBJVqBEsxtPNQEQMTQCLQ",
+       "amount": 1234567
+      },
+      "type_url": "type.googleapis.com/protocol.TransferContract"
+     },
+     "type": "TransferContract"
+    }
+   ],
+   "timestamp": 1794406134398
+  }
+ },
+ "trc20": {
+  "raw_data_hex": "0a0269612208d1c9c03bff9aa96e40d0b6c6d79c345aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a154189cbcb2372e1c2fbc00f24895a406a0c722c89f3121541a614f803b6fd780986a42c78ec9c7f77e6ded13c2244a9059cbb00000000000000000000000019e7e376e7c213b7e7e7e46cc70a5dd086daff2a00000000000000000000000000000000000000000000000000000000002625a0709fe7c2d79c3490018087a70e",
+  "txID": "7bc4ec96f1d92d309556fb15a2f9218d1c661ecfcb7ae7d09871435cd2614f2e",
+  "raw_data": {
+   "ref_block_bytes": "6961",
+   "ref_block_hash": "d1c9c03bff9aa96e",
+   "expiration": 1794406194000,
+   "contract": [
+    {
+     "parameter": {
+      "value": {
+       "owner_address": "TNXoiAJ3dct8Fjg4M9fkLFh9S2v9TXc32G",
+       "contract_address": "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+       "data": "a9059cbb00000000000000000000000019e7e376e7c213b7e7e7e46cc70a5dd086daff2a00000000000000000000000000000000000000000000000000000000002625a0"
+      },
+      "type_url": "type.googleapis.com/protocol.TriggerSmartContract"
+     },
+     "type": "TriggerSmartContract"
+    }
+   ],
+   "timestamp": 1794406134687,
+   "fee_limit": 30000000
+  }
+ }
+}

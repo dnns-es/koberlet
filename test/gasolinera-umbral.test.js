@@ -40,8 +40,9 @@ const ok = (c, m) => { assert.ok(c, m); n++; console.log('ok     ' + m); };
   // Todas las firmas que pueden ir por la gasolinera dicen cuanto valen.
   const src = fs.readFileSync(path.join(__dirname, '..', 'lib', 'dca.js'), 'utf8');
   const ord = fs.readFileSync(path.join(__dirname, '..', 'lib', 'ordenes.js'), 'utf8');
-  ok(/gasLimit: 12000, valorUsdc\n/.test(src) && /gasLimit: 10000, valorUsdc\n/.test(src), 'crear y recargar un plan pasan su valor');
-  ok(/nonce: 'koberlet-orden', valorUsdc\n/.test(ord), 'crear una orden pasa su valor');
+  // \r?\n: en una copia de Windows git deja los ficheros con CRLF y el test fallaba sin motivo.
+  ok(/gasLimit: 12000, valorUsdc\r?\n/.test(src) && /gasLimit: 10000, valorUsdc\r?\n/.test(src), 'crear y recargar un plan pasan su valor');
+  ok(/nonce: 'koberlet-orden', valorUsdc\r?\n/.test(ord), 'crear una orden pasa su valor');
   ok(/q\.direccion === 'compra' \? Number\(q\.cantidad\) : Number\(q\.minOut\)/.test(ord), 'la orden se valora como el Mercado: lo que entra al comprar, el minimo al vender');
   ok(!/hayGasolinera: !!\(await (dca\.)?gasolinera\(cfg\)\)/.test(src + ord), 'el aviso de gas mira el mismo umbral');
   console.log('\nUmbral de la gasolinera: todas las comprobaciones pasan (' + n + ').');
