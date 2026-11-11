@@ -658,3 +658,9 @@ body.focus-mode .netcard.focused .nc-expand{display:none}   /* ya estás ampliad
 /* USDT de Tron -> KDA: desglose de la cotizacion */
 .row-sp{display:flex;justify-content:space-between;gap:12px;padding:2px 0}
 .row-sp b{font-weight:600}
+/* Tarjeta de Tron: el boton de USDT -> KDA va en su propia fila, a todo el ancho. Con
+   cuatro botones en una fila el cuarto se salia de la tarjeta (nowrap). */
+.nc-actions{flex-wrap:wrap}
+.act-btn.t-2kda{flex:1 1 100%;color:#EB0029;border-color:#f3c2c8;background:#fff7f8}
+.act-btn.t-2kda:hover{border-color:#EB0029}
+:root[data-theme="dark"] .act-btn.t-2kda{color:#ff5a6e;border-color:#5a2a31;background:var(--card)}
