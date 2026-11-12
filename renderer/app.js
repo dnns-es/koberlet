@@ -516,8 +516,8 @@ const LANG = {
     recv_ask_on: 'El QR lleva ya la cantidad y la chain: quién pague con Koberlet en el móvil se las encuentra puestas.',
     fiat_hint: 'En qué moneda se te enseña lo que valen tus saldos: el total del panel, las tarjetas de red y el conversor. No cambia nada de lo que se mueve en cadena.',
     min_5: '5 minutos', min_10: '10 minutos', min_30: '30 minutos',
-    sec_intro: 'Revela la clave privada de una de tus wallets. Requiere la contraseña de la bóveda. No la compartas con nadie.',
-    sec_view_pk: '🔑 Ver clave privada',
+    sec_intro: 'Revela la clave privada (y la semilla, si la wallet la tiene) de una de tus wallets. Requiere la contraseña de la bóveda. No la compartas con nadie.',
+    sec_view_pk: '🔑 Ver clave privada / semilla',
     sec_note: 'La bóveda está cifrada (AES-256-GCM + scrypt) y las privadas nunca salen del proceso principal salvo aquí, con tu contraseña.',
     lbl_backup_pass: 'Contraseña de la copia',
     br_sim_btn: '🧪 Simular', br_send_btn: '🚀 Ejecutar de verdad',
@@ -534,7 +534,7 @@ const LANG = {
     lbl_seed: 'Semilla (12/24 palabras)',
     imp_hint: 'Una semilla contiene varias cuentas (índice 0, 1, 2…), como en eckoWallet. Pulsa "Ver cuentas" para elegir la que tiene tus fondos, o importa directamente la índice 0.',
     btn_seed_scan: '🔍 Ver cuentas de esta semilla', lbl_seed_target: '¿Buscas una cuenta concreta? (opcional)', ph_seed_target: 'k:… (Kadena) o 0x… (EVM)', btn_seed_find: '🎯 Buscar esa cuenta en la semilla',
-    exp_title: 'Ver clave privada', exp_intro: 'Introduce la contraseña de la bóveda para revelar la privada. No la compartas.', reveal: 'Revelar', close_btn: 'Cerrar',
+    exp_title: 'Ver clave privada y semilla', exp_intro: 'Introduce la contraseña de la bóveda para revelar la privada y, si la wallet la tiene, la semilla. No las compartas.', lbl_seed_words: 'Semilla (frase de recuperación)', exp_noseed: 'Esta wallet no tiene semilla guardada (se creó antes de que Koberlet la guardara, o se importó por clave privada). Solo puedes usar la clave privada.', reveal: 'Revelar', close_btn: 'Cerrar',
     send_title: 'Confirmar envío', lbl_vault_pass: 'Contraseña de la bóveda', btn_sign_send: 'Firmar y enviar',
     ttl_invert: 'Invertir', ttl_theme: 'Tema claro / oscuro',
     ledger_btn: '🔐 Ledger', ledger_title: 'Conectar Ledger',
@@ -1006,8 +1006,8 @@ const LANG = {
     recv_ask_on: 'The QR now carries the amount and the chain: whoever pays with Koberlet on mobile finds them filled in.',
     fiat_hint: 'The currency your balances are shown in: the dashboard total, the network cards and the converter. It changes nothing about what moves on chain.',
     min_5: '5 minutes', min_10: '10 minutes', min_30: '30 minutes',
-    sec_intro: 'Reveals the private key of one of your wallets. Requires the vault password. Never share it with anyone.',
-    sec_view_pk: '🔑 View private key',
+    sec_intro: 'Reveals the private key (and the seed, if the wallet has one) of one of your wallets. Requires the vault password. Never share it with anyone.',
+    sec_view_pk: '🔑 View private key / seed',
     sec_note: 'The vault is encrypted (AES-256-GCM + scrypt) and private keys never leave the main process except here, with your password.',
     lbl_backup_pass: 'Backup password',
     br_sim_btn: '🧪 Simulate', br_send_btn: '🚀 Send for real',
@@ -1024,7 +1024,7 @@ const LANG = {
     lbl_seed: 'Seed (12/24 words)',
     imp_hint: 'A seed holds several accounts (index 0, 1, 2…), like in eckoWallet. Hit "View accounts" to pick the one holding your funds, or import index 0 directly.',
     btn_seed_scan: "🔍 View this seed's accounts", lbl_seed_target: 'Looking for a specific account? (optional)', ph_seed_target: 'k:… (Kadena) or 0x… (EVM)', btn_seed_find: '🎯 Find that account in the seed',
-    exp_title: 'View private key', exp_intro: 'Enter the vault password to reveal the private key. Do not share it.', reveal: 'Reveal', close_btn: 'Close',
+    exp_title: 'View private key and seed', exp_intro: 'Enter the vault password to reveal the private key and, if the wallet has one, the seed. Do not share them.', lbl_seed_words: 'Seed (recovery phrase)', exp_noseed: 'This wallet has no stored seed (it was created before Koberlet stored it, or imported by private key). Only the private key is available.', reveal: 'Reveal', close_btn: 'Close',
     send_title: 'Confirm send', lbl_vault_pass: 'Vault password', btn_sign_send: 'Sign and send',
     ttl_invert: 'Reverse', ttl_theme: 'Light / dark theme',
     ledger_btn: '🔐 Ledger', ledger_title: 'Connect Ledger',
@@ -3988,9 +3988,9 @@ $('btn-do-import').onclick = async () => { const label = $('imp-label').value.tr
 
 // EXPORTAR
 let expChain = null, expWid = null;
-function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : (chain === 'tron' ? 'TRON' : 'EVM'); $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
+function openExport(wid, chain) { expWid = wid; expChain = chain; $('exp-chain').textContent = chain === 'kda' ? 'KDA' : (chain === 'tron' ? 'TRON' : 'EVM'); $('exp-chain').className = 'chip ' + (chain === 'kda' ? 'kda' : 'eth'); $('exp-pass').value = ''; $('exp-out').hidden = true; $('exp-secret').textContent = ''; $('exp-seed').textContent = ''; $('exp-seed-out').hidden = true; $('exp-seed-note').hidden = true; msg($('exp-msg'), ''); $('modal-export').hidden = false; }
 $('btn-sec-export').onclick = () => { const w = WALLETS.find(x => x.id === $('sec-wallet').value); if (!w) return; openExport(w.id, w.kind === 'kda' ? 'kda' : (w.kind === 'tron' ? 'tron' : 'eth')); };
-$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), errIdioma(e.message), 'err'); } };
+$('btn-do-export').onclick = async () => { try { const r = await window.api.exportKey($('exp-pass').value, expWid, expChain); $('exp-secret').textContent = r.secret; $('exp-out').hidden = false; $('exp-seed').textContent = r.mnemonic || ''; $('exp-seed-out').hidden = !r.mnemonic; if (!r.mnemonic) { const w = WALLETS.find(x => x.id === expWid); if (w && !w.ledger) $('exp-seed-note').hidden = false; } msg($('exp-msg'), t('exp_revealed'), 'ok'); } catch (e) { msg($('exp-msg'), errIdioma(e.message), 'err'); } };
 
 // borrar wallet: paso 1 (consejo semilla) → paso 2 (última confirmación) → borrar
 $('btn-del-next').onclick = () => { $('del-step1').hidden = true; $('del-step2').hidden = false; };

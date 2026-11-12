@@ -1,0 +1,7 @@
+{
+  "notes": "Ver la semilla de 12 palabras en Seguridad, en las wallets nuevas o importadas por semilla. / View the 12-word seed in Security, for new wallets or wallets imported by seed.",
+  "notes_i18n": {
+    "es": "VER LA SEMILLA\n\n- Seguridad -> Ver clave privada / semilla: ahora, con la contrasena de la boveda, tambien ensena las 12 palabras.\n- Solo en las wallets que crees o importes por semilla a partir de ahora. Las que ya existian no la tienen guardada: usa su clave privada.",
+    "en": "VIEW THE SEED\n\n- Security -> View private key / seed: with the vault password it now also shows the 12 words.\n- Only for wallets you create or import by seed from now on. Existing wallets do not have it stored: use their private key."
+  }
+}

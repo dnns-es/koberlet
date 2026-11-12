@@ -886,6 +886,10 @@
       <div class="btnrow2"><button id="btn-do-export" class="primary" data-i18n="reveal">Revelar</button><button class="ghost" data-close data-i18n="close_btn">Cerrar</button></div>
       <div id="exp-out" hidden><label data-i18n="tab_pk">Clave privada</label>
         <div class="addr"><span id="exp-secret" class="mono"></span><button class="copy" data-copy="exp-secret" data-i18n="copy">copiar</button></div></div>
+      <p id="exp-seed-note" class="muted xs" hidden data-i18n="exp_noseed">Esta wallet no tiene semilla guardada (se creó antes de que Koberlet la guardara, o se importó por clave privada). Solo puedes usar la clave privada.</p>
+      <div id="exp-seed-out" hidden><label data-i18n="lbl_seed_words">Semilla (frase de recuperación)</label>
+        <div class="seedbox mono" id="exp-seed"></div>
+        <button class="tiny" data-copy="exp-seed" data-i18n="copy">copiar</button></div>
       <div id="exp-msg" class="msg"></div>
     </div>
   </div>

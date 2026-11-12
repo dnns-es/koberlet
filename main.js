@@ -426,7 +426,7 @@ function view() {
   if (!unlocked) return null;
   const shown = new Set(shownIds());
   return {
-    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : (x.kind === 'tron' ? 'Tron' : 'Kadena'), shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null, tronAddress: x.tron ? x.tron.address : null, ledger: !!x.ledger })),
+    wallets: unlocked.data.wallets.map(x => ({ id: x.id, label: x.label, kind: x.kind, net: x.net || null, netName: x.kind === 'evm' ? evmNetName(x.net || 'eth') : (x.kind === 'tron' ? 'Tron' : 'Kadena'), shown: shown.has(x.id), hasKda: !!x.kda, hasEth: !!x.eth, kdaAccount: x.kda ? x.kda.account : null, ethAddress: x.eth ? x.eth.address : null, tronAddress: x.tron ? x.tron.address : null, ledger: !!x.ledger, hasSeed: !!x.mnemonic })),
     shown: shownIds().slice()
   };
 }
@@ -709,6 +709,7 @@ ipcMain.handle('vault:setup', async (_e, { passphrase, kind, net }) => {
   const w = { id, label: kind === 'kda' ? 'Mi wallet KDA' : (kind === 'tron' ? 'Mi wallet Tron' : 'Mi wallet ' + evmNetName(net || 'eth')), kind, kda: k, eth: e };
   if (kind === 'evm') w.net = net || 'eth';
   if (kind === 'tron') w.tron = tr;
+  w.mnemonic = mnemonic; // se guarda cifrada en la bóveda para poder volver a verla (Seguridad → Ver semilla)
   vault.crear(VAULT(), passphrase, { wallets: [w], active: id, shown: [id] });
   if (kind === 'evm') enableEvmNet(net || 'eth');
   return { ok: true, mnemonic };
@@ -808,6 +809,7 @@ ipcMain.handle('wallet:create', async (_e, { label, kind, net }) => {
   const w = { id, label: label || (kind === 'kda' ? 'Nueva KDA' : (kind === 'tron' ? 'Nueva Tron' : 'Nueva ' + evmNetName(net || 'eth'))), kind, kda: k, eth: e };
   if (kind === 'evm') { w.net = net || 'eth'; enableEvmNet(w.net); }
   if (kind === 'tron') w.tron = tr;
+  w.mnemonic = mnemonic; // ídem: queda en la bóveda cifrada
   unlocked.data.wallets.push(w); addShown(id);
   unlocked.data.active = id; saveVault();
   return { view: view(), mnemonic }; // la semilla se muestra UNA vez para que la anote
@@ -819,6 +821,7 @@ ipcMain.handle('wallet:import-mnemonic', async (_e, { label, mnemonic, kind, net
   if (kind === 'evm') { w.net = net || 'eth'; enableEvmNet(w.net); }
   if (kind === 'tron') w.tron = tr;
   if (w.tron && unlocked.data.wallets.some(x => x.tron && x.tron.address === w.tron.address)) throw new Error('Esa cuenta de Tron ya está añadida.');
+  w.mnemonic = String(mnemonic).trim().split(/\s+/).join(' ');
   unlocked.data.wallets.push(w); addShown(id); unlocked.data.active = id; saveVault(); return view();
 });
 // Busca una cuenta CONCRETA dentro de la semilla: prueba índices 0..max en ambos métodos y devuelve el que la genera (sin consultar saldo, rápido).
@@ -910,7 +913,8 @@ ipcMain.handle('wallet:export', (_e, { passphrase, walletId, chain }) => {
   if (w.ledger) throw new Error('Esta wallet es de Ledger: su clave privada vive dentro del aparato y no se puede exportar desde aquí.');
   const acc = w[chain];
   if (!acc) throw new Error('Esta wallet no tiene cuenta ' + chain.toUpperCase() + '.');
-  return { chain, secret: acc.secret, public: acc.public, id: chain === 'kda' ? acc.account : acc.address };
+  // La semilla solo existe en wallets creadas o importadas por semilla desde que se guarda; las demás devuelven null.
+  return { chain, secret: acc.secret, mnemonic: w.mnemonic || null, public: acc.public, id: chain === 'kda' ? acc.account : acc.address };
 });
 
 // Por que falló una red, en corto y legible. Antes esto se tiraba a la basura y la tarjeta
