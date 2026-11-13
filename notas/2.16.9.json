@@ -1,0 +1,7 @@
+{
+  "notes": "Puente: ahora tambien pasa KDA de Kadena a Ethereum (llega como kb-KDA). / Bridge: it now also sends KDA from Kadena to Ethereum (it arrives as kb-KDA).",
+  "notes_i18n": {
+    "es": "KDA POR EL PUENTE\n\n- Puente -> Kadena → Ethereum: en la lista de tokens aparece KDA. Tus KDA se quedan guardados en el puente y en Ethereum recibes la misma cantidad como kb-KDA.\n- Sale de la chain 2. El puente cobra su peaje en KDA (unos 37 KDA por envio hacia Ethereum), aparte de lo que envias: pulsa Simular antes para verlo.\n- De momento solo en ese sentido. Traer kb-KDA de vuelta a Kadena llegara mas adelante.",
+    "en": "KDA OVER THE BRIDGE\n\n- Bridge -> Kadena → Ethereum: KDA now appears in the token list. Your KDA stays locked in the bridge and you receive the same amount on Ethereum as kb-KDA.\n- It leaves from chain 2. The bridge charges its fee in KDA (about 37 KDA per transfer to Ethereum), on top of what you send: press Simulate first to see it.\n- One way only for now. Bringing kb-KDA back to Kadena will come later."
+  }
+}

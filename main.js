@@ -192,6 +192,17 @@ const DEFAULT_CONFIG = {
       { symbol: 'USDT', cg: 'tether', kadenaModule: 'kb-USDT', evmRouter: '0x9CFDB123cE10CFBe276393D4B666AEBBE766ad8F', evmToken: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 },
       { symbol: 'DAI', cg: 'dai', kadenaModule: 'kb-DAI', evmRouter: '0x85CC60531119041B250003E25fe0c5920606c6dB', evmToken: '0x6B175474E89094C44Da98b954EedeAC495271d0F', decimals: 18 },
       { symbol: 'WBTC', cg: 'wrapped-bitcoin', kadenaModule: 'kb-WBTC', evmRouter: '0xDFdB8F3dEb5458BFA25cc97df41298A915a34BF3', evmToken: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', decimals: 8 }
+    ],
+    // RUTAS DE COLATERAL (13-11-2026): el viaje al reves. KDA nativo se GUARDA en Kadena (cuenta
+    // `colateral` del modulo `KDA` del puente) y en Ethereum se acuña kb-KDA, que es a la vez el
+    // token y su propio router. Van en lista APARTE de `routes` a proposito: `routes` se usa en
+    // medio programa para pintar saldos "kb-<simbolo>" en Kadena y mover esos tokens, y meter KDA
+    // ahi lo enseñaria dos veces (como KDA y como un "kb-KDA" que en Kadena no existe).
+    // Solo sentido Kadena → Ethereum por ahora; la vuelta (quemar kb-KDA) no esta probada.
+    // Verificado en cadena: (KDA.has-remote-router 1) = este evmToken; (KDA.get-collateral-account)
+    // = esta cuenta; (KDA.get-collateral-asset) = coin; kb-KDA.decimals() = 12.
+    nativas: [
+      { symbol: 'KDA', cg: 'kadena', kadenaModule: 'KDA', colateral: 'c:TLKMz0rO15FnZARzjvdoT6FHMGWqc8NGI0V_p2KvjY4', evmRouter: '0x7786F1eb2eC198A04d8f5e3Fc36fAB14da370076', evmToken: '0x7786F1eb2eC198A04d8f5e3Fc36fAB14da370076', decimals: 12 }
     ]
   },
   // Tron (11-11-2026). Mucha gente tiene su USDT ahí (Trust Wallet). Tokens fijos del código,
@@ -1995,18 +2006,30 @@ ipcMain.handle('bridge:tokens', async (_e, { walletId, dir }) => {
   if (!unlocked) throw new Error('bloqueado');
   const w = walletById(walletId); const b = loadConfig().bridge; if (!w) return [];
   if (dir === 'evm2kda') { if (!w.eth) return []; return bridge.getEvmBalances({ rpc: await rpcEvmPuente(), address: w.eth.address, routes: b.routes }); }
-  if (!w.kda) return []; return bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: b.routes, account: w.kda.account });
+  if (!w.kda) return [];
+  const kb = await bridge.getKadenaBalances({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, routes: b.routes, account: w.kda.account });
+  // + KDA nativo (rutas de colateral): solo en este sentido, Kadena → Ethereum
+  const nat = await bridge.getKdaNativa({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, rutas: b.nativas || [], account: w.kda.account });
+  return [...kb, ...nat];
 });
+// Ruta del puente por simbolo. Las de colateral (KDA) solo valen Kadena → Ethereum.
+function rutaPuente(b, symbol, dir) {
+  const r = b.routes.find(x => x.symbol === symbol); if (r) return r;
+  const n = (b.nativas || []).find(x => x.symbol === symbol);
+  if (n && dir !== 'kda2evm') throw new Error('KDA solo se puede pasar de Kadena a Ethereum por ahora (la vuelta llegará más adelante).');
+  if (n) return n;
+  throw new Error('Token no válido.');
+}
 ipcMain.handle('bridge:dryrun', async (_e, { dir, fromWalletId, symbol, recipient, amount }) => {
   if (!unlocked) throw new Error('bloqueado');
   const w = walletById(fromWalletId) || active(); const b = loadConfig().bridge;
-  const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
+  const route = rutaPuente(b, symbol, dir === 'evm2kda' ? 'evm2kda' : 'kda2evm');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
     return bridge.dryRunEvm2Kda({ rpc: await rpcEvmPuente(), router: route.evmRouter, evmToken: route.evmToken, fromAddress: w.eth.address, kadenaAccount: recipient, amount, decimals: route.decimals, kadenaDomain: b.kda.domain, kadenaChain: b.kda.chain });
   }
   if (!w.kda) throw new Error('La wallet origen no tiene cuenta KDA.');
-  return bridge.dryRunKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount });
+  return bridge.dryRunKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount, colateral: route.colateral });
 });
 // ENVÍO REAL del puente (mueve fondos). Exige la contraseña de la bóveda.
 ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol, recipient, amount }) => {
@@ -2016,7 +2039,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   // Kadena→EVM NO todavía (el dispatch es código Pact arbitrario → firma ciega, fase futura).
   if (w.ledger && dir !== 'evm2kda') throw new Error('El puente Kadena→EVM con Ledger llegará más adelante (necesita firmar código Pact en el aparato). El sentido Ethereum→Kadena sí funciona con Ledger.');
   if (!w.ledger && !passOk(passphrase)) throw new Error('Contraseña incorrecta.');
-  const route = b.routes.find(r => r.symbol === symbol); if (!route) throw new Error('Token no válido.');
+  const route = rutaPuente(b, symbol, dir === 'evm2kda' ? 'evm2kda' : 'kda2evm');
   if (dir === 'evm2kda') {
     if (!w.eth) throw new Error('La wallet origen no tiene cuenta EVM.');
     const onStep = (d) => { try { _e.sender.send('bridge:step', d); } catch (_) {} };
@@ -2039,7 +2062,7 @@ ipcMain.handle('bridge:send', async (_e, { dir, passphrase, fromWalletId, symbol
   // que CUALQUIER lectura posterior pareciera "ha llegado el dinero". Mejor no saber que mentir.
   const evmBal = async () => { try { const v = (await bridge.getEvmBalances({ rpc: await rpcEvmPuente(), address: recipient, routes: [route] }))[0].balance; return (v === null || v === undefined) ? null : v; } catch (_) { return null; } };
   const before = await evmBal();
-  const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount }, onStep);
+  const res = await bridge.sendKda2Evm({ node: b.kda.node, networkId: b.kda.networkId, chain: b.kda.chain, senderAccount: w.kda.account, senderPubKey: w.kda.public, secretHex: w.kda.secret, kadenaModule: route.kadenaModule, evmDomain: b.evm.domain, recipientEvmAddr: recipient, amount, colateral: route.colateral }, onStep);
   if (res.minedOk === false) throw new Error('La tx falló en Kadena: ' + JSON.stringify(res.error || {}).slice(0, 160));
   let arrived = false;
   if (res.minedOk) {

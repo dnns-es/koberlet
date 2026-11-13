@@ -120,6 +120,8 @@ const ERRORES_EN = [
   [/^No hay ninguna red de Kadena activa\.$/, 'No Kadena network is active.'],
   [/^No hay redes de Kadena configuradas\.$/, 'No Kadena networks are configured.'],
   [/^Token no válido\.$/, 'Invalid token.'],
+  [/^KDA solo se puede pasar de Kadena a Ethereum por ahora \(la vuelta llegará más adelante\)\.$/, 'KDA can only go from Kadena to Ethereum for now (the way back will come later).'],
+  [/^cuenta de colateral del puente no válida\.$/, "the bridge collateral account isn't valid."],
   [/^Token KDA no reconocido: ([\s\S]*)$/, 'Unrecognized KDA token: $1'],
   [/^Módulo de token no válido\.$/, 'Invalid token module.'],
   [/^Modulo +(?:(.+?) +)?no valido: ([\s\S]*)$/, 'Invalid $1 module: $2'],
