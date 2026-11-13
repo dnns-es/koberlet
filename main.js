@@ -107,7 +107,10 @@ const DEFAULT_CONFIG = {
     // bloques por numero Y aguanta grupos de 20. Comprobado asi antes de poner este.
     { key: 'eth', name: 'Ethereum', enabled: true, rpc: 'https://eth-mainnet.public.blastapi.io', chainId: 1,
       reservas: ['https://eth.drpc.org', 'https://rpc.mevblocker.io', 'https://gateway.tenderly.co/public/mainnet'], symbol: 'ETH', cg: 'ethereum', color: '#627eea',
-      tokens: [{ symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', cg: 'tether' }] },
+      tokens: [{ symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', cg: 'tether' },
+               // kb-KDA: el KDA que cruza el puente Kinesis hacia Ethereum (12 decimales; se leen del contrato). Sin esto
+               // la wallet de Ethereum no lo enseñaba ni dejaba enviarlo, aunque el puente si lo trajera (2.16.9).
+               { symbol: 'kb-KDA', address: '0x7786F1eb2eC198A04d8f5e3Fc36fAB14da370076', cg: 'kadena' }] },
     { key: 'arb', name: 'Arbitrum', enabled: false, rpc: 'https://arbitrum-one-rpc.publicnode.com', chainId: 42161,
       reservas: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum.drpc.org'], symbol: 'ETH', cg: 'ethereum', color: '#28a0f0',
       tokens: [{ symbol: 'USDC', address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', cg: 'usd-coin' }, { symbol: 'USDT', address: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', cg: 'tether' }] },

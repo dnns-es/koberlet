@@ -1,0 +1,7 @@
+{
+  "notes": "La wallet de Ethereum ya muestra y envia kb-KDA. / The Ethereum wallet now shows and sends kb-KDA.",
+  "notes_i18n": {
+    "es": "kb-KDA EN LA WALLET DE ETHEREUM\n\n- El kb-KDA (el KDA que cruza el puente hacia Ethereum) aparece ya en la wallet de Ethereum, con su saldo y su valor.\n- Tambien se puede elegir en Enviar, igual que ETH, USDC o USDT.\n- Antes el token llegaba bien por el puente, pero la wallet no lo pintaba.",
+    "en": "kb-KDA IN THE ETHEREUM WALLET\n\n- kb-KDA (the KDA that crosses the bridge to Ethereum) now shows up in the Ethereum wallet, with its balance and value.\n- It can also be picked under Send, just like ETH, USDC or USDT.\n- The token used to arrive fine over the bridge, but the wallet did not display it."
+  }
+}
