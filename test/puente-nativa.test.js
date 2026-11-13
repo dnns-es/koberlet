@@ -10,7 +10,8 @@
 //   3. una cuenta de colateral con forma rara se rechaza antes de firmar nada;
 //   4. KDA vive en `nativas`, NO en `routes` (si entrara en `routes` el programa pintaria un
 //      "kb-KDA" que en Kadena no existe y contaria el saldo dos veces);
-//   5. KDA no se ofrece en el sentido Ethereum → Kadena (la vuelta no esta probada).
+//   5. la vuelta (Ethereum → Kadena) se pide como kb-KDA, que es como se llama alli, y NO da
+//      approve: el token se quema a si mismo (verificado con eth_call el 13-11-2026).
 //
 //   node test/puente-nativa.test.js
 const fs = require('fs');
@@ -49,8 +50,13 @@ const iR = main.indexOf('    routes: ['), iN = main.indexOf('    nativas: [');
 ok(iR > 0 && iN > iR, 'main.js tiene routes y, despues, nativas');
 ok(!/symbol: 'KDA'/.test(main.slice(iR, iN)), 'KDA no esta dentro de routes');
 ok(new RegExp("symbol: 'KDA'[^\\n]*kadenaModule: 'KDA'[^\\n]*colateral: '" + COL + "'").test(main.slice(iN, iN + 700)), 'nativas lleva KDA con la cuenta de colateral fija');
-ok(/if \(n && dir !== 'kda2evm'\) throw new Error/.test(main), 'rutaPuente corta KDA en el sentido Ethereum → Kadena');
-ok(/dir === 'evm2kda'\) \{ if \(!w\.eth\) return \[\]; return bridge\.getEvmBalances\(\{[^\n]*routes: b\.routes \}\)/.test(main), 'en Ethereum → Kadena la lista de tokens sale solo de routes');
+ok(/evmSymbol: 'kb-KDA'/.test(main.slice(iN, iN + 900)), 'nativas dice como se llama el token en Ethereum (kb-KDA)');
+ok(/\(dir === 'evm2kda' \? x\.evmSymbol : x\.symbol\) === symbol/.test(main), 'rutaPuente busca la ruta de colateral por el nombre de la orilla de salida');
+ok(/map\(n => \(\{ \.\.\.n, symbol: n\.evmSymbol \}\)\)/.test(main), 'en Ethereum → Kadena la lista enseña kb-KDA, no KDA');
+ok((main.match(/sinPermiso: !!route\.colateral/g) || []).length === 2, 'simulacion y envio pasan sinPermiso en la ruta de colateral');
+const br = fs.readFileSync(path.join(__dirname, '..', 'lib', 'bridge.js'), 'utf8');
+ok(/const allowance = sinPermiso \? amt : await t\.allowance\(from, router\);/.test(br), 'con sinPermiso no se consulta ni se da approve');
+ok(/missingApprove: sinPermiso \? false : allowance < amt/.test(br), 'la simulacion no pide autorizar el token en la ruta de colateral');
 
 console.log(fallos === 0 ? 'OK: ruta de colateral KDA → kb-KDA' : `HAY ${fallos} FALLOS EN LA RUTA DE COLATERAL`);
 process.exit(fallos === 0 ? 0 : 1);

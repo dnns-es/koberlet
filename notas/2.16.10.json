@@ -1,0 +1,7 @@
+{
+  "notes": "Puente: el KDA ya va y vuelve (kb-KDA de Ethereum a KDA en Kadena). / Bridge: KDA now goes both ways (kb-KDA on Ethereum back to KDA on Kadena).",
+  "notes_i18n": {
+    "es": "KDA POR EL PUENTE, TAMBIEN DE VUELTA\n\n- Puente -> Ethereum → Kadena: en la lista de tokens aparece kb-KDA. Lo envias desde Ethereum y recibes la misma cantidad de KDA en Kadena (chain 2).\n- No hace falta autorizar el token antes: es un solo paso, y solo pagas el gas de Ethereum.\n- La ida (KDA de Kadena a Ethereum) sigue igual que en la 2.16.9.",
+    "en": "KDA OVER THE BRIDGE, NOW BOTH WAYS\n\n- Bridge -> Ethereum → Kadena: kb-KDA now appears in the token list. You send it from Ethereum and receive the same amount of KDA on Kadena (chain 2).\n- No token approval is needed first: it is a single step, and you only pay Ethereum gas.\n- The way out (KDA from Kadena to Ethereum) works as in 2.16.9."
+  }
+}
