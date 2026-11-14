@@ -155,6 +155,7 @@ const LANG = {
     dca_limite_ahora: 'Ahora, con esta cuota: {p} {de} por cada {a}.',
     dca_limite_fila: 'Paga como mucho {p} {de} por cada {a}',
     dca_limite_sin: 'Sin precio límite',
+    dca_limite_poniendo: 'Poniendo el precio límite (como mucho {p} {de} por cada {a})… aún no está en la cadena',
     dca_limite_sinleer: 'Precio límite: sin leer',
     dca_limite_btn: 'Precio límite',
     dca_cuanto_limite: 'Como mucho, ¿cuántos {de} pagas por cada {a}? 0 para quitar el límite.',
@@ -645,6 +646,7 @@ const LANG = {
     dca_limite_ahora: 'Right now, with this amount: {p} {de} for each {a}.',
     dca_limite_fila: 'Pays at most {p} {de} for each {a}',
     dca_limite_sin: 'No price limit',
+    dca_limite_poniendo: 'Setting the price limit (at most {p} {de} for each {a})… not on chain yet',
     dca_limite_sinleer: 'Price limit: could not read',
     dca_limite_btn: 'Price limit',
     dca_cuanto_limite: 'At most, how many {de} do you pay for each {a}? 0 to remove the limit.',
@@ -2614,8 +2616,12 @@ const dcaPagoDesdeLim = (lim, de) => (Number(lim) > 0 ? (de === 'KDA' ? 1 / Numb
 const dcaFmtPago = (v) => fmtCorto(v, decAsset(v));
 // La casilla se rellena sola con el precio de ahora mientras el usuario no la toque.
 let DCA_LIM_AUTO = true, DCA_PAGO_AHORA = 0, DCA_PAGO_SEQ = 0, DCA_PAGO_T = null;
+// Planes recien creados cuyo limite va en una 2a tx aun sin minar: id -> lo que pagara como mucho.
+// Sin esto la fila decia «Sin precio límite» durante ese rato y parecia que no se habia guardado (14/11/2026).
+const DCA_LIM_PEND = {};
 
 function dcaLimiteTxt(p, simIn, simOut) {
+  if (!(p.limite > 0) && DCA_LIM_PEND[p.id] > 0) return tr('dca_limite_poniendo', { p: dcaFmtPago(DCA_LIM_PEND[p.id]), de: esc(simIn), a: esc(simOut) });
   if (p.limite === null || p.limite === undefined) return t('dca_limite_sinleer');
   if (!(p.limite > 0)) return t('dca_limite_sin');
   return tr('dca_limite_fila', { p: dcaFmtPago(dcaPagoDesdeLim(p.limite, simIn)), de: esc(simIn), a: esc(simOut) });
@@ -2698,12 +2704,13 @@ if ($('dca-crear')) $('dca-crear').onclick = () => {
       // no cabe en la misma tx (firma acotada al TRANSFER vs enforce-guard suelto).
       // Se espera a que el plan entre en un bloque y se manda entonces, con la misma
       // contraseña que acaba de teclear: pedirla dos veces por un solo plan no es serio.
+      DCA_LIM_PEND[r.id] = pago;
       dcaConfirmar(r, $('dca-msg')).then(async (ok) => {
-        if (!ok) return msg($('dca-msg'), t('dca_limite_fallo'), 'err');
+        if (!ok) { delete DCA_LIM_PEND[r.id]; return msg($('dca-msg'), t('dca_limite_fallo'), 'err'); }
         try {
           const rl = await window.api.dcaLimite({ passphrase: pass, walletId: wid, id: r.id, precio: limite, modulo: r.modulo });
-          dcaConfirmar(rl, $('dca-msg'));
-        } catch (e) { msg($('dca-msg'), t('dca_limite_fallo') + ' ' + cleanErr(e), 'err'); }
+          Promise.resolve(dcaConfirmar(rl, $('dca-msg'))).then((ok2) => { if (ok2 === false) delete DCA_LIM_PEND[r.id]; });
+        } catch (e) { delete DCA_LIM_PEND[r.id]; msg($('dca-msg'), t('dca_limite_fallo') + ' ' + cleanErr(e), 'err'); }
       });
       return tr('dca_creado', { id: r.id }) + ' ' + tr('dca_limite_despues', { p: dcaFmtPago(pago), de: esc(de), a: esc(a) });
     });
