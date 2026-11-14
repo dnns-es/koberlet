@@ -395,6 +395,9 @@ const LANG = {
     bal_unknown: 'saldo no disponible: el nodo no contesto. NO quiere decir que sea cero.',
     br_no_from: 'No hay wallet origen para esa dirección.', br_need: 'Elige destino y cantidad.', br_simulating: 'Simulando…',
     br_sim_ok: '✅ La transacción se arma bien (simulación correcta).',
+    br_fee: '<br>⛽ <b>Gas de Ethereum ahora: {e} ETH{u}</b> · {g} gwei · {n}{s}',
+    br_fee_usd: ' (≈ {d} $)', br_fee_1: '1 orden', br_fee_2: '2 órdenes (autorizar + enviar)', br_fee_est: ' · cifra aproximada',
+    br_fee_caro: 'CARO', br_fee_normal: 'NORMAL', br_fee_barato: 'BARATO', br_fee_ref: ' · lo normal en las últimas 3 h: {g} gwei{d}', br_fee_ref_usd: ' (≈ {d} $)',
     br_toll: ' <b>Peaje del puente: {t} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).',
     br_sim_approve: '✅ La tx se construye bien y tienes saldo ({b} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.',
     br_sim_nobal: '⚠️ Saldo insuficiente en Ethereum: tienes {b}, necesitas {n}.',
@@ -886,6 +889,9 @@ const LANG = {
     bal_unknown: 'balance unavailable: the node did not answer. This does NOT mean zero.',
     br_no_from: 'No source wallet for that address.', br_need: 'Choose destination and amount.', br_simulating: 'Simulating…',
     br_sim_ok: '✅ The transaction builds correctly (simulation OK).',
+    br_fee: '<br>⛽ <b>Ethereum gas right now: {e} ETH{u}</b> · {g} gwei · {n}{s}',
+    br_fee_usd: ' (≈ ${d})', br_fee_1: '1 transaction', br_fee_2: '2 transactions (approve + send)', br_fee_est: ' · approximate figure',
+    br_fee_caro: 'EXPENSIVE', br_fee_normal: 'NORMAL', br_fee_barato: 'CHEAP', br_fee_ref: ' · usual over the last 3 h: {g} gwei{d}', br_fee_ref_usd: ' (≈ ${d})',
     br_toll: ' <b>Bridge toll: {t} KDA</b> (charged on Kadena when dispatching, besides the bridged token).',
     br_sim_approve: '✅ The tx builds correctly and you have balance ({b} of the token). It only reverts because the <b>approve</b> is missing (authorizing the router to move your token) — a prior step done automatically in the real send.',
     br_sim_nobal: '⚠️ Insufficient balance on Ethereum: you have {b}, you need {n}.',
@@ -1627,6 +1633,19 @@ $('btn-bridge-sim').onclick = async () => {
     else if (/buy gas/i.test(err)) { m = t('br_sim_nogas'); kind = 'err'; }
     else if (/row not found|No value found|Insufficient|balance/i.test(err)) { m = t('br_sim_notok'); kind = 'err'; }
     else { m = t('br_sim_err') + esc(err.slice(0, 140)); kind = 'err'; }
+    // Gas de Ethereum en ETH y en dolares (14-11-2026): el fee cambia mucho de una hora a otra.
+    if (DIR === 'evm2kda' && r.fee && r.fee.eth > 0) {
+      if (!(PRICES.ethereum && PRICES.ethereum.usd > 0)) { try { PRICES = await window.api.prices(); } catch (_) {} }
+      const usd = (PRICES.ethereum && PRICES.ethereum.usd > 0) ? r.fee.eth * PRICES.ethereum.usd : 0;
+      // color propio segun este caro, normal o barato (no el del mensaje de arriba)
+      const niv = r.fee.pct == null ? null : (r.fee.pct >= 75 ? ['br_fee_caro', '#d24a42'] : (r.fee.pct <= 25 ? ['br_fee_barato', '#0f9c66'] : ['br_fee_normal', '#c98a00']));
+      const usdNormal = (usd > 0 && r.fee.gwei > 0 && r.fee.normal > 0) ? usd * r.fee.normal / r.fee.gwei : 0;
+      m += '<span style="color:' + (niv ? niv[1] : 'inherit') + '">'
+        + tr('br_fee', { e: r.fee.eth.toFixed(5), u: usd > 0 ? tr('br_fee_usd', { d: usd.toFixed(2) }) : '', g: r.fee.gwei.toFixed(2),
+          n: t(r.fee.ordenes === 2 ? 'br_fee_2' : 'br_fee_1'), s: r.fee.estimado ? t('br_fee_est') : '' })
+        + (niv ? ' · <b>' + t(niv[0]) + '</b>' + (r.fee.normal > 0 ? tr('br_fee_ref', { g: r.fee.normal.toFixed(2), d: usdNormal > 0 ? tr('br_fee_ref_usd', { d: usdNormal.toFixed(2) }) : '' }) : '') : '')
+        + '</span>';
+    }
     $('br-msg').innerHTML = m; $('br-msg').className = 'msg ' + kind;
   } catch (e) { msg($('br-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
