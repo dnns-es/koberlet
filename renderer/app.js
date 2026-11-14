@@ -397,6 +397,7 @@ const LANG = {
     br_sim_ok: '✅ La transacción se arma bien (simulación correcta).',
     br_fee: '<br>⛽ <b>Gas de Ethereum ahora: {e} ETH{u}</b> · {g} gwei · {n}{s}',
     br_fee_usd: ' (≈ {d} $)', br_fee_1: '1 orden', br_fee_2: '2 órdenes (autorizar + enviar)', br_fee_est: ' · cifra aproximada',
+    br_recibes: 'Recibes: {n} {s}', br_recibes_tok: 'Llega como {s}',
     br_fee_caro: 'CARO', br_fee_normal: 'NORMAL', br_fee_barato: 'BARATO', br_fee_ref: ' · lo normal en las últimas 3 h: {g} gwei{d}', br_fee_ref_usd: ' (≈ {d} $)',
     br_toll: ' <b>Peaje del puente: {t} KDA</b> (se cobra en Kadena al despachar, aparte del token puenteado).',
     br_sim_approve: '✅ La tx se construye bien y tienes saldo ({b} del token). Revierte solo porque falta el <b>approve</b> (autorizar al router a mover tu token) — es un paso previo que se hará automáticamente en el envío real.',
@@ -891,6 +892,7 @@ const LANG = {
     br_sim_ok: '✅ The transaction builds correctly (simulation OK).',
     br_fee: '<br>⛽ <b>Ethereum gas right now: {e} ETH{u}</b> · {g} gwei · {n}{s}',
     br_fee_usd: ' (≈ ${d})', br_fee_1: '1 transaction', br_fee_2: '2 transactions (approve + send)', br_fee_est: ' · approximate figure',
+    br_recibes: 'You receive: {n} {s}', br_recibes_tok: 'Arrives as {s}',
     br_fee_caro: 'EXPENSIVE', br_fee_normal: 'NORMAL', br_fee_barato: 'CHEAP', br_fee_ref: ' · usual over the last 3 h: {g} gwei{d}', br_fee_ref_usd: ' (≈ ${d})',
     br_toll: ' <b>Bridge toll: {t} KDA</b> (charged on Kadena when dispatching, besides the bridged token).',
     br_sim_approve: '✅ The tx builds correctly and you have balance ({b} of the token). It only reverts because the <b>approve</b> is missing (authorizing the router to move your token) — a prior step done automatically in the real send.',
@@ -1592,6 +1594,24 @@ function renderBridge() {
   $('br-from').onchange = () => loadBridgeTokens($('br-from').value);
   if (fromW.length) loadBridgeTokens(fromW[0].id); else $('br-token').innerHTML = '';
 }
+// Lo que llega al otro lado (14-11-2026): el puente entrega el mismo activo, pero con el nombre de la
+// otra orilla (USDC -> kb-USDC, kb-KDA -> KDA...). Antes la pantalla no lo decia en ningun sitio.
+let BR_CFG = null;
+function brLlegaComo(symbol) {
+  const b = BR_CFG; if (!b || !symbol) return '';
+  const evm2 = DIR === 'evm2kda';
+  const n = (b.nativas || []).find(x => (evm2 ? x.evmSymbol : x.symbol) === symbol);
+  if (n) return evm2 ? n.symbol : n.evmSymbol;
+  const r = (b.routes || []).find(x => x.symbol === symbol);
+  return r ? (evm2 ? r.kadenaModule : r.symbol) : '';
+}
+async function brRecibe() {
+  const el = $('br-recibe'); if (!el) return;
+  if (!BR_CFG) { try { BR_CFG = await window.api.bridgeConfig(); } catch (_) {} }
+  const s = brLlegaComo($('br-token').value), cant = String($('br-amt').value || '').trim();
+  el.textContent = !s ? '' : (Number(cant.replace(',', '.')) > 0 ? tr('br_recibes', { n: cant, s: s }) : tr('br_recibes_tok', { s: s }));
+}
+$('br-amt').addEventListener('input', brRecibe);
 $('btn-invert').onclick = () => { DIR = DIR === 'evm2kda' ? 'kda2evm' : 'evm2kda'; renderBridge(); msg($('br-msg'), ''); $('br-out').hidden = true; };
 async function loadBridgeTokens(walletId) {
   if (!walletId) { $('br-token').innerHTML = ''; return; }
@@ -1611,6 +1631,7 @@ async function loadBridgeTokens(walletId) {
   $('br-token').onchange = () => {
     const o = $('br-token').selectedOptions[0];
     $('br-tokhint').textContent = !o ? '' : (o.dataset.err ? t('bal_unknown') : tr('tok_balance', { b: o.dataset.bal }));
+    brRecibe();
   };
   $('br-token').onchange();
 }
