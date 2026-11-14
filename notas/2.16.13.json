@@ -1,0 +1,7 @@
+{
+  "notes": "El puente dice lo que recibes al otro lado (por ejemplo, 39 kb-USDC). / The bridge tells you what you receive on the other side (for example, 39 kb-USDC).",
+  "notes_i18n": {
+    "es": "PUENTE: LO QUE RECIBES\n\n- Debajo de la casilla Cantidad sale ahora lo que llega al otro lado: «Recibes: 39 kb-USDC».\n- El puente entrega el mismo activo, pero con el nombre de la otra orilla: USDC llega como kb-USDC, kb-KDA llega como KDA, y al reves. Antes habia que saberselo.\n- Cambia solo al tocar la cantidad, el token o al invertir el sentido.",
+    "en": "BRIDGE: WHAT YOU RECEIVE\n\n- Under the Amount box you now see what arrives on the other side: \"You receive: 39 kb-USDC\".\n- The bridge delivers the same asset under its name on the other side: USDC arrives as kb-USDC, kb-KDA arrives as KDA, and the other way round. You used to have to know that.\n- It updates as you change the amount, the token or the direction."
+  }
+}
