@@ -84,6 +84,16 @@ const DEFAULT_CONFIG = {
           // Ademas de estos, la tarjeta enseña cualquier token del Mercado (pools de la
           // chain 2) en el que la cuenta tenga saldo: ver `saldosMercado` en el balance.
         ] },
+      // Devnet de DNNS (vuelve en la 2.16.14; estuvo hasta la 2.10.0). Red de PRUEBAS: su KDA
+      // no vale nada, así que `pruebas: true` hace que cuente 0 en el total del dashboard.
+      // Apagada de fábrica: se enciende en Redes como cualquier otra, y convive con la real
+      // (ya no hay "modo pruebas" excluyente ni grifo). El nodo es fijo: la sonda de kdanodo
+      // solo elige el de la red `fork`.
+      { key: 'devnet', name: 'Devnet', node: 'https://devnet.dnns.es', networkId: 'development', color: '#f59e0b', enabled: false, fork: false, pruebas: true,
+        tokens: [
+          { module: 'free.gia', symbol: 'GIA', precision: 2, chain: 2, cg: null },
+          { module: 'free.gym-token', symbol: 'GYM', precision: 12, chain: 0, cg: null }
+        ] },
       // El descubridor es el CATÁLOGO PÚBLICO de piezas de la tienda (sin `?cuenta=`):
       // de él salen los candidatos y el dueño lo confirma la cadena, wallet aparte.
       // El panel privado `/api/mis-piezas` ya no sirve: desde 08/2026 exige sesión
@@ -981,7 +991,8 @@ ipcMain.handle('balances', async () => {
               }
             } catch (_) { /* sin mercado: solo las filas de siempre */ }
           }
-          const usd = k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
+          // Red de pruebas (devnet): saldos ficticios, no suman al total.
+          const usd = net.pruebas ? 0 : k.total * px('kadena') + tokens.reduce((s, t) => s + t.usd, 0);
           blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: k.total, perChain: k.perChain, tokens, usd });
           total += usd;
         } catch (e) { blocks.push({ walletId: w.id, walletLabel: w.label, kind: 'kda', knet: net.key, name: net.name, color: net.color, address: w.kda.account, native: 0, perChain: {}, tokens: [], usd: 0, error: true, errorMsg: motivo(e) }); }

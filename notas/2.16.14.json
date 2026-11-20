@@ -1,0 +1,7 @@
+{
+  "notes": "Vuelve la red Devnet (pruebas): se activa en Redes y enseña GIA y GYM. / The Devnet test network is back: turn it on in Networks; it shows GIA and GYM.",
+  "notes_i18n": {
+    "es": "RED DEVNET (PRUEBAS)\n\n- En Redes hay una casilla nueva: Devnet, la red de pruebas de DNNS. Viene apagada; se marca o se desmarca como las demas.\n- Convive con la red real: cada wallet de Kadena ensena una tarjeta mas, con su KDA de prueba y los tokens GIA y GYM.\n- Sus saldos son ficticios: no suman al total del dashboard.\n- Enviar y recibir funciona igual que en la red real, pero dentro de la Devnet.",
+    "en": "DEVNET (TEST NETWORK)\n\n- Networks has a new switch: Devnet, the DNNS test network. It is off by default; tick or untick it like the others.\n- It lives alongside the real network: each Kadena wallet shows one more card, with its test KDA and the GIA and GYM tokens.\n- Its balances are fictitious: they do not count towards the dashboard total.\n- Sending and receiving work the same as on the real network, but inside the Devnet."
+  }
+}
