@@ -863,16 +863,14 @@ ipcMain.handle('seed:find', async (_e, { mnemonic, kind, net, target, maxIndex }
       if (id.toLowerCase() === tgt) return { found: true, index: i, method: m, id };
     }
   }
-  // No ha salido con ninguna derivacion que Koberlet sepa FIRMAR. Antes de rendirse, se mira
-  // la antigua de Chainweaver / eckoWALLET: si la cuenta es de esas, se dice claro en vez de
-  // dejar al usuario pensando que la semilla esta mal.
+  // Por ultimo, la derivacion ANTIGUA de Chainweaver (la de eckoWALLET). Va aparte y al final
+  // porque es lenta (~0,25 s por indice) y la raiz se calcula una sola vez para todos.
   if (kind !== 'evm' && kind !== 'tron') {
-    try {
-      const root = await wallets.legacyRoot(mnemonic);
-      for (let i = 0; i < max; i++) {
-        if ((await wallets.legacyAccount(root, i)).toLowerCase() === tgt) return { found: false, scanned: max, legacy: true, index: i };
-      }
-    } catch (_) { /* si la libreria antigua falla, vale el "no aparece" de siempre */ }
+    const root = await wallets.legacyRoot(mnemonic);
+    for (let i = 0; i < max; i++) {
+      const id = await wallets.legacyAccount(root, i);
+      if (id.toLowerCase() === tgt) return { found: true, index: i, method: wallets.METODO_ANTIGUO, id };
+    }
   }
   return { found: false, scanned: max };
 });
@@ -903,7 +901,7 @@ ipcMain.handle('seed:accounts', async (_e, { mnemonic, kind, net, start, count }
   }
   const nets = c.kda.networks.filter(x => x.enabled);
   const jobs = [];
-  for (const i of idxs) for (const m of ['chainweaver', 'ecko']) jobs.push({ i, m });
+  for (const i of idxs) for (const m of ['chainweaver', 'ecko', wallets.METODO_ANTIGUO]) jobs.push({ i, m });
   return Promise.all(jobs.map(async ({ i, m }) => {
     const k = await wallets.deriveKda(mnemonic, i, m);
     let amount = 0;
@@ -1772,7 +1770,7 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
     if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
     if (!compartidas.includes(pub)) throw new Error('Koberlet no firma esto: pide firmar con una cuenta que no se compartió con esta web.');
     if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
-    const r = kda.firmarCmd(cmdStr, w.kda.secret);
+    const r = await kda.firmarCmd(cmdStr, w.kda.secret);
     wcPendientes.delete(String(id));
     await walletconnect.responder(f.topic, f.id, respuestaFirmada('kadena_sign_v1', [{ cmd: cmdStr, hash: r.hash, sig: r.sig, pubKey: pub }]));
     logHistory({ type: 'wc-firma', wallet: w.label, desc: 'Firma para ' + f.nombre + ' (' + f.url + ')', to: f.url, id: String(f.id) });
@@ -1794,7 +1792,7 @@ ipcMain.handle('wc:firmar', async (_e, { id, passphrase, aceptaSinLimite }) => {
       if (!w) throw new Error('La página pide firmar con una clave que no está en esta bóveda.');
       if (!compartidas.includes(pub)) throw new Error('Koberlet no firma esto: pide firmar con una cuenta que no se compartió con esta web.');
       if (w.ledger) throw new Error('Esa cuenta es de un Ledger: firmar desde una web con Ledger llegará más adelante.');
-      const r = kda.firmarCmd(cmdStr, w.kda.secret);
+      const r = await kda.firmarCmd(cmdStr, w.kda.secret);
       sigs.push({ pubKey: pub, sig: r.sig });
       hash = r.hash;
     }

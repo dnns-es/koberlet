@@ -20,7 +20,7 @@
 const path = require('path');
 const fs = require('fs');
 
-const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup', 'evmnodo'];
+const LIBS = ['kda', 'dca', 'bridge', 'ethswap', 'evmswap', 'vault', 'wallets', 'nft', 'swap', 'eth', 'ledger', 'kdatime', 'backup', 'evmnodo', 'firma'];
 
 async function main() {
   // La ruta se resuelve a ABSOLUTA aqui. Con una relativa sin './' -como la que manda
@@ -53,6 +53,23 @@ async function main() {
     if (!m || m.split(' ').length < 12) throw new Error('la semilla generada no tiene pinta de serlo');
     ok('@kadena/hd-wallet: genera semilla de ' + m.split(' ').length + ' palabras');
   } catch (e) { mal('@kadena/hd-wallet (crear wallet por semilla)', e); }
+
+  // 2b. Derivacion ANTIGUA de Chainweaver (cuentas de eckoWALLET): carga kadena-crypto (wasm)
+  //     en diferido. Si faltara en el paquete, importar o firmar con una de esas cuentas
+  //     fallaria el dia que alguien lo intentase. Se deriva una cuenta y se firma de verdad.
+  try {
+    const w = require(path.join(raiz, 'lib', 'wallets.js'));
+    const f = require(path.join(raiz, 'lib', 'firma.js'));
+    const nacl = require(path.join(raiz, 'node_modules', 'tweetnacl'));
+    const urlHd = require('url').pathToFileURL(path.join(raiz, 'node_modules', '@kadena', 'hd-wallet', 'lib', 'cjs', 'index.js')).href;
+    const hd2 = await import(urlHd);
+    const sem = (hd2.kadenaGenMnemonic || (hd2.default && hd2.default.kadenaGenMnemonic))();
+    const k = await w.deriveKda(sem, 0, w.METODO_ANTIGUO);
+    const msg = require('crypto').randomBytes(32);
+    const sig = await f.firmar(msg, k.secret);
+    if (!nacl.sign.detached.verify(new Uint8Array(msg), new Uint8Array(Buffer.from(sig, 'hex')), new Uint8Array(Buffer.from(k.public, 'hex')))) throw new Error('la firma no valida contra su clave publica');
+    ok('derivacion antigua de Chainweaver: deriva y firma');
+  } catch (e) { mal('derivacion antigua de Chainweaver (cuentas de eckoWALLET)', e); }
 
   try { require(path.join(raiz, 'node_modules', '@kadena', 'cryptography-utils')); ok('@kadena/cryptography-utils'); }
   catch (e) { mal('@kadena/cryptography-utils', e); }

@@ -88,6 +88,9 @@ const ERRORES_EN = [
   [/^No hay ninguna cuenta (KDA )?que ofrecer\.$/, 'There is no $1account to offer.'],
   [/^La privada KDA debe ser 64 caracteres hex \(32 bytes\)\.$/, 'The KDA private key must be 64 hex characters (32 bytes).'],
   [/^La semilla debe tener 12 o 24 palabras\.$/, 'The seed phrase must have 12 or 24 words.'],
+  [/^La firma con la clave antigua no ha salido bien\.$/, 'Signing with the old-format key did not work.'],
+  [/^Clave de Kadena no reconocida: no se puede firmar\.$/, 'Unrecognised Kadena key: cannot sign.'],
+  [/^La derivacion antigua de Chainweaver no ha devuelto una clave valida\.$/, 'The old Chainweaver derivation did not return a valid key.'],
   [/^Parámetros KDF de la bóveda por debajo del mínimo de seguridad\.$/, 'Vault KDF parameters are below the security minimum.'],
 
   // --- Copias de seguridad ---
