@@ -863,6 +863,17 @@ ipcMain.handle('seed:find', async (_e, { mnemonic, kind, net, target, maxIndex }
       if (id.toLowerCase() === tgt) return { found: true, index: i, method: m, id };
     }
   }
+  // No ha salido con ninguna derivacion que Koberlet sepa FIRMAR. Antes de rendirse, se mira
+  // la antigua de Chainweaver / eckoWALLET: si la cuenta es de esas, se dice claro en vez de
+  // dejar al usuario pensando que la semilla esta mal.
+  if (kind !== 'evm' && kind !== 'tron') {
+    try {
+      const root = await wallets.legacyRoot(mnemonic);
+      for (let i = 0; i < max; i++) {
+        if ((await wallets.legacyAccount(root, i)).toLowerCase() === tgt) return { found: false, scanned: max, legacy: true, index: i };
+      }
+    } catch (_) { /* si la libreria antigua falla, vale el "no aparece" de siempre */ }
+  }
   return { found: false, scanned: max };
 });
 // Escáner de cuentas de una semilla. Para KDA prueba AMBOS métodos (Chainweaver y eckoWallet); devuelve cada cuenta con su saldo.

@@ -1,0 +1,7 @@
+{
+  "notes": "Importar por semilla ya no da «Invalid mnemonic» por mayúsculas, espacios de más o saltos de línea. / Importing a seed no longer fails with \"Invalid mnemonic\" because of capitals, extra spaces or line breaks.",
+  "notes_i18n": {
+    "es": "IMPORTAR POR SEMILLA\n\n- Una semilla correcta daba «Invalid mnemonic» si se pegaba con mayusculas, dobles espacios, tabuladores o saltos de linea. Ahora se limpia sola antes de usarla.\n- Una palabra mal escrita sigue dando error, como debe.\n- «Buscar esa cuenta en la semilla» reconoce ahora las cuentas de la derivacion antigua de Chainweaver (la que usa eckoWALLET) y lo dice claro. Todavia no se pueden importar: Koberlet aun no firma con ese tipo de clave.",
+    "en": "IMPORT FROM SEED\n\n- A correct seed failed with \"Invalid mnemonic\" when pasted with capitals, double spaces, tabs or line breaks. It is now cleaned up before use.\n- A misspelt word still fails, as it should.\n- \"Find that account in the seed\" now recognises accounts from the old Chainweaver derivation (the one eckoWALLET uses) and says so. They cannot be imported yet: Koberlet does not sign with that kind of key for now."
+  }
+}

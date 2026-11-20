@@ -509,6 +509,7 @@ const LANG = {
     seed_scanning: 'Buscando cuentas y saldos… (unos segundos)',
     seed_finding: 'Buscando la cuenta en los índices (0-40, ambos métodos)…',
     seed_more: 'Ver 5 cuentas más (desde #{n})', import_this: 'Importar esta',
+    seed_legacy: 'Encontrada en el índice {n}, pero con la derivación antigua de Chainweaver (la que usa eckoWALLET). Koberlet todavía no puede firmar con ese tipo de clave, así que no se puede importar aún.',
     seed_notfound: 'No aparece en los primeros {n} índices con ninguno de los dos métodos. Tu wallet usa otra derivación — dímelo y la añado.',
     exp_revealed: 'Revelada. Cópiala y cierra.', wallet_deleted: 'Wallet borrada.',
     ttl_eye: 'Ver / ocultar', ttl_copy_id: 'copiar id',
@@ -1004,6 +1005,7 @@ const LANG = {
     seed_scanning: 'Looking up accounts and balances… (a few seconds)',
     seed_finding: 'Searching for the account across indexes (0-40, both methods)…',
     seed_more: 'Show 5 more accounts (from #{n})', import_this: 'Import this one',
+    seed_legacy: 'Found at index {n}, but with the old Chainweaver derivation (the one eckoWALLET uses). Koberlet cannot sign with that kind of key yet, so it cannot be imported for now.',
     seed_notfound: 'Not found in the first {n} indexes with either method. Your wallet uses another derivation — tell me and I will add it.',
     exp_revealed: 'Revealed. Copy it and close.', wallet_deleted: 'Wallet deleted.',
     ttl_eye: 'Show / hide', ttl_copy_id: 'copy id',
@@ -4027,7 +4029,7 @@ $('btn-seed-find').onclick = async () => {
     if (r.found) {
       seedRowsHtml = `<div class="seedrow"><div class="sr-acc">✅ <b>${METHOD_TAG[r.method] || 'EVM'} · #${r.index}</b> <span class="mono">${r.id.slice(0, 14)}…${r.id.slice(-6)}</span></div><button class="tiny seed-imp" data-idx="${r.index}" data-method="${r.method}">${t('import_this')}</button></div>`;
       $('seed-accts').innerHTML = seedRowsHtml; wireSeedRows();
-    } else { $('seed-accts').innerHTML = `<div class="muted xs">${tr('seed_notfound', { n: r.scanned })}</div>`; }
+    } else { $('seed-accts').innerHTML = `<div class="muted xs">${r.legacy ? tr('seed_legacy', { n: r.index }) : tr('seed_notfound', { n: r.scanned })}</div>`; }
   } catch (e) { $('seed-accts').innerHTML = ''; msg($('imp-msg'), 'Error: ' + errIdioma(e.message), 'err'); }
 };
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); $('tab-mn').hidden = t.dataset.tab !== 'mn'; $('tab-pk').hidden = t.dataset.tab !== 'pk'; });
